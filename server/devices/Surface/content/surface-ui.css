@@ -1,0 +1,22 @@
+/*
+ * CSS for displaying a miniature wall in the platform UI
+ */
+#wall {
+	margin-top: 20px;
+	margin-bottom: 20px;
+	margin-left: 20px;
+	position: relative;
+	border: 1px solid grey;
+	overflow: hidden;
+}
+.tile {
+	position: absolute; 
+	overflow: hidden;
+	background-color: rgba(240, 224, 255, 0.8); /* #edf */
+	border: 1px solid grey;
+	transition: background-color 1s;
+	z-index: 100;
+}
+.tile.connected {
+	background-color: rgba(0,0,0,0); /* transparent */
+}

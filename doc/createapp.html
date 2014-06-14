@@ -1,0 +1,301 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Creating an Application for WildOS</title>
+
+    <link href="assets/css/bootstrap.min.css" rel="stylesheet">
+    <!-- HTML5 Shim and Respond.js IE8 support of HTML5 elements and media queries -->
+    <!-- WARNING: Respond.js doesn't work if you view the page via file:// -->
+    <!--[if lt IE 9]>
+      <script src="https://oss.maxcdn.com/libs/html5shiv/3.7.0/html5shiv.js"></script>
+      <script src="https://oss.maxcdn.com/libs/respond.js/1.4.2/respond.min.js"></script>
+    <![endif]-->
+    <link href="assets/css/highlight-docco.css" rel="stylesheet">
+    <link href="assets/css/custom.css" rel="stylesheet">
+  </head>
+  <body>
+    <nav class="navbar navbar-inverse navbar-fixed-top" role="navigation">
+      <div class="container-fluid">
+        <div class="navbar-header">
+          <a class="navbar-brand" href="#">Creating an Application for WildOS</a>
+        </div>
+        <ul id="tocmenu" class="nav navbar-nav navbar-right">
+          <li class="dropdown">
+            <a href="#" class="dropdown-toggle" data-toggle="dropdown">Content <b class="caret"></b></a>
+            <ul class="dropdown-menu">
+              <li class="toc3"><a href="#filesystemlayout">File system layout</a></li>
+<li class="toc3"><a href="#applicationclassandinstance">Application class and instance</a></li>
+<li class="toc3"><a href="#applicationlifecycle">Application lifecycle</a></li>
+<li class="toc3"><a href="#applicationcontrollerui">Application controller UI</a></li>
+<li class="toc3"><a href="#sharingobjectswithclients">Sharing objects with clients</a></li>
+<li class="toc3"><a href="#client-sidecodeforrenderingonatiledisplay">Client-side code for rendering on a tile display</a></li>
+<li class="toc3"><a href="#client-sidecodeforwebcontrollers">Client-side code for web controllers</a></li>
+
+            </ul>
+          </li>
+        </ul>
+        <!--
+        <ul id="filemenu" class="nav navbar-nav navbar-right">
+          <li class="dropdown">
+            <a href="#" class="dropdown-toggle" data-toggle="dropdown">Files <b class="caret"></b></a>
+            <ul class="dropdown-menu">
+              <li><a href="doc/createdev.html">Creating Devices for WildOS</a></li>
+<li><a href="doc/index.html">Overview</a></li>
+<li><a href="doc/logging.html">Logging in WildOS</a></li>
+<li><a href="doc/sharing.html">Sharing Objects in WildOS</a></li>
+
+            </ul>
+          </li>
+        </ul>
+        -->
+      </div><!-- /.container -->
+    </nav>
+
+    <div class="container-fluid">
+      <h1 id="creatinganapplicationforwildos">Creating an Application for WildOS</h1>
+
+<p>Note: In this document, we use <code>MyApp</code> as the name of the app you are creating.
+We strongly advise that you look at the source code of existing applications to understand how they work.</p>
+
+<p>A WildOS application typically provides a way to display some content and/or interact with some content.
+Applications are often distributed, with some code running in the WildOS server and some code running in one or more clients.
+This distribution is dynamic, because clients can come and go at any time.
+To simplify the work of the developer, <a href="sharing.html">object sharing</a> is often used to share state between server and clients.</p>
+
+<h3 id="filesystemlayout">File system layout</h3>
+
+<p>WildOS applications must be stored in the <code>WildOS/server/apps</code> directory (or the <code>WildOS/apps</code> directory, but this has not been tested).
+Each application must conform to the format of a node module, i.e. it must be either:</p>
+
+<ul>
+<li>A single file <code>MyApp.js</code>;</li>
+<li>A directory <code>MyApp</code> with at least a file called <code>index.js</code>;</li>
+<li>A directory <code>MyApp</code> with a <code>package.json</code> file that includes a property <code>main</code> holding the name of the main file.</li>
+</ul>
+
+<p>Whichever way you decide to implement the package, we call this file (<code>MyApp.js</code>, <code>MyApp/index.js</code> or the file specified in the <code>main</code> property of the <code>MyApp/package.json</code>) the app&#8217;s <em>main file</em>. </p>
+
+<p>If the application has client-side code running in a web browser, this code must be in the <code>content</code> directory under the application&#8217;s directory. </p>
+
+<p>If the application has client-side code for rendering on a tiled display, this code must be in the <code>WidOS/renderer/apps</code> directory (or the <code>WildOS/apps</code> directory, but this has not been tested). Like server-side code, the format must conform to a node package with the same name as the application.</p>
+
+<p>Other kinds of clients may have different requirements for implementing the client-side part of the application.</p>
+
+<h3 id="applicationclassandinstance">Application class and instance</h3>
+
+<p>On the server, the app&#8217;s main file must export a single object: the class implementing the app, which must be a subclass of <code>App</code> and have the same name as the app. The absolute minimum code for an application is therefore:</p>
+
+<pre><code>    var App = require('../../lib/App');         // Get the App class to inherit from it
+    var MyApp = App.subclass().name('MyApp');   // Create the app's class. The name must be that of the app.
+    module.exports = MyApp;                     // Export the app's class
+</code></pre>
+
+<h3 id="applicationlifecycle">Application lifecycle</h3>
+
+<p>When your application is loaded into WildOS, an application instance is created by creating an instance of the exported class (<code>MyApp.create()</code>), and it&#8217;s <code>start</code> method is called.
+You can initialize your application either in the constructor or in this method.
+In many cases you need information about the platform to complete initialization.
+To this end, WildOS also calls the <code>initPlatform</code> method with the platform as argument.
+Since the platform is needed to access almost anything in WildOS, most applications will store a reference to the class in the class:</p>
+
+<pre><code>    MyApp.methods({
+        ...
+        initPlatform: function(platform) {
+            this.platform = platform;
+        },
+        ...
+    })
+</code></pre>
+
+<p>Before unloading an application, WildOS calls its <code>stop</code> method, so you can perform any necessary cleanup.</p>
+
+<h3 id="applicationcontrollerui">Application controller UI</h3>
+
+<p>Many apps want to have some user interface in the main WildOS window to control them.
+This is possible by injecting code in the platform control window as follows:</p>
+
+<pre><code>    // typically done in initPlatform:
+    platform.injectJSFile('file://'+this.__dirname+'/ui.js');
+</code></pre>
+
+<p>The injected code is in the file <code>ui.js</code>, in the same directory as the application&#8217;s main file.
+Note that <code>injectJSFile</code> can take two additional optional arguments:</p>
+
+<ul>
+<li>an id to set on the <code>&lt;script&gt;</code> tag created by <code>injectJSFile</code>.
+ This is useful to delete the element when the app is unloaded (see below).</li>
+<li>a callback to be called when the script is finished executing.
+ This is useful if you need to access variables or DOM elements created by the script.</li>
+</ul>
+
+<p>The platform also provides methods to inject CSS code and HTML code into the platform UI, similar to <code>injectJSFile</code>.</p>
+
+<p>Since the platform UI is part of the same process as the server, it has direct access to its objects (this is the beauty of node-webkit).
+In particular, the injected code can directly access the <code>platform</code> global variable.
+From there, it can get acccess to the application object as follows:</p>
+
+<pre><code>   var app = platform.apps.getApp('MyApp');
+</code></pre>
+
+<p>The platform UI is organized in three top-level divs, with respective ids <code>top</code>, <code>platform</code> and <code>bottom</code>.
+Application typically create divs under these sections, with an id derived from the application name (to avoid name clashes).
+The id is used to remove the div when the application is unloaded.
+Some devices create divs inside the <code>platform</code> div, in particular the tiled display device creates a div with id <code>wall</code>.
+The platform UI uses jQuery so your code can use it and does not need to load it.</p>
+
+<p>The application UI control code that is injected into the platform UI typically features two functions, <code>startMyApp</code> and <code>stopMyApp</code>:</p>
+
+<pre><code>    function startMyApp() {
+        ...
+        // create a div for the app
+        $('#top').append('&lt;div id=&quot;MyApp&quot;&gt;My app's stuff: &lt;/div&gt;'););
+        ...
+    }
+
+    function stopMyApp() {
+        // remove what we created
+        $('#top').remove();
+    }
+
+    startMyApp()
+</code></pre>
+
+<p><code>startMyApp</code> creates the UI and is called by the script itself.</p>
+
+<p><code>stopMyApp</code> deletes the UI and is called from the application&#8217;s <code>stop</code> method as follows:</p>
+
+<pre><code>    MyApp.methods({
+        ...
+        stop: function() {
+            ...
+            if (this.platform.window)
+                this.platform.window.window.stopMyApp();
+        }
+        ...
+    })
+</code></pre>
+
+<p>(<code>this.platform.window</code> is the node-webkit window object for the window holding the platform UI,
+<code>this.platform.window.window</code> is the browser window object where the injected code is loaded,
+which is why the <code>stopMyApp</code> function is defined).</p>
+
+<h3 id="sharingobjectswithclients">Sharing objects with clients</h3>
+
+<p>The documentation on <a href="sharing.html">object sharing</a> explains how to set up sharing and how to use, in particular by wrapping object fields in order to react to updates. Since applications almost always share state with clients, the <code>App</code> class defines a class method to simplify the process:</p>
+
+<pre><code>    MyApp.shareState(/*fields: */ 'own', /*allow remote calls: */ null, /* notify: */ null)
+</code></pre>
+
+<p>creates a sharer, stored in <code>MyApp.sharer</code> and sets it up as master.
+The arguments specify which fields to share (defaults to <code>own</code>), which methods can be called remotely (defaults to none), and which method calls should be notified to the clients (defaults to none). This is all you need to do to enable sharing.</p>
+
+<p>If your application defines other classes that also share their state with the clients, you can simply add them to this sharer (i.e., you do not need to create a different sharer):</p>
+
+<pre><code>    MyApp.sharer.master(MyOtherClass, /*fields: */ 'own', /*allow remote calls: */ null, /* notify: */ null)
+</code></pre>
+
+<h3 id="client-sidecodeforrenderingonatiledisplay">Client-side code for rendering on a tile display</h3>
+
+<p>If your application renders content on the tiled display, you probably need to write client code for the renderer.
+The layout and setup is very similar as for the server: the client module must define and export a class called <code>MyApp</code> that inherits from <code>App</code>.
+(Although the names are the same as on the server, the implentations differ).
+When the application is loaded, an instance of the class is created and its <code>start</code> method is called.
+When the application is unloaded, it&#8217;s method <code>stop</code> is called.</p>
+
+<p>The rendering client has no notion of platform, instead it manages a set of rendering <em>tiles</em>, which are full-screen HTML windows.
+To monitor the tiles, you can redefine the app methods <code>tileReady</code> and <code>tileGone</code>, which are called with a tile object each time a tile becomes available or unavailable.</p>
+
+<p>The tile object holds information such as the size (<code>width</code>, <code>height</code>) and position within the tiled display (<code>originX</code>, <code>originY</code>).
+This is often needed to create a mosaic of images that together represent a larger image.</p>
+
+<p>The tile also holds, in the <code>window</code> property, the node-webkit window object for the tile.
+This gives you access to the content of the rendering window:</p>
+
+<pre><code>    MyApp.methods({
+        tileReady: function(tile) {
+            tile.window                       // the node-webkit window
+            tile.window.window                // the HTML window
+            tile.window.window.document       // the HTML document in the tile
+            tile.window.window.location.href  // the URL of the HTML document in the tile
+        }
+    })
+</code></pre>
+
+<p>Some applications will load their own content in the tiles by changing the tile window&#8217;s URL.
+Other applications will instead inject code into the existing content of the tile.
+In both cases, your application probably needs to know when the window is reloaded:
+in the first case, you want to know when the content is actually done loading before proceeding,
+in the second case, you need to re-inject your code when another application loads a different page.</p>
+
+<p>This can be done by setting a handler as follows:</p>
+
+<pre><code>    MyApp.methods({
+        tileReady: function(tile) {
+            var self = this;
+            tile.window.on('loaded', function() {
+                // do what is needed once the window is done loading
+                // use self instead of this to access the app object
+                self.initContent(tile);
+            });
+        }
+    })
+</code></pre>
+
+<p>Unlike the <code>Platform</code> class of the server, the <code>Tile</code> class does not (yet) provide function to inject Javascript, CSS or HTML code into the page.
+Since the page may not have jQuery loaded, you need to use native DOM functions to inject code (of course, you can start by injecting jquery.js).
+Here is an example of how to create a div:</p>
+
+<pre><code>    MyApp.methods({
+        initContent: function(tile) {
+            var doc = tile.window.window.document;
+            var el = doc.createElement('div');
+            // set element's attributes and content
+            doc.body.appendChild(el);
+        }
+    })
+</code></pre>
+
+<p>In order for you application to use the client-side rendering code, it must be installed on the rendering client machines.
+An easy way to do this is to run</p>
+
+<pre><code>   make sync
+</code></pre>
+
+<p>in the <code>server</code> directory. This will use <code>walldo</code> and <code>rsync</code> to synchronize the WildOS files on the rendering clients with the server.
+Once the clients are updated, you should stop and restart them by clicking the <code>restart</code> button in the platform control interface,
+or by running <code>make start</code> in the <code>server</code> directory.</p>
+
+<h3 id="client-sidecodeforwebcontrollers">Client-side code for web controllers</h3>
+
+<p>Web-based clients are often used to provide a mobile interface for an application, accessible through a smartphone or tablet.
+We call these web controllers.
+The <code>WebControllers</code> device manages an arbitrary number of such clients. Each client is notified of applications being loaded and unloaded, and loads/unloads a controller interface for this application, if the application has defined it.</p>
+
+<p>To support a web controller, you must create a file <code>content/controller.html</code> under you application directory (on the server).
+The web server bundled with the WildOS server creates a route to serve files in the app&#8217;s <code>content</code> subdirectory at the URL <code>MyApp</code>. The above file will therefore be accessible by a web client as <code>http://&lt;server-address&gt;:8080/MyApp/controller.html</code>.</p>
+
+<p>This file is not actually loaded directly into the web controller.
+Instead, the web controller loads the page <code>http://&lt;server-address&gt;:8080/controller.html</code>, which provides a shell to dynamically load and unload the web controllers of the active applications. This shell also defines a simplified version of the <code>App</code> class, to you can define your app class and share its state with the server as for the rendering client.</p>
+
+<p>You app&#8217;s <code>controller.html</code> file is therefore typically a snippet of HTML code that defines the controlling interface, and a script that defines your app&#8217;s class. Similar to the server and rendering client, the methods <code>start</code> and <code>stop</code> are called when the app is loaded / unloaded. However, unlike the server and rendering client, the script should also instantiate the class:</p>
+
+<pre><code>    var MyApp = App.subclass().name('MyApp')
+        .methods({
+            ...
+        })
+        .shareState('own');
+
+    var myApp = MyApp.create();
+</code></pre>
+
+<p>When your application is loaded, the <code>WebControllers</code> device manager notifies all the web controllers, which then injects the app&#8217;s <code>controller.html</code> file (if it exists) into a new div in the web interface. When the app is unloaded, the div is removed, with all its content. Therefore you usually do not have to do anything special in the app&#8217;s <code>stop</code> method.</p>
+
+    </div>
+    <script type="text/javascript" src="assets/js/jquery-1.11.0.min.js"></script>
+    <script type="text/javascript" src="assets/js/bootstrap.min.js"></script>
+    <script type="text/javascript" src="assets/js/highlight.custom.js"></script>
+    <script type="text/javascript">hljs.initHighlightingOnLoad();</script>
+  </body>
+</html>

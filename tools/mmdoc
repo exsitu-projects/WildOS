@@ -1,0 +1,470 @@
+#!/usr/bin/env node
+//
+// Michel Beaudouin-Lafon - mbl@lri.fr - 2014
+//
+// Syntax:
+//		mmdoc [-h] | [-i|-input dir] [-o|-output dir] [-a|-assets dir] [-t|-template file] [files]
+//
+// Use a template page to turn multimarkdown pages into complete HTML.
+//
+// Occurences of {{variable}} in the template are replaced by the value of variable.
+// Predefined variables are:
+//		- assets - directory with HTML assets
+//		- title - the content of the first level-1 header, or empty if there isn't one
+//		- toc - a table of content, as an HTML sequence of <li> elements with class "toc1" ... "toc6" according to the level
+//		- content - HTML output of the multimarkdown file
+
+// Node modules
+var fs = require('fs');
+var spawn = require('child_process').spawn;
+
+// Global configuration
+var inputDir = './';
+var outputDir = './';
+var assetsDir = 'assets/';
+var templateFile = 'template.html';
+
+// Default template
+var template = '{{content}}';
+
+// List of files to process
+var files = [];
+// List of files to process with additional info:
+// each element is an object with properties `infile`, `outfile`, `title`
+var fileInfo = [];
+
+// Print usage
+function usage() {
+	console.log("mmdoc [-h] | [-i|-input dir] [-o|-output dir] [-a|-assets dir] [-t|-template file] [files]");
+	console.log("   -i and -o default to current directory, -a to 'assets' and -t to 'template.html'.");
+	console.log("   if files are omitted, all .md and .mmd files in input directory are processed.");
+	console.log("   assets dir is relative to output dir, template to intput dir unless it contains a slash.");
+}
+
+// Print error and exit with exit code 1
+function error(/*args*/) {
+	console.log.apply(this, arguments);
+	process.exit(1);
+}
+
+// Process command arguments.
+// Sets the global configuration and the list of files.
+function processArgs(args) {
+	for (var i = 2; i < args.length; i++) {
+		var arg = args[i];
+		var nextArg = (i < args.length -1) ? args[i+1] : null;
+
+		switch(arg) {
+			case '-h':
+			case '-help':
+				usage();
+				process.exit(0);
+				break;
+			case '-i':
+			case '-input':
+				if (nextArg && !nextArg.match(/^-/))
+					inputDir = nextArg + '/';
+				else
+					error('Missing argument for', arg);
+				i++;
+				break;
+			case '-o':
+			case '-output':
+				if (nextArg && !nextArg.match(/^-/))
+					outputDir = nextArg + '/';
+				else
+					error('Missing argument for', arg);
+				i++;
+				break;
+			case '-a':
+			case '-assets':
+				if (nextArg && !nextArg.match(/^-/))
+					assetsDir = nextArg + '/';
+				else
+					error('Missing argument for', arg);
+				i++;
+				break;
+			case '-t':
+			case '-template':
+				if (nextArg && !nextArg.match(/^-/))
+					templateFile = nextArg;
+				else
+					error('Missing argument for', arg);
+				i++;
+				break;
+			default:
+				if (arg.match('^-'))
+					error('Unknown option', arg);
+				else
+					files.push(arg);
+		}
+	}
+}
+
+// Return an array of files to process in directory `dir`. 
+// Dot-files are ignored, as well as files with a suffix other than `.md`, `.mmd` and `.js`.
+function ls(dir) {
+	var files = [];
+
+	// List files in `dir`
+	fs.readdirSync(dir).forEach(function(file) {
+		// Ignore dot files
+		if (file.match(/^\./))
+			return;
+		// Ignore files with unknown suffix
+		if (file.match(/\.m?md$/) || file.match(/.js$/))
+			files.push(file);
+	});
+	return files;
+}
+
+// Extract the title of a file
+function getTitle(file) {
+	// For non-Markdown files, return null
+	if (! file.match(/\.m?md$/))
+		return null;
+
+	// For Markdown file, get the `title` metadata, or else the first line
+	var lines = fs.readFileSync(file, {encoding: 'utf8'});
+	if (!lines)
+		return null;
+	lines = lines.split('\n');
+
+	var title = lines[0];
+	for (var i = 0; i < lines.length; i++) {
+		var line = lines[i];
+		// Look for `Title:`, non-case-sensitive
+		var m = line.match(/[tT][iI][tT][lL][eE]:\s*(.*)\s*$/);
+		if (m)
+			return m[1];
+		// Blank line is end of metadata
+		if (line.match(/^\s*$/))
+			break;
+	}
+	return title;
+}
+
+// Parse the content of the generated HTML (`content`) to extract the table of contents (into `variables`)
+function preProcess(content, variables) {
+	// If there is no header, return the variables unmodified
+	var matches = content.match(/<h[1-6][^\n]*<\/h[1-6]>/g);
+	if (! matches)
+		return variables;
+
+	// Process each match
+	matches.forEach(function(header) {
+		// Ignore matches with no ids
+		var match = header.match(/<h([1-6]) *id="([^"]+)">([^\n]*)<\/h[1-6]>/);
+		if (! match)
+			return;
+
+		// Extract level (of header), id and title
+		var level = match[1];
+		var id = match[2];
+		var title = match[3];
+
+		// Update the `toc` entry of `variables`
+		if (level == 1) {
+			if (! variables.title)
+				variables.title = title;
+		} else {
+			variables.toc += '<li class="toc'+level+'"><a href="#'+id+'">'+title+'</a></li>\n';
+		}
+	});
+
+	return variables;
+}
+
+// Process a template string, replacing `{{var}}` by the corresponding entry in `variables`.
+// Undefined variables are replaced by an empty string.
+function processTemplate(template, variables) {
+	var output = template;
+
+	// Substitute variables
+	for (var v in variables)
+		output = output.replace(new RegExp('{{'+v+'}}', 'g'), variables[v]);
+
+	// Substitute all unknown variables by empty string
+	output = output.replace(/{{[-_a-zA-Z0-9]*}}/g, '');
+
+	return output;
+}
+
+// Process a file, calling `cb` when done.
+function processFile(infile, outfile, cb) {
+	var content = '';
+	var errout = '';
+	var output = template;
+
+	console.log('processing', infile, '->', outfile);
+
+	// Run multimarkdown -> HTML
+	var mmd = spawn('multimarkdown', ['--process-html', infile]);
+
+	// Capture output
+	mmd.stdout.on('data', function(data) {
+		content += data;
+	});
+	mmd.stderr.on('data', function(data) {
+		errout += data;
+	});
+
+	// Process it
+	mmd.stdout.on('close', function(code) {
+		if (code) {
+			// Failed
+			console.log('multimarkdown', infile, 'exited with error code', code);
+			console.log(errout);
+			if (cb) {
+				cb(infile, outfile, 'err', code);
+			}
+			return;
+		}
+
+		// Prepare to process template
+		var variables = {
+			assets: assetsDir,
+			title: '',
+			toc: '',
+			content: content,
+		};
+
+		// Create files menu
+		var filesMenu = '';
+		fileInfo.forEach(function(fInfo){
+			if (fInfo.infile != infile) 
+				filesMenu += '<li><a href="'+fInfo.outfile+'">'+fInfo.title+'</a></li>\n';			
+		});
+		variables.files = filesMenu;
+
+		// Extract toc, process template and postprocess resulting HTML
+		variables = preProcess(content, variables);
+		output = processTemplate(template, variables);
+		output = postProcess(output);
+
+		// Try to write output and call `cb`
+		try {
+			fs.writeFileSync(outfile, output, {flag: 'w'});
+			console.log('done', infile, '->', outfile);
+			if (cb)
+				cb(infile, outfile, 'OK');
+		} catch(err) {
+			console.log('error', infile, '->', outfile);
+			console.log(err.toString());
+			if (cb)
+				cb(infile, outfile, 'err', err);
+		}
+	});
+}
+
+// ### Process Javascript files
+
+// Clean up resulting HTML.
+function postProcess(html) {
+	// *** Really a hack to fix the spurious <p> and </p> that mmd generates due to our markup
+	return html.replace(/<p><\/div>/g, '</div>').replace(/(<div\s+class="[^"]*">)<\/p>/g, '$1');
+}
+
+// Turn a context object into HTML.
+function outputContext(c) {
+	// If the source is empty, simply return the comment.
+	// This occurs at the top of the file, and makes it possible to have a comment
+	// that spans the width of the page instead of just the left column.
+	if (c.src.match(/^\s*\n?$/)) {
+		var res = c.comment;
+		c.comment = '';
+		return res;
+	}
+
+	// The output is a `codesegment` div with two optional divs within it
+	output = '<div class="codesegment row">';
+	if (c.comment) {
+		// The `comment` div
+		output +='<div class="comment col-md-4">\n';
+		output += c.comment;
+		output += '</div>';
+		c.comment = '';
+	}
+	if (c.src) {
+		// The `sourcecode` div
+		output +='<div class="sourcecode col-md-8">\n';
+		output += '\n```\n';
+		output += c.src;
+		output += '```\n';
+		output += '</div>';
+		c.src = '';
+	}
+	c.inComment = true;
+
+	return output+'</div>';
+}
+
+// Add a comment corresponding to heading to the context.
+function addCodeHeading(heading, context) {
+	var output = '';
+	heading = heading+'\n';
+
+	if (!context.inComment)
+		output = outputContext(context);
+
+	context.comment = heading + context.comment;
+	return output;
+}
+
+// Parse Javascript lines for special definitions and generate automatic comments for them.
+// Special definitions include function declarations as well as OO-specific declarations (class, constructor, method).
+function processJSline(line, context) {
+	var m;
+
+	// Functions
+	m = line.match(/^function\s*(\S+)\s*(\([^)]*\))/);
+	if (m)
+		return addCodeHeading('### Function `'+m[1]+'`'/*+m[2]*/, context);
+
+	// Classes and subclasses
+	m = line.match(/^var\s+(\S+)\s*=\s*\S+\.newClass\s*\(/);
+	if (m)
+		return addCodeHeading('### Class `'+m[1]+'`', context);
+
+	m = line.match(/^var\s+(\S+)\s*=\s*\S+\.subclass\s*\(/);
+	if (m)
+		return addCodeHeading('### Class `'+m[1]+'`', context);
+
+	// Constructors (default and named)
+	m = line.match(/^\s*\.constructor\(function\s*(\([^)]*\))/);
+	if (m)
+		return addCodeHeading('#### Constructor `create`'/*+m[1]*/, context);
+
+	m = line.match(/^\s*\.constructor\('|"([^'"]*)'|", function\s*(\([^)]*\))/);
+	if (m)
+		return addCodeHeading('#### Constructor `'+m[1]+'`'/*+m[2]*/, context);
+
+	// Methods
+	m = line.match(/^\s*(\S+)\s*:\s*function\s*(\([^)]*\))/);
+	if (m)
+		return addCodeHeading('#### Method `'+m[1]+'`'/*+m[2]*/, context);
+
+	return '';
+}
+
+// Turn a Javascript file into a Markdown file.
+function processJS(title, infile, outfile) {
+	// Read the input file and split it into lines
+	var lines = fs.readFileSync(infile, {encoding: 'utf8'});
+	if (!lines)
+		return false;
+	lines = lines.split('\n');
+
+	// Prepare output.
+	// The context accumulates a set of adjacent comments and the code following them.
+	var output = title+'\n=====\n';	
+	var context = {
+		inComment: true,
+		comment: '',
+		src: '',
+	};
+
+	// Process each line
+	lines.forEach(function(line) {
+		var isComment = line.match(/^\s*\/\//);
+		if (isComment) {
+			// If it's a comment, add it to the set of comments in the context,
+			// but first generate and reset the current context if we were not accumulating comments
+			if (! context.inComment)
+				output += outputContext(context);
+			var comment = line.match(/^\s*\/\/(.*$)/)[1];
+			context.comment += comment + '\n';
+		} else {
+			// If it's not a comment, add it to the code in the context.
+			// Note that `processJSline` parses lines defining functions and other important objects
+			// to automatically generate comments for them.
+			output += processJSline(line, context);
+			if (context.inComment)
+				context.inComment = false;
+			context.src += line+'\n';
+		}
+	});
+	// Generate the last segment
+	output += outputContext(context);
+
+	// Try to write the output file
+	try {
+		fs.writeFileSync(outfile, output);
+		return true;
+	} catch(err) {
+		console.log('*** could not process JS file', err.toString());
+		return false;
+	}
+}
+
+// ### Main function 
+// Process each file and wait until they are all done.
+function main() {
+	// Parse arguments
+	processArgs(process.argv || []);
+
+	// Output settings
+	console.log('InputDir', inputDir);
+	console.log('OutputDir', outputDir);
+	console.log('AssetsDir', assetsDir);
+	console.log('Template', templateFile);
+	console.log('Files', files);
+
+	// The template is looked up in input dir unless it contains a slash
+	if (! templateFile.match(/\//))
+		templateFile = inputDir+templateFile;
+
+	try {
+		template = fs.readFileSync(templateFile, {encoding: 'utf8'});
+	} catch(err) {
+		console.log(err.toString());
+		process.exit(2);
+	}
+
+	// If no files are specified, process files in input directory
+	if (files.length === 0)
+		files = ls(inputDir);
+
+	// Create the list of files with their titles
+	files.forEach(function(file) {
+		var infile = inputDir+file;
+		var outfile = outputDir+file+'.html';
+		if (file.match(/\.m?md$/))
+			outfile = outputDir+file.replace(/\.m?md$/, '.html');
+		fileInfo.push({
+			name: file,
+			infile: infile,
+			outfile: outfile,
+			title: getTitle(infile) || file,
+		});
+	});
+
+	// Processs each file (asynchronously)
+	fileInfo.forEach(function(fInfo) {
+		var cb = null;
+		var infile = fInfo.infile;
+		var outfile = fInfo.outfile;
+
+		if (fInfo.name.match(/\.js$/)) {
+			// Preprocess javascript file:
+			// First turn it into a markdown file
+			var tmpfile = outputDir+fInfo.name+'.md';
+			if (!processJS(fInfo.name, infile, tmpfile)) {
+				console.log('*** Could not process', infile);
+				return;
+			}
+
+			// Set up the callback to remove the intermediate markdown file
+			cb = function(infile, outfile) {
+				fs.unlink(infile);
+			};
+			infile = tmpfile;
+		}
+
+		// Process the markdown file to generate HTML
+		processFile(infile, outfile, cb);
+	});
+}
+
+// Go!
+main();

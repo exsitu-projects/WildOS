@@ -1,0 +1,20 @@
+{
+	"name": "server",
+	"version": "0.2.0",
+	"main": "content/server.html",
+	"node-main": "WildOS.js",
+	"single-instance": false,
+	"window": {
+		"title": "The WildOS Server",
+		"frame": true,
+		"toolbar": true
+	},
+	"dependencies": {
+		"express": "3.x",
+		"socket.io": "0.9.16"
+	},
+	"scripts": {
+		"postinstall": "cp ../shared/*.js node_modules",
+		"postupdate": "cp ../shared/*.js node_modules"
+	}
+}

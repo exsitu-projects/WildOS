@@ -1,0 +1,319 @@
+<html>
+<head>
+	<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+	<title>WILD controller</title>
+	<script src="jquery-mbl-1.8.3.min.js"></script>
+	<!--<script src="/socket.io/socket.io.js"></script>-->
+	<script src="wildos.js"></script>
+	<script>
+
+	function msg(message) {
+		$('#status').html(message);
+	}
+
+	var OO = require('OO');
+	var ObjectSharer = require('./ObjectSharer');
+	var SharingServer = require('./SharingServer');
+	var log = require('Log').shared();
+
+	var App = OO.newClass().name('App')
+		.classFields({
+			instances: {},		// app instances by name
+			apps: [],			// list of app instances
+		})
+		.classMethods({
+			// Return the list of running app names
+			runningApps: function() {
+				var appNames = [];
+				for (var i = 0; i < this.apps.length; i++) {
+					appNames.push(this.apps[i].name);
+				}
+				return appNames;
+			},
+
+			// Load the UI for the app, which creates its instance.
+			// Call `cb` (if non null) when done loading, with `appName` and true/false
+			// as arguments depending on whether loading succeeded or not.
+			loadApp: function(appName, cb) {
+				log.enter(this, 'loadApp', appName);
+
+				// Insert controller UI
+				var url = '/'+appName+'/controller.html';
+				var id = 'app'+appName;
+				var self = this;
+				$.ajax({
+					url: url,
+				}).done(function(html) {
+					log.enter(self, 'loadApp.done', appName);
+					$('#controller').append('<div id="'+id+'">'+html+'</div>');
+					var app = self.getApp(appName);
+					if (app)
+						app.start();
+					if (cb)
+					//	$('#'+id).load(function() {
+							cb(appName, true);
+					//	});
+					log.exit(self, 'loadApp.done', appName);
+				}).fail(function() {
+					log.enter(self, 'loadApp.fail', appName);
+					$('#controller').append('<div id="'+id+'"></div>');
+					if (cb)
+						cb(appName, false);
+					log.exit(self, 'loadApp.fail', appName);
+				});
+
+				// The UI is supposed to create the app instance (if it needs it).
+
+				log.exit(this, 'loadApp', appName);
+			},
+
+			// Remove the UI and App object.
+			unloadApp: function(appName) {
+				log.enter(this, 'unloadApp', appName);
+				// Remove the UI
+				var id = '#app'+appName;
+				$('#app'+appName).remove();
+
+				// If there is an app object, remove it
+				var app = this.getApp(appName);
+				if (!app)
+					return;
+
+				app.stop();
+				this.unregister(app);
+				log.exit(this, 'unloadApp', appName);
+			},
+
+			// Register an app so that we only load it once
+			register: function(app) {
+				log.enter(this, 'register', app.name);
+				if (this.apps.indexOf(app) >= 0)
+					return;
+				
+				this.apps.push(app);
+				this.instances[app.className()] = app;
+				log.exit(this, 'register', app.name);
+			},
+
+			// Remove an app
+			unregister: function(app) {
+				log.enter(this, 'unregister', app.name);
+				// Remove the app from our records
+				var i = this.apps.indexOf(app);
+				if (i >= 0)
+					this.apps.splice(i, 1);
+				delete this.instances[app.name];
+				log.exit(this, 'unregister', app.name);
+			},
+
+			// Find an app by name.
+			getApp: function(appName) {
+				return this.instances[appName];
+			},
+
+			// Configure the sharer to manage app state.
+			// This must be called before the app is created, 
+			// typically when creating the class (after defining the fields and methods to be shared).
+			shareState: function(sharedFields, sharedMethods) {
+				log.enter(this, 'shareState');
+				this.sharer = ObjectSharer.create().name(this.className()+'ObjectSharer').slave(this, sharedFields || 'own', sharedMethods);
+				log.exit(this, 'shareState');
+				return this;
+			},
+
+			// Used by ObjectSharer to find pre-existing objects.
+			findObject: function(oid, obj) {
+				log.enter(this, 'findObject', oid, obj);
+				var className = oid.split('_')[0];
+				var app = this.instances[className];
+				if (app)
+					app.set(obj);
+				log.exit(this, 'findObject', app ? (' - found in app '+app.name) : '- not found');
+				return app;
+			},
+
+			// The methods below are called in response to server messages.
+			//
+
+			// Load several apps.
+			// Call `cb`, if non null, when loading is done, with the list of loaded apps.
+			loadApps: function(appNames, cb) {
+				log.enter(this, 'loadApps', appNames);
+				var appDone = null;
+
+				// Arrange for the callback to be called when all applications have loaded
+				if (cb) {
+					var count = appNames.length;
+					var apps = [];
+					appDone = function(appName, loaded) {
+						count--;
+						if (loaded)
+							apps.push(appName);
+						if (count === 0)
+							cb(apps);
+					};
+				}
+
+				// For each application, try to load the controller from the app's `content` directory
+				for (var i = 0; i < appNames.length; i++)
+					this.loadApp(appNames[i], appDone);
+				log.exit(this, 'loadApps', appNames);
+			},
+
+			// Unload all apps
+			unloadAllApps: function() {
+				log.enter(this, 'unloadAllApps');
+				var self = this;
+				this.apps.forEach(function(app) {
+					log.message('unloading', app.name);
+					app.stop();
+					self.unregister(app);
+				});
+				$('#controller').html('');
+				log.exit(this, 'unloadAllApps');
+			},
+
+		})
+		.fields({
+			name: null,
+		})
+		.constructor(function(config) {
+			// The server to communicate with
+			this.server = App.server;
+
+			this.name = this.className();
+			App.register(this);
+
+			if (config)
+				this.set(config);
+
+			this.sharer = this.classs().sharer;
+		})
+		.methods({
+			// Called just after the app module is created
+			// Subclasses can extend.
+			start: function() {
+				if (this.sharer)
+					this.server.addSharer(this.sharer);
+			},
+
+			// Called just after the app is unloaded
+			stop: function() {
+				if (this.sharer) {
+					this.sharer.removeObject(this);
+					this.server.removeSharer(this.sharer);
+				}
+			},
+
+		})
+	;
+
+	log.spyMethods(App);
+	
+	var Controller = SharingServer.subclass().name('Controller')
+		.methods({
+			// Called when the connection is created.
+			created: function() {
+				this._super();
+
+				// If we have already set our listeners, give up.
+				// This typically happens when the server is not there on the first attempt
+				// and we try to reconnect.
+				if (this.socket.listeners('hello').length > 0) {
+					log.message(this, 'created', '- already configued');
+					return;
+				}
+
+				// Initial handshake with server.
+				//	server              client
+				//	    -- helloClient -->
+				//      <-- helloServer --
+				//      -- deviceReady -->
+				//      <-- clientReady --
+				//
+				// Note: DO NOT nest the `on` calls, because we want 1 listener per message at most!
+				//
+				var self = this;
+				this.on('helloClient', function(serverInfo) {
+					log.eventEnter(self, 'helloClient', serverInfo);
+					msg('Hello - apps = '+serverInfo.apps.join(', '));
+
+					self.emit('helloServer', {
+						client: 'device',
+						device: {
+							type: 'WebControllers',
+						},
+					});
+
+					log.eventExit(self, 'helloClient');
+				});
+
+				this.on('deviceReady', function(serverInfo) {
+					log.eventEnter(self, 'deviceReady');
+					App.loadApps(serverInfo.apps, function(apps) {
+						self.emit('clientReady', {
+							apps: apps
+						});
+					});
+					log.eventExit(self, 'deviceReady');
+				});
+
+				// Start/stop an app - these are sent when apps are loaded/stopped dynamically
+				this.on('startApp', function(appName) {
+					log.eventEnter(self, 'startApp', appName);
+					msg('Start app '+appName);
+
+					App.loadApp(appName, function() {
+						log.message('loadApp completed', appName, '- sending appReady');
+						// Tell server we're ready
+						// *** should be done in a promise passed to loadApp and resolved when everything is loaded
+						self.emit('appReady', appName);
+					});
+
+					log.eventExit(self, 'startApp', appName);
+				});
+
+				this.on('stopApp', function(appName) {
+					log.eventEnter(self, 'stopApp', appName);
+					msg('Stop app '+appName);
+
+					App.unloadApp(appName);
+
+					log.eventExit(self, 'stopApp', appName);
+				});
+
+				// Set up a listener for the `'quit'` message, which tells us to ... quit!
+				this.on('quit', function() {
+					// quit();
+				});
+			},
+			
+			connected: function() {
+				// nothing
+			},
+
+			// Called when we loose the connection.
+			// Delete all the tiles since they will be recreated when we reconnect.
+			disconnected: function() {
+				this._super();
+
+				App.unloadAllApps();
+			},
+		})
+	;
+
+	log.spyMethods(Controller);
+
+	function startController() {
+		App.server = Controller.create().connect();
+	}
+
+	$(document).ready(startController);
+	</script>
+</head>
+<body>
+	<h2>WILD controller</h2>
+	<div id="controller"></div>
+	<p id="status">Waiting for connection</p>
+</body>
+</html>

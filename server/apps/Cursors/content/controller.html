@@ -1,0 +1,276 @@
+<style type="text/css">
+		.cursorSwatch {
+			margin: 5px;
+			border: solid white 2px;
+		}
+		#cursorTouchpad {
+			min-width: 300px;
+			min-height: 150px;
+			width: 400px;
+			height: 200px;
+			background-color: darkgrey;
+		}
+</style>
+
+<h3>I am the Cursors controller</h3>
+
+<input id="newCursor" type="button" value="New Cursor"/>
+<span id="cursors"></span>
+<input id="removeCursor" type="button" value="Remove selected"/>
+<div id="cursorTouchpad"></div>
+
+<script>
+	var Cursor = OO.newClass().name('Cursor')
+		.fields({
+			id: null,
+			x: 100,
+			y: 100,
+			color: 'yellow',
+		})
+		.constructor(function(config) {
+			if (config)
+				this.set(config);
+
+			// Recreate cursor if id or color changes
+			this.wrapFields({
+				set id(id) { this._set(id); this.createCursor(); },
+				set color(color) { this._set(color); this.createCursor(); },
+			});
+
+			this.selected = false;
+			this.createCursor();
+		})
+		.methods({
+			// Add a div to the tile's page representing the cursor
+			createCursor: function() {
+				if (! this.id)
+					return;
+				var id = 'Swatch_'+this.id;
+
+				// Remove the swatch if there's already one (we could replace it instead)
+				$('#'+id).remove();
+
+				// Create the swatch
+				var border = this.selected ? 'black' : this.color;
+				$('#cursors').append('<span id="'+id+'" class="cursorSwatch" style="background-color: '+this.color+'">'+this.id+'</span>');
+
+				// Set a listener to select it by clicking it
+				var self = this;
+				$('#'+id).click(function() { log.event(self, 'click', self); if (self.app) self.app.selectCursor(self); });				
+			},
+
+			// Select cursor, so that it can be moved and removed
+			selectCursor: function() {
+				if (! this.id)
+					return;
+
+				this.selected = true;
+
+				// Change the border to show it's selected
+				var id = 'Swatch_'+this.id;
+				$('#'+id).css('border-color', 'black');
+
+				// Make the trackpad the same color
+				$('#cursorTouchpad').css('background-color', this.color).css('opacity', '0.5');
+			},
+
+			// Deselect the cursor
+			deselectCursor: function() {
+				if (! this.id)
+					return;
+
+				this.selected = false;
+
+				// Change the border to show it's deselected, and restore the default color of the touchpad
+				var id = 'Swatch_'+this.id;
+				$('#'+id).css('border-color', 'white');
+				$('#cursorTouchpad').css('background-color', '').css('opacity', '');
+			},
+
+			// Forward call to move cursor to server
+			moveBy: function(dx, dy) {},
+
+			// Called when a cursor is removed: deselect and remove the swatch
+			die: function() {
+				if (! this.id)
+					return;
+
+				if (this.selected)
+					this.deselectCursor();
+
+				var id = 'Swatch_'+this.id;
+				$('#'+id).remove();
+			},
+		})
+	;
+
+	log.spyMethods(Cursor);
+
+	var Cursors = App.subclass().name('Cursors')
+		.fields({
+			cursors: [],
+		})
+		.constructor(function(config) {
+			this._super(config);
+
+			// The cursor we manipulate with the trackpad
+			this.selected = null;
+
+			// Since we create the object in the script, the initial set of cursors is empty.
+			// The `cursors` array will be updated when the object is received from the server.
+			this.wrapFields({
+				set cursors(cursors) { this._set(cursors); this.createCursors(); },
+			});
+
+			this.createCursors();
+		})
+		.methods({
+			// Make sure all cursors exist 
+			createCursors: function() {
+				var self = this;
+				this.cursors.forEach(function(cursor, i) {
+					// The objects may not have been resolved yet because ObjectSharer does not manage arrays
+					var oid = cursor.oid;
+					if (cursor && oid && ! cursor.id) {
+						// This is not a full object, see if it's in the sharer
+						cursor = self.classs().sharer.getObject(oid);
+					}
+					if (cursor) {
+						// We have a full object - link it back to us
+						cursor.app = self;
+						cursor.createCursor();
+					} else {
+						// We don't have the object. Create it by anticipation,
+						// it will be updated when the server sends it.
+						cursor = self.classs().sharer.makeObject({ oid: oid});
+						cursor.app = self;
+						self.cursors[i] = cursor;
+					}
+				});
+			},
+
+			// Select current cursor for manipulation by the trackpad
+			selectCursor: function(cursor) {
+				if (this.selected)
+					this.selected.deselectCursor();
+				this.selected = cursor;
+				if (cursor)
+					cursor.selectCursor();
+			},
+
+			// Remove the selected cursor
+			removeSelected: function() {
+				if (! this.selected)
+					return;
+				this.selected.deselectCursor();
+				this.removeCursor(this.selected.id);
+				this.selected = null;
+			},
+
+			// Move the selected cursor, if any
+			moveSelectedBy: function(dx, dy) {
+				if (this.selected)
+					this.selected.moveBy(dx, dy);
+			},
+
+			// Remote calls to add/remove cursor
+			addCursor: function(config) {},
+			removeCursor: function(id) {},
+
+			// Called by the notification system when a cursor is added/removed:
+			// Add/remove the cursor from all tiles
+			cursorCreated_after: function(cursor) {
+				cursor.app = this;
+			},
+
+			cursorRemoved_after: function(cursor) {
+			},
+
+		})
+		.shareState('own', ['addCursor', 'removeCursor'])
+	;
+
+	log.spyMethods(Cursors);
+
+	// Add the `Cursor` class to the Cursors sharer
+	Cursors.sharer.slave(Cursor, 'own', ['moveBy']);
+
+	var cursors = Cursors.create();
+
+	$('#newCursor').click(function() { cursors.addCursor(); });
+	$('#removeCursor').click(function() { cursors.removeSelected(); });
+
+
+	// A `Joystick` interactor.
+	function Joystick(options) {
+		this.dragging = 0;
+		this.screenX = this.screenY = 0;
+		this.deltaX = this.deltaY = 0;
+		this.delay = 100;
+		this.timer = null;
+
+		this.target = options.target || 'html';
+		this.dragTarget = options.dragTarget || this.target;
+		this.startedDragging = options.startedDragging || function() {};
+		this.stoppedDragging = options.stoppedDragging || function() {};
+		this.draggedBy = options.draggedBy || function() {};
+		this.dragChanged = options.dragChanged || function() {};
+	}
+
+	// The `start` method sets the handlers to implement the panzoom interaction.
+	Joystick.prototype.start = function() {
+		var self = this;
+		$(self.target)
+			.mousedown(self.mousedown = function(event) {
+				self.dragging = true;
+				self.screenX = event.screenX;
+				self.screenY = event.screenY;
+				self.deltaX = self.deltaY = 0;
+				self.startedDragging(self.dragTarget);
+				if (self.delay)
+					self.timer = window.setInterval(function() {
+						if (self.deltaX && self.deltaY && self.dragging)
+							self.draggedBy(self.dragTarget, self.deltaX, self.deltaY);
+					}, self.delay);
+			});
+
+		$('html')
+			.mousemove(self.mousemove = function(event) {
+				if (self.dragging) {
+					self.deltaX = event.screenX - self.screenX;
+					self.deltaY = event.screenY - self.screenY;
+					self.dragChanged(self.dragTarget, self.deltaX, self.deltaY);
+				}
+			})
+			.mouseup(self.mouseup = function(event) {
+				self.dragging = false;
+				if (self.timer) {
+					window.clearInterval(self.timer);
+					self.timer = null;
+				}
+				self.stoppedDragging(self.dragTarget);
+			})
+		;
+
+		return this;
+	};
+
+	// The `stop` method removes the listeners.
+	Joystick.prototype.stop = function() {
+		$(this.target).off('mousedown', this.mousedown);
+		$('html').off('mousemove', this.mousemove).off('mouseup', this.mouseup);
+		delete this.mousedown;
+		delete this.mousemove;
+		delete this.mouseup;
+		if (this.timer) {
+			window.clearInterval(this.timer);
+			this.timer = null;
+		}
+	};
+
+	new Joystick({
+		target: '#cursorTouchpad',
+		dragTarget: cursors,
+		draggedBy: function(target, dx, dy) { if (target) target.moveSelectedBy(dx, dy); },
+	}).start();
+</script>

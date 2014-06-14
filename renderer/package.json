@@ -1,0 +1,19 @@
+{
+	"name": "Renderer",
+	"version": "0.2.0",
+	"main": "content/renderer.html",
+	"node-main": "lib/Renderer.js",
+	"single-instance": false,
+	"window": {
+		"title": "A WildOS Client",
+		"frame": true,
+		"toolbar": true
+	},
+	"dependencies": {
+		"socket.io-client": "0.9.16"
+	},
+	"scripts": {
+		"postinstall": "cp ../shared/*.js node_modules",
+		"postupdate": "cp ../shared/*.js node_modules"
+	}
+}

@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>{{title}}</title>
+
+    <link href="{{assets}}css/bootstrap.min.css" rel="stylesheet">
+    <!-- HTML5 Shim and Respond.js IE8 support of HTML5 elements and media queries -->
+    <!-- WARNING: Respond.js doesn't work if you view the page via file:// -->
+    <!--[if lt IE 9]>
+      <script src="https://oss.maxcdn.com/libs/html5shiv/3.7.0/html5shiv.js"></script>
+      <script src="https://oss.maxcdn.com/libs/respond.js/1.4.2/respond.min.js"></script>
+    <![endif]-->
+    <link href="{{assets}}css/highlight-docco.css" rel="stylesheet">
+    <link href="{{assets}}css/custom.css" rel="stylesheet">
+  </head>
+  <body>
+    <nav class="navbar navbar-inverse navbar-fixed-top" role="navigation">
+      <div class="container-fluid">
+        <div class="navbar-header">
+          <a class="navbar-brand" href="#">{{title}}</a>
+        </div>
+        <ul id="tocmenu" class="nav navbar-nav navbar-right">
+          <li class="dropdown">
+            <a href="#" class="dropdown-toggle" data-toggle="dropdown">Content <b class="caret"></b></a>
+            <ul class="dropdown-menu">
+              {{toc}}
+            </ul>
+          </li>
+        </ul>
+        <!--
+        <ul id="filemenu" class="nav navbar-nav navbar-right">
+          <li class="dropdown">
+            <a href="#" class="dropdown-toggle" data-toggle="dropdown">Files <b class="caret"></b></a>
+            <ul class="dropdown-menu">
+              {{files}}
+            </ul>
+          </li>
+        </ul>
+        -->
+      </div><!-- /.container -->
+    </nav>
+
+    <div class="container-fluid">
+      {{content}}
+    </div>
+    <script type="text/javascript" src="{{assets}}js/jquery-1.11.0.min.js"></script>
+    <script type="text/javascript" src="{{assets}}js/bootstrap.min.js"></script>
+    <script type="text/javascript" src="{{assets}}js/highlight.custom.js"></script>
+    <script type="text/javascript">hljs.initHighlightingOnLoad();</script>
+  </body>
+</html>

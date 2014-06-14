@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Logging in WildOS</title>
+
+    <link href="assets/css/bootstrap.min.css" rel="stylesheet">
+    <!-- HTML5 Shim and Respond.js IE8 support of HTML5 elements and media queries -->
+    <!-- WARNING: Respond.js doesn't work if you view the page via file:// -->
+    <!--[if lt IE 9]>
+      <script src="https://oss.maxcdn.com/libs/html5shiv/3.7.0/html5shiv.js"></script>
+      <script src="https://oss.maxcdn.com/libs/respond.js/1.4.2/respond.min.js"></script>
+    <![endif]-->
+    <link href="assets/css/highlight-docco.css" rel="stylesheet">
+    <link href="assets/css/custom.css" rel="stylesheet">
+  </head>
+  <body>
+    <nav class="navbar navbar-inverse navbar-fixed-top" role="navigation">
+      <div class="container-fluid">
+        <div class="navbar-header">
+          <a class="navbar-brand" href="#">Logging in WildOS</a>
+        </div>
+        <ul id="tocmenu" class="nav navbar-nav navbar-right">
+          <li class="dropdown">
+            <a href="#" class="dropdown-toggle" data-toggle="dropdown">Content <b class="caret"></b></a>
+            <ul class="dropdown-menu">
+              <li class="toc3"><a href="#simplemessages">Simple messages</a></li>
+<li class="toc3"><a href="#enterexitmessage">Enter/Exit message</a></li>
+<li class="toc3"><a href="#spying">Spying</a></li>
+<li class="toc3"><a href="#loglevels">Log levels</a></li>
+<li class="toc3"><a href="#filteringlogs">Filtering logs</a></li>
+
+            </ul>
+          </li>
+        </ul>
+        <!--
+        <ul id="filemenu" class="nav navbar-nav navbar-right">
+          <li class="dropdown">
+            <a href="#" class="dropdown-toggle" data-toggle="dropdown">Files <b class="caret"></b></a>
+            <ul class="dropdown-menu">
+              <li><a href="doc/createapp.html">Creating an Application for WildOS</a></li>
+<li><a href="doc/createdev.html">Creating Devices for WildOS</a></li>
+<li><a href="doc/index.html">Overview</a></li>
+<li><a href="doc/sharing.html">Sharing Objects in WildOS</a></li>
+
+            </ul>
+          </li>
+        </ul>
+        -->
+      </div><!-- /.container -->
+    </nav>
+
+    <div class="container-fluid">
+      <h1 id="logginginwildos">Logging in WildOS</h1>
+
+<p>The <code>Log</code> module provides facilities to log information to the output console or to a node-webkit window.
+In particular, it takes advantage of the Classy&#8217;s wrapping to systematically log method calls and field value changes.</p>
+
+<p>The most common way to access logging is to import the shared logger at the beginning of your scripts:</p>
+
+<pre><code>    var log = require('Log').shared();
+</code></pre>
+
+<p>You are free to create different loggers by instantiating the <code>Log</code> class returned by the module,
+but in general using the shared logger should be sufficient.</p>
+
+<p>Most logging methods take a variable number of arguments holding arbitrary values.
+These are printed according to their type: </p>
+
+<ul>
+<li>numbers and strings are printed as expected;</li>
+<li>Classy objects are printed simply by printing their name.
+ If they don&#8217;t have a name, they are automatically assigned a unique name composed
+ of the name of their class and a number;</li>
+<li>Arrays and non-classy objects are printed using node.js&#8217; <code>util.insect</code>.</li>
+</ul>
+
+<p>WildOS redirects logging output as soon as possible to an HTML window.
+(Until the window is created, output goes to standard output).
+In the HTML output each message is a div and can be closed (i.e., reduced to its first line) or opened by clicking it.</p>
+
+<h3 id="simplemessages">Simple messages</h3>
+
+<p><code>log.message(...)</code> is the simplest way to log any message and set of values.</p>
+
+<p><code>log.newObject(obj, ...)</code> logs the name of a newly created object. It is normally used in constructors.</p>
+
+<p><code>log.method(obj, method, ...)</code> logs the receiving object method name and extra arguments. It is normally used within methods.</p>
+
+<p><code>log.event(obj, e, ...)</code> logs the object handling the event, the event name and extra arguments. It is normally used in an event handler.</p>
+
+<h3 id="enterexitmessage">Enter/Exit message</h3>
+
+<p>The following methods should be bracketed to provide proper indentation (and, on the HTML output, nesting):</p>
+
+<p><code>log.enter(obj, method, ...)</code> / <code>log.exit(obj, method, ...)</code>, used when entering / exiting the method.
+The object and method arguments are not required at exit.
+If present they are checked against those specified at entry and if they do not match an additional message is issued to show the mismatch.</p>
+
+<p><code>log.eventEnter(obj, event, ...)</code> / <code>log.eventExit(obj, event, ...)</code>, similar to the above for event handlers.</p>
+
+<h3 id="spying">Spying</h3>
+
+<p>Adding logging instructions by hand is cumbersome, especially to systematically log enter/exit of methods.
+The logger supports <code>spying</code> of methods of Classy objects so that all calls to the specified methods are logged.
+This is achieved with the following call:</p>
+
+<pre><code>    log.spyMethods(MyClass);
+</code></pre>
+
+<p>wraps the methods of the class so that they automatically issue <code>log.enter</code> and <code>log.exit</code> messages.</p>
+
+<p>If you want to log only some methods or all methods except a few, you can also use:</p>
+
+<pre><code>    log.spySomeMethods(MyClass, [list of method names to spy]);
+    log.spyMethodsExcept(MyClass, [list of method names to not spy]);
+</code></pre>
+
+<p>All WildOS classes are currently spied to facilitate debugging.
+This provides a log of output and affects performance slightly.
+Fitering facilities will be provided soon to alleviate these problems (see below).</p>
+
+<h3 id="loglevels">Log levels</h3>
+
+<p>All the above methods log info-level messages.
+To log warnings, errors and fatal errors, use the same methods but apply them respectively to <code>log.warn</code>, <code>log.error</code>, or <code>log.fatal</code>.
+For example:</p>
+
+<pre><code>    log.warn.message('You have been warned');
+    log.fatal.message('Bailing out');
+</code></pre>
+
+<p>Warning and error messages are prefixed by <code>Warning</code> and <code>Error</code> respectively.
+In addition, fatal errors cause the program to quit immediately.</p>
+
+<h3 id="filteringlogs">Filtering logs</h3>
+
+<p>Filtering capabilities are not yet available.
+The plan is to support a configuration file that defines what is logged and how.
+In particular, the HTML output can hide logging output so it is only shown upon demand.</p>
+
+    </div>
+    <script type="text/javascript" src="assets/js/jquery-1.11.0.min.js"></script>
+    <script type="text/javascript" src="assets/js/bootstrap.min.js"></script>
+    <script type="text/javascript" src="assets/js/highlight.custom.js"></script>
+    <script type="text/javascript">hljs.initHighlightingOnLoad();</script>
+  </body>
+</html>

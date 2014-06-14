@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>WildOS - Overview</title>
+
+    <link href="assets/css/bootstrap.min.css" rel="stylesheet">
+    <!-- HTML5 Shim and Respond.js IE8 support of HTML5 elements and media queries -->
+    <!-- WARNING: Respond.js doesn't work if you view the page via file:// -->
+    <!--[if lt IE 9]>
+      <script src="https://oss.maxcdn.com/libs/html5shiv/3.7.0/html5shiv.js"></script>
+      <script src="https://oss.maxcdn.com/libs/respond.js/1.4.2/respond.min.js"></script>
+    <![endif]-->
+    <link href="assets/css/highlight-docco.css" rel="stylesheet">
+    <link href="assets/css/custom.css" rel="stylesheet">
+  </head>
+  <body>
+    <nav class="navbar navbar-inverse navbar-fixed-top" role="navigation">
+      <div class="container-fluid">
+        <div class="navbar-header">
+          <a class="navbar-brand" href="#">WildOS - Overview</a>
+        </div>
+        <ul id="tocmenu" class="nav navbar-nav navbar-right">
+          <li class="dropdown">
+            <a href="#" class="dropdown-toggle" data-toggle="dropdown">Content <b class="caret"></b></a>
+            <ul class="dropdown-menu">
+              <li class="toc2"><a href="#aboutnode-webkit">About node-webkit</a></li>
+<li class="toc2"><a href="#architecture">Architecture</a></li>
+<li class="toc2"><a href="#objectmodel">Object Model</a></li>
+<li class="toc2"><a href="#sharedobjectsmodel">Shared Objects Model</a></li>
+<li class="toc2"><a href="#platformanddevices">Platform and Devices</a></li>
+<li class="toc2"><a href="#applications">Applications</a></li>
+<li class="toc2"><a href="#directorystructure">Directory Structure</a></li>
+
+            </ul>
+          </li>
+        </ul>
+        <!--
+        <ul id="filemenu" class="nav navbar-nav navbar-right">
+          <li class="dropdown">
+            <a href="#" class="dropdown-toggle" data-toggle="dropdown">Files <b class="caret"></b></a>
+            <ul class="dropdown-menu">
+              <li><a href="doc/createapp.html">Creating an Application for WildOS</a></li>
+<li><a href="doc/createdev.html">Creating Devices for WildOS</a></li>
+<li><a href="doc/logging.html">Logging in WildOS</a></li>
+<li><a href="doc/sharing.html">Sharing Objects in WildOS</a></li>
+
+            </ul>
+          </li>
+        </ul>
+        -->
+      </div><!-- /.container -->
+    </nav>
+
+    <div class="container-fluid">
+      <!DOCTYPE html>
+<html>
+<head>
+	<meta charset="utf-8"/>
+	<title>Overview</title>
+</head>
+<body>
+
+<h1 id="wildos-title">WildOS - Overview</h1>
+
+<p>This documentation describes the architecture of WildOS and how to create applications and devices.</p>
+
+<h2 id="aboutnode-webkit">About node-webkit</h2>
+
+<p>WildOS is programmed entirely in Javascript using <a href="https://github.com/rogerwang/node-webkit">node-webkit</a>. Node-webkit is an open-source project developed at Intel to support the development of desktop applications using web technologies. Concretely, it is a merge of <a href="http://nodejs.org">node.js</a>, which is popular to write back-end software, including web servers, and <a href="http://www.chromium.org/">Chromium</a>, the core part of the Chrome web browser. </p>
+
+<p>On the one hand, the node.js part of node-webkit gives access to an efficient reactive engine and a large collection of modules, including for accessing the file system and other operating system resources that web browsers do not have access to. On the other hand, Chromium provides an efficient and cutting-edge rendering engine of web content without all the security overhead of a complete web browser. Finally, by &#8220;welding&#8221; together node.js and Chromium in a single process, we avoid the typical overhead of web applications where the server and client are on different machines or in different processes and communicate over HTTP network connections. In fact, even though node-webkit runs node.js code and Chromium code in separate virtual machines, each has direct access to the other. In practice, objects and functions created on one side can be used on the other with no overhead (see however the <a href="https://github.com/rogerwang/node-webkit/wiki/Transfer-objects-between-window-and-node">node-webkit documentation</a> for a few pitfalls). One immediate benefit is that one can use <code>require</code> to import any node.js module in Javascript code running inside a Chromium web page (many web developers would love to do that in their web applications!).</p>
+
+<h2 id="architecture">Architecture</h2>
+
+<p>WildOS is made of one central server and zero or more clients typically running on other computers. Clients communicate with the server through websockets, which are full-dupleix sockets running in the Web environment. Other protocols could be added to WildOS if needed, such as OSC running on UDP.</p>
+
+<p>The WildOS server manages a set of <strong>devices</strong> and a set of <strong>applications</strong>. The set of devices constitutes the <strong>platform</strong> on which the applications run. Some devices are distributed: part of them are run by a client process connected to the server. For example, to display content on a large cluster-driven wall display, rendering clients are run on the cluster computers. In the server they are represented by a device called a <code>Surface</code>.</p>
+
+<p>Similarly, applications are distributed between the server, where the core functionality of the application takes place, and clients, which include those running the devices described above. The choice of running application code in the devices may seem counter-intuitive, or even terrible. Traditionally, device drivers run low-level code and provide an API that applications can use. In our case, devices can be high-level and for architectural as well as performance reasons, running application code in the device may provide a better division of labor. For example, deciding how to distribute the work to display a complex content on a tiled wall display is not trivial, and developers will want the flexibility of controlling what runs where. In practice, this does make application development more complex. Only time will tell whether this was a good idea or not. Maybe some new abstractions will emerge from this experiment and lead to new ways of developing applications for distributed systems.</p>
+
+<p>One abstraction that is heavily used in WildOS, and was inspired by our previous work on the <a href="https://www.lri.fr/perso/~mbl/WILD/publications/index.html#substance-chi11">Substance framework</a>, is the notion of distributed objects, or more accurately <strong>shared objects</strong>. Concretely the WildOS server manages a set of objects, whose state can be replicated on the clients. Clients can easily attach behaviors to the change of state of their shared objects. WildOS also supports remote procedure calls and automatic notification of clients when the server calls methods of shared objects. However the emphasis is on sharing state and adding local behavior, as in Substance&#8217;s <em>data-oriented programming</em>, so using RPC and notification should be limited to cases where it is necessary or simpler.</p>
+
+<p>Finally, since WildOS is a distributed system, we try to make it resilient: if the server crashes, or if a client crash, the rest of the system should &#8220;behave&#8221; and continue to work the best it can, or at least start working again when the crashed part is back. In practice, if a client crash, the server continues without it and will be happy to take it onboard when it&#8217;s back. If the server crashes, clients wait for it to come back by trying to connect to it at regular intervals. Following the same philosophy, WildOS devices and applications can be started, stopped and restarted at any time, again without causing major difficulty.</p>
+
+<h2 id="objectmodel">Object Model</h2>
+
+<p>Javascript is not an object-oriented programming language. Unlike languages such as Java, C++ or Objective-C, Javascript does <em>not</em> support classes. Rather than the class-instance paradigm of traditional object-oriented languages, Javascript is based on the notion of <strong>prototype</strong>. Each object has a collection of <strong>properties</strong>, each property can hold a primitive value (such as an integer), a reference to an object, or a function (which is, in fact, a particular type of object). Each object also has a <strong>prototype</strong>: a special link to another object so that when referencing property <code>p</code> of object <code>o</code>, as in <code>o.p</code>, if the property does not exist in <code>o</code>, it is looked up in its prototype, and so on up the prototype chain (which eventually stops at the <code>Object</code> prototype). So unlike object-oriented languages where classes hold methods and objects hold state and a link to their class to look up their methods, a prototype-based language such as Javascript only has objects, each of which can have state as well as methods (i.e., functions)<a href="#fn:1" id="fnref:1" title="see footnote" class="footnote">[1]</a>.</p>
+
+<p>While this provides tremendous flexibility, most programmers are used to the traditional object-oriented model where classes are clearly distinct from objects and where classes can inherit from each other. There are many object-oriented frameworks for Javascript (and indeed a future version of the language will feature <a href="http://wiki.ecmascript.org/doku.php?id=strawman:maximally_minimal_classes">native classes</a> - in fact the word <code>class</code> is already a reserved keyword). WildOS uses <a href="https://github.com/mblinsitu/Classy">Classy</a>, a framework that I have developed because none of the ones I looked at provided the feature set I needed.</p>
+
+<p>In short, Classy lets you define <strong>classes</strong> with a set of <strong>fields</strong> (we purposefully do not call them properties to differentiate them from Javascript properties, even though they are in fact Javascript properties) and a set of <strong>methods</strong>. Classes can also have <strong>class fields</strong> and <strong>class methods</strong>. Classes can <strong>inherit</strong> from other classes. Classes can also have one or more <strong>constructors</strong>. When a class inherits from another class, its constructors and methods can &#8220;call to super&#8221;, i.e. can call the same constructor or method in the parent class with the construct <code>this._super(args)</code>.</p>
+
+<p>In addition to this basic, fairly standard object-oriented model, Classy features more funky capabilities: field wrappers, method wrappers and mixins. <strong>Field wrappers</strong> let you capture any access to a field so as to affect the way it is read/written, and/or generate side effect. <strong>Method wrappers</strong> are similar for method calls, letting you add code executed when a method is called. Finally, <strong>mixins</strong> add capabilities (fields, methods and wrappers) to an existing class without creating a new class that inherits from it. Mixins are more powerful than multiple inheritance (which Classy does <em>not</em> feature). </p>
+
+<p>WildOS uses Classy and its advanced features extensively. One use is for logging, to automatically trace method calls and access to fields. Another one is for sharing objects between server and clients.</p>
+
+<p>See the <a href="https://github.com/mblinsitu/Classy">Classy Documentation</a> for more details on the framework.<br/>
+See the <a href="logging.html">Logging in WildOS</a> page for details about logging.</p>
+
+<h2 id="sharedobjectsmodel">Shared Objects Model</h2>
+
+<p>The <code>ObjectSharer</code> class is designed to monitor a collection of objects of a set of classes, to notify this activity by sending events (typically to one or more remote clients), and to listen to such events (typically on a client) to synchronize local copies of the objects. <code>ObjectSharer</code> adds a mixin to the monitored class to achieve this behavior, so any class can be monitored without it doing anything special. An <code>ObjectSharer</code> can manage all the objects of a given class or just a subset ofthem. It can monitor and synchronize all of the objects&#8217; fields or a subset of them, and all of its method calls or just a subset of them. This gives great flexibility to adjust the amount of sharing.</p>
+
+<p>In order to communicate the changes between server and clients, WildOS uses networking objects: a <code>SharingClient</code> object on the server for each connected client, and a <code>SharingServer</code> object on each client. Both use web sockets to communicate. Each such networking object holds a set of object sharers describing which classes and objects are shared and how. Distributed programming in WildOS therefore amounts mostly to creating classes, registering them with object sharers and attaching these object sharers to networking objects. Once this &#8220;piping&#8221; is established, object states synchronize automagically between server and clients, even when they go down and come back up.</p>
+
+<p>See <a href="createdev.html">Creating Devices for WildOS</a> for more details.</p>
+
+<h2 id="platformanddevices">Platform and Devices</h2>
+
+<p>WildOS loads a description of the platform it is running on from a JSON configuration file. This file describes the set of devices that constitute the platform. Each such device can contain more devices. For example, a <code>Surface</code> device represents a tiled display, and contains one device per tile. Devices can be added and removed dynamically, and can become active or inactive. For example, a tile of the wall display can be inactive when the client running it is down.</p>
+
+<p>Some devices communicate with clients. For example, a tiled wall display is typically run by a display cluster where each computer runs one or more tiles of the display. Devices can use the shared objects model to share state between server and clients. For example, the description of the tiles loaded from the platform configuration file can be shared with the clients running the tiles.</p>
+
+<p>Devices have access to the platform user interface controller, which runs on the server and lets the user control and monitor the state of the system. Typically, devices will load additional HTML/CSS/Javascript into the controller&#8217;s user interface to display the configuration and status of the device, such as a miniature representation of the wall display.</p>
+
+<p>Devices can run application code when an applications is started (see below). This makes it possible to run a distributed application between the server and the clients running the devices. For example, an application that needs to display content on the tile display can run the rendering part in the clients that manage the tiles.</p>
+
+<p>See <a href="sharing.html">Sharing Objects with WildOS</a> for more details.</p>
+
+<h2 id="applications">Applications</h2>
+
+<p>Applications are loaded dynamically when the server starts up (if specified on the command line) or later when loaded by the user through the platform controller. Each application is the single instance of its class (a.k.a. a singleton class). Most applications have their core running in the server and their input and display run in clients associated to the platform&#8217;s devices. </p>
+
+<p>Applications will typically use the shared object model to share their state between the server and these clients. This makes it easy, among other things, to create multi-user applications: each user holds a device running a client, and their states are synchronized. Since the architecture is centralized, solving conflicts, e.g. when two users want to modify the same object. is easy: clients do not change state locally, they use remote procedure calls or separate objects to notify the server, which arbitrates the conflict.</p>
+
+<p>Since an application can be loaded and unloaded at any time, it must clean up after itself when unloaded. This is actually quite tricky because Javascript does not let you &#8220;kill&#8221; objects: all references to them must be removed for them to be eventually garbage-collected. A future version of Classy will support object destructors and tracking of class instances to facilitate this process. (Object destructors will not actually destroy objects, but will make essentially mark them as such and disable them, so that references to them can be more easily tracked and removed).</p>
+
+<p>See <a href="createapp.html">Creating an Application for WildOS</a> for more details.</p>
+
+<h2 id="directorystructure">Directory Structure</h2>
+
+<p>The WildOS distribution is organized as follows:</p>
+
+<ul>
+<li><code>configs/</code> - Platform configuration files
+
+<ul>
+<li><code>content</code> - Optional platform-specific HTML5 content</li>
+</ul></li>
+<li><code>doc/</code> - Documentation
+
+<ul>
+<li><code>assets/</code> - CSS, Javascript and font files for rendering the documentation</li>
+<li><code>img/</code> - Images included in the documentation</li>
+<li><code>src/</code> - Source files of the document (in Markdown format)</li>
+</ul></li>
+<li><code>Makefile</code> - Type <code>make</code> to see the relevant targets</li>
+<li><code>ReadMe.html</code> - Instructions to install and run WildOS (HTML)</li>
+<li><code>ReadMe.md</code> - Instructions to install and run WildOS (MarkDown)</li>
+<li><code>renderer/</code> - Rendering client for tiled displays
+
+<ul>
+<li><code>apps/</code> - Application code for the renderer</li>
+<li><code>content/</code> - HTML5 content for the renderer</li>
+<li><code>lib/</code> - Renderer source files</li>
+<li><code>node_modules/</code> - Node.js modules for the renderer (created by <code>npm</code>)</li>
+<li><code>package.json</code> - Node-webkit manifest file for the renderer</li>
+<li><code>restart</code> - Script to kill and restart the renderer(s) on the current machine</li>
+<li><code>slides/</code> - Folder created only on the client machines for the SlideShow application</li>
+</ul></li>
+<li><code>server/</code> - WildOS server
+
+<ul>
+<li><code>apps/</code> - WildOS applications
+
+<ul>
+<li><code>Browser/</code> - Display and pan/zoom any web page on the tiled display</li>
+<li><code>Cursors/</code> - Control multiple cursors on the tiled display</li>
+<li><code>SlideShow/</code> - Show large images on the tiled display</li>
+</ul></li>
+<li><code>content/</code> - HTML5 content for the server</li>
+<li><code>devices/</code> - WildOS devices
+
+<ul>
+<li><code>Surface/</code> - Device to manage a tiled display</li>
+<li><code>WebControllers.js</code> - Device to manage web-based clients</li>
+</ul></li>
+<li><code>lib/</code> - Source code of the server</li>
+<li><code>node_modules/</code> - Node.js modules for the server (created by <code>npm</code>)</li>
+<li><code>package.json</code> - Node-webkit manifest file for the server</li>
+<li><code>WildOS.js</code> - Main file of the server</li>
+</ul></li>
+<li><code>shared/</code> - Source files used by both the server and clients</li>
+<li><code>slides/</code> - Slide library (large images cut into tiles, created by the separate <code>tilecutter</code> application)</li>
+<li><code>TODO.txt</code> - Things to do</li>
+<li><code>tools/</code> - Various useful scripts and tools</li>
+<li><code>wall-rsync</code> - Filter used by <code>walldo rsync</code> to only copy the renderer to client machines</li>
+</ul>
+
+<div class="footnotes">
+<hr />
+<ol>
+
+<li id="fn:1">
+<p>For more information on prototype-based languages, see the seminal work on the <a href="http://selflanguage.org/">Self programming language</a>. <a href="#fnref:1" title="return to article" class="reversefootnote">&#160;&#8617;</a></p>
+</li>
+
+</ol>
+</div>
+
+
+</body>
+</html>
+
+    </div>
+    <script type="text/javascript" src="assets/js/jquery-1.11.0.min.js"></script>
+    <script type="text/javascript" src="assets/js/bootstrap.min.js"></script>
+    <script type="text/javascript" src="assets/js/highlight.custom.js"></script>
+    <script type="text/javascript">hljs.initHighlightingOnLoad();</script>
+  </body>
+</html>

@@ -1,0 +1,473 @@
+#! /bin/bash
+# walldo - execute command sequentially on a tiled display cluster
+#	see usage below or by running without arguments
+#	Full documentation at http://insitu.lri.fr/WILD/Walldo
+#
+#	This script works with filenames that contain spaces.
+#	Think twice and test heavily if you change anything!
+
+# --- This section may be customized to the local install ---
+
+# $WALL is the name of the platform and can be set in the environment
+# It defaults to wild
+WALL=${WALL-WILD}
+
+# The platform can be inferred from the command name by creating symbolic links
+# Note that these override the $WALL environment variable
+# BASECMD is the "real" command (e.g., walldo) and is the prefix for the sequential shortcut (walldo->walldos)
+# ROOTCMD is the prefix for the other shortcuts (e.g., wall->wallcp, wallcpr, wallsync)
+case $0 in
+	*wild*)
+		WALL=WILD
+		BASECMD=wildo
+		ROOTCMD=wild
+		;;
+	*)
+		# see if we find a command config file in ~/.walldo
+		if [ -f ~/.walldo/$0 ] ; then
+			source ~/.walldo/$0
+		else
+			# otherwise default to walldo defaults
+			BASECMD=walldo
+			ROOTCMD=wall
+		fi
+esac
+
+# Default values
+#
+# array of all host names
+declare -a allHosts
+allHosts=()
+# regexp matching host names
+anyHost=
+# domain name to append to the hosts (do not forget the leading '.')
+DOMAIN=
+# sudo user
+SU=wild
+# remote PATH for SSH
+RPATH="PATH=\$PATH:/usr/local/bin"
+# extra rsync filter
+RSYNCFILTER=wall-rsync
+# name or name patterns of directories to sync files per-host
+BYHOST=*byhost*
+
+# Change values as appropriate for other walls
+case $WALL in
+	WILD)
+		allHosts=(a1 a2 a3 a4 b1 b2 b3 b4 c1 c2 c3 c4 d1 d2 d3 d4)
+		anyHost=[a-d][1-4]
+		DOMAIN=.wild.lri.fr
+		;;
+	WILDleft)
+		allHosts=(a1 a2 a3 a4 b1 b2 b3 b4)
+		anyHost=[a-b][1-4]
+		DOMAIN=.wild.lri.fr
+		;;
+	WILDright)
+		allHosts=(c1 c2 c3 c4 d1 d2 d3 d4)
+		anyHost=[c-d][1-4]
+		DOMAIN=.wild.lri.fr
+		;;
+	local)
+		allHosts=(`hostname -s`)
+		DOMAIN=.local
+		SU=$LOGNAME
+		;;
+	*)
+		# see if we find a wall config file in ~/.walldo
+		if [ -f ~/.walldo/$WALL ] ; then
+			source ~/.walldo/$WALL
+		else
+			# otherwise complain and exit
+			echo "Unknown wall: $WALL. Exiting"
+			exit 1
+		fi
+	;;
+esac
+
+# --- The rest of the script should not be changed ---
+
+# set of hosts being targeted
+declare -a hosts
+hosts=()
+# user on remote host
+USER=${LOGNAME-${SU}}
+# sudo command to be used with 'sudo' option
+SUDO=
+# if not empty, special command (e.g., scp)
+CMD=
+# options to prepend to special command arguments
+OPTS=
+# & to run commands in parallel, empty to run them sequentially 
+# (default is parallel in command-line mode, sequential in interactive mode)
+SEQ=default
+# whether or not to echo the command (default is off, -n and -e turn it on)
+ECHO=
+# whether to run the command or not (default is on, -n turns it off)
+RUN=1
+# prompt to use in interactive mode
+PROMPT="`basename $0` $* > "
+# remote working directory (only used in interactive mode)
+RWD=
+# whether to start interactive mode
+INTERACTIVE=0
+
+# --- usage ---
+function usage {
+	echo	"$BASECMD [options] <command> <args>..."
+	echo	"options:"
+	echo	"	-h: print this message. In interactive mode, use 'help' or '?'."
+	echo	"	-n: list commands without running them."
+	echo	"	-e: list commands and run them (default is to run without listing them)."
+	echo	"	-s: launch commands sequentially (default in interactive mode)."
+	echo	"	-p: launch commands in parallel (default in non-interactive mode)."
+	echo	"	-l user: execute remote command as user (defaults to \$LOGNAME)."
+	echo	"	-d dir: set remote directory (defaults to home directory of remote user)."
+	echo	"	-i: enter interactive mode after executing <command> (default when <command> is empty)."
+	echo	"	[a-d][1-4] ...: machine(s) to send to (defaults to all)."
+	echo	"	all: send to all machines of the cluster (default)."
+	echo	"	all -[a-d][1-4] ...: send to all machine(s) but those listed."
+	echo	"	sudo: run as user $SU and prefix command with sudo."
+	echo	" special commands:"
+	echo	"	scp: remote copy files. Last parameter is destination."
+	echo	"	scpr: remote copy files recursively (same as $BASECMD scp -r)."
+	echo	"	sync: sync files with rsync. Last parameter is destination."
+	echo	"         In directories matching $BYHOST, only files that start"
+	echo	"	      with a host name are copied to the corresponding host,"
+	echo	"	      e.g. $BYHOST/a1_L.png is only copied to a1. Additional rules can"
+	echo	"	      put in .rsync-filter and $RSYNCFILTER files in each directory."
+	echo	"File names with spaces are supported by all commands: use \"foo bar\" or foo\ bar."
+	echo	"In interactive mode, commands are read and executed one by one."
+	echo	"	In this mode, commands starting with '! ' are run in the local shell,"
+	echo	"	and 'cd dir' and 'pwd' can be used to change/print the remote directory."
+	echo	"	Note however that options cannot be changed during an interactive session."
+	echo	"   If interactive mode was invoked with a special command, such as '$BASECMD scp',"
+	echo	"   input lines are added to that command, e.g. 'srcfile dstdir'. This makes it"
+	echo	"   easy to copy a series of files. Note that 'cd', 'pwd' and '! ' work as expected."
+	echo	"Aliases:"
+	echo	"	${BASECMD}s  is equivalent to $BASECMD -s"
+	echo	"	${ROOTCMD}cp  is equivalent to $BASECMD scp"
+	echo	"	${ROOTCMD}cpr is equivalent to $BASECMD scp -r"
+	echo	"	${ROOTCMD}sync is equivalent to $BASECMD sync"
+	echo	"Wall configurations can be stored in ~/.walldo and used with \$WALL - see documentation."
+}
+
+# --- shortcut based on name of executable ---
+case `basename $0` in
+	${BASECMD}s)
+		SEQ=
+	;;
+	${ROOTCMD}cp)
+		CMD=scp
+	;;
+	${ROOTCMD}cpr)
+		CMD=scp
+		OPTS=-r
+	;;
+	${ROOTCMD}sync)
+		CMD=rsync
+	;;
+esac
+
+# --- remote working directory ---
+function changeremotedir {
+	# default remote directory is the remote user's home directory
+	if [[ $# -eq 0 ]]; then
+		RWD='~'
+		return 0
+	fi
+
+	# absolute vs. relative path
+	if [[ $1 == /* ]]; then
+		RWD=$1
+	else
+		RWD=$RWD/$1
+	fi
+
+	# turn sequences of // and /./ into /
+	RWD=`echo $RWD | sed -E -e 's@/(\.?/)+@/@g'`
+	# turn a/dir/../b into a/b - repeat as many times as we can to handle multiple .., e.g. a/dir1/dir2/../../b
+	OLDRWD=
+	while [ "x$OLDRWD" != "x$RWD" ]; do
+		OLDRWD=$RWD
+		# make sure we don't match /../..
+		# Explanation of regex:
+		#	part in parentheses matches everything except .., as follows:
+		# 		\.[^.][^/]*	starts with . but followed by non . up to a /
+		# 		\.\.[^/]+	starts with .. but followed by something else up to a /
+		# 		[^.][^/]*	starts with non . up to a /
+		# So regex matches
+		#	/(everything but ..)/..(/|$)	everything but .., followed by /.., followed by / or $
+		# and replaces it with \2, i.e. / or $
+		RWD=`echo $OLDRWD | sed -E -e 's@/(\.[^.][^/]*|\.\.[^/]+|[^.][^/]*)/\.\.(/|$)@\2@g'`
+	done
+	# empty string actually means / (e.g. 'cd /foo' followed by 'cd ..')
+	if [ -z "$RWD" ]; then
+		RWD="/"
+	fi
+}
+
+# --- function to prepend remote directory RWD to destination directory dest ---
+function prependRWD {
+	if [ -n "$RWD" ]; then
+		if [[ $dest != /* ]]; then
+			dest=$RWD/$dest
+		fi
+	fi
+}
+
+# --- function to protect spaces in its argument ---
+function protect {
+	echo "$*" | sed -e 's/ /\\ /g'
+}	
+
+# --- function to protect spaces in a list of args ---
+declare -a protectedArgs	# return value
+function protectArgs {
+	# use an array to store the result
+	protectedArgs=()
+	for arg; do
+		protected=`echo "$arg" | sed -e 's/ /\\\\ /g'`
+		protectedArgs+=("$protected")
+	done
+}
+
+# --- function to run one command ---
+function runcmd {
+	if [ "$ECHO" != "" ]; then
+		# echo command
+		# Note that for scp and rsync, since the file arguments are not space-protected,
+		# the echoed command will not be copy-pasteable.
+		# To print non space-protected arguments, we need to use
+		# printf "%q $SEQ\n" "$@"
+		$ECHO "$@" $SEQ
+	fi
+	if [ $RUN -eq 1 ]; then
+		if [ "$SEQ" != "" ]; then
+			# run command in the background
+			"$@" &
+		else
+			# run command in the foreground
+			"$@"
+		fi
+	fi
+}
+
+# --- function to run command on each host ---
+function runall {
+	# prepend options (if any)
+	if [ "$CMD" != "" -o "$OPTS" != "" ]; then
+		set - $CMD $OPTS "$@"
+	fi
+
+	case "$1" in
+		scp)
+			# -- special copy command
+			# save last argument as destination directory
+			dest=${@: -1}
+			prependRWD
+			# remove it from argument list
+			set - "${@:1: ($#-1)}"
+			# call scp
+			for host in ${hosts[*]}; do
+				protectedDir=`protect "$USER@$host$DOMAIN:$dest"`
+				runcmd "$@" "$protectedDir"
+			done
+		;;
+		rsync)
+			# -- special sync command
+			# save last argument as destination directory
+			dest=${@: -1}
+			prependRWD
+			# remove it from argument list
+			set - "${@:1: ($#-1)}"
+			# remove leading 'rsync' so we can add is back with the options
+			shift
+			# call rsync
+			#	-v 				verbose
+			#	-a = -rlptgoD	archive = recursive, recreate symlinks, copy permissions, modification times, owner and group, copy devices and special files
+			#	-C 				exclude version control files and many other temporary files (a filter adds .DS_Store to these). 
+			#	--delete		delete destination files not in the source (only for directories being copied)
+			#	--filters 		in directories matching $BYHOST, only copy files (and dirs) that have the same name as the remote host
+			#	-F 				use the rules in .rsync-filter files as well as those in $RSYNCFILTER
+			# Other options of interest (can be specified on the command line):
+			#	-n 				dry run
+			#	--progress		to see what is going on
+			for host in ${hosts[*]}; do
+				protectedDir=`protect "$USER@$host$DOMAIN:$dest"`
+				runcmd rsync -v -a -C --delete \
+					-F --filter="+ /**/$BYHOST/${host}*" --filter="- /**/$BYHOST/*" --filter='- .DS_Store' --filter=": /$RSYNCFILTER" \
+					"$@" "$protectedDir"
+			done
+		;;
+		*)	# -- default: simply run the command
+			# protect arguments so they are preserved by ssh
+			protectArgs "$@"
+			if [ -n "$RWD" ]; then
+				# protect spaces in dirname
+				protectedDir=`protect "$RWD"`
+				# run the command with ssh in the destination directory
+				for host in ${hosts[*]}; do
+					runcmd ssh $USER@$host$DOMAIN cd "$protectedDir" \&\& $SUDO $RPATH "${protectedArgs[@]}"
+				done
+			else
+				# run the command with ssh
+				for host in ${hosts[*]}; do
+					runcmd ssh $USER@$host$DOMAIN $SUDO $RPATH "${protectedArgs[@]}"
+				done				
+			fi
+		;;
+	esac
+}
+
+#--- process options ---
+while [ $# -gt 0 ];
+do {
+	case $1 in
+		-h)
+			usage
+			exit 0
+		;;
+		-i)
+			INTERACTIVE=1
+		;;
+		$anyHost)		# add host to list
+			already_given=0
+			for host in ${hosts[*]}; do {
+				if [ $host == $1 ]; then
+					already_given=1;
+				fi
+			}
+			done
+			if [ $already_given == 0 ]; then
+				hosts+=($1);
+			fi
+		;;
+		all)			# include all hosts
+			hosts=("${allHosts[@]}")
+		;;
+		-$anyHost)	# remove host from list (will only work well after 'all')
+			# trim leading '-'
+			rhost=${1:1}
+			declare -i i=0
+			for host in ${hosts[*]}; do {
+				if [ $host == $rhost ]; then
+					hosts=(${hosts[@]:0:$i} ${hosts[@]:$(($i + 1))})
+					break;
+				fi
+				let i ++i
+			}
+			done
+		;;
+		-n)		# echo commands but don't run them
+			ECHO=echo
+			RUN=0
+		;;
+		-e)		# echo commands before running them
+			ECHO=echo
+		;;
+		-s)		# run sequentially
+			SEQ=
+		;;
+		-p)		# run sequentially
+			SEQ=\&
+		;;
+		-l)		# user name on remote machines
+			shift
+			USER=$1
+		;;
+		-d)		# set remote directory
+			shift
+			RWD=~
+			changeremotedir "$1"
+		;;
+		sudo)	# special sudo command
+			SUDO=sudo
+			USER=${SU}
+		;;
+		scp)	# special scp command
+			CMD=scp
+		;;
+		scpr)	# special scp -r command
+			CMD=scp
+			OPTS=-r
+		;;
+		sync)	# special rsync command
+			CMD=rsync
+		;;
+		*)		# end of options
+			break
+	   ;;
+	esac
+	shift
+}
+done
+
+# --- default to cluster if no hosts specified ---
+if [ ${#hosts[*]} == 0 ]; then
+	hosts=("${allHosts[@]}")
+fi
+
+# --- Enter interactive mode if command empty, execute it if not ---
+# note that 'wall -i <cmd>' will run cmd and then enter interactive mode
+if [ $# -eq 0 ]; then
+	if [[ $SEQ == "default" ]]; then
+		SEQ=
+	fi
+	INTERACTIVE=1
+else
+	if [[ $SEQ == "default" ]]; then
+		SEQ=\&
+	fi
+	# run the command
+	runall "$@"	
+fi
+
+# --- Interactive mode ---
+if [ $INTERACTIVE -eq 1 ]; then
+	# start interactive session (note that the settings cannot be changed)
+	if [ -z "$RWD" ]; then
+		RWD='~'
+	fi
+	while true; do
+		# -e: line editing; -r: backslash is a character; -p: prompt
+    	read -e -r -p "$PROMPT" command
+    	if [[ $command == "" ]]; then
+    		continue
+    	fi
+    	set - $command
+    	history -s $command
+		case "$1" in
+			"!")	#-- execute in local shell
+				shift
+				# evaluate local commands synchronously
+				OSEQ=$SEQ
+				SEQ=
+				# this properly evaluates quoted chars, e.g. ! ls foo\ bar
+				eval "runcmd $*"
+				SEQ=$OSEQ
+			;;
+			cd)		#-- change remote directory
+				shift
+				# this properly evaluates quoted chars, e.g. cd foo\ bar
+    			eval "changeremotedir $*"
+    			echo "New remote dir: $RWD"
+    		;;
+    		pwd)	#-- print remote working directory
+	    		echo "Remote dir: $RWD"
+    		;;
+    		"?" | help)	#-- help
+				echo "<command>    - execute command on remote machines"
+				echo "cd <dir>     - set remote working directory"
+				echo "pwd          - print remote working directory"
+				echo "! <command>  - execute command locally"
+				echo "^C           - quit"
+			;;
+    		*)		#-- other commands
+		    	# this properly evaluates quoted chars, e.g. ls foo\ bar
+		    	eval "runall $*"
+		    ;;
+	    esac
+    done
+fi
+

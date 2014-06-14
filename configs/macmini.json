@@ -1,0 +1,70 @@
+{
+	"type": "Platform",
+	"name": "WILD home MacMini",
+	"UI": {
+		"frame": {
+			"left": 100,
+			"top": 500,
+			"width": 600,
+			"height": 350
+		},
+		"wallZoom": 0.25
+	},
+	"wall": {		
+		"type": "Surface",
+		"name": "4x1 Home MacMini WILD",
+		"tileSize": {"width": 470, "height": 540},
+		"bezelSize": {"width": 10, "height": 10},
+		"numTiles": {"columns": 4, "rows": 1},
+		"tiles": [
+			[["Michels-Mac-mini", "Left", 0], ["Michels-Mac-mini", "Left", 1],
+			 ["Michels-Mac-mini", "Right", 0], ["Michels-Mac-mini", "Right", 1]]
+		],
+		"renderer": "perTile",
+		"layout": {
+			"Left": [{ "left": 5, "top": 200}, { "left": 485, "top": 200}],
+			"Right": [{ "left": 965, "top": 200}, { "left": 1445, "top": 200}]
+		},
+		"restart": "walldo -l mbl WildOS/renderer/restart"
+	},
+	"wall3": {		
+		"type": "NonSurface",
+		"name": "4x1 Home MacMini WILD",
+		"tileSize": {"width": 470, "height": 540},
+		"bezelSize": {"width": 10, "height": 10},
+		"numTiles": {"columns": 4, "rows": 1},
+		"tiles": [
+			[["Michels-Mac-mini", "LL"], ["Michels-Mac-mini", "LR"],
+			 ["Michels-Mac-mini", "RL"], ["Michels-Mac-mini", "RR"]]
+		],
+		"renderer": "perTile",
+		"layout": {
+			"LL": { "left": 5, "top": 200},
+			"LR": { "left": 485, "top": 200},
+			"RL": { "left": 965, "top": 200},
+			"RR": { "left": 1445, "top": 200}
+		},
+		"restart": "walldo -l mbl WildOS/renderer/restart"
+	},
+	"wall2": {		
+		"type": "NonSurface",
+		"name": "2x2 Home MacMini WILD",
+		"tileSize": {"width": 960, "height": 540},
+		"bezelSize": {"width": 20, "height": 20},
+		"numTiles": {"columns": 2, "rows": 2},
+		"tiles": [
+			[["Michels-Mac-Mini", "TL"], ["Michels-Mac-Mini", "TR"]],
+			[["Michels-Mac-Mini", "BL"], ["Michels-Mac-Mini", "BR"]]
+		],
+		"renderer": "perTile",
+		"layout": {
+			"TL": { "left": 20, "top": 20},
+			"TR": { "left": 1000, "top": 20},
+			"BL": { "left": 20, "top": 580},
+			"BR": { "left": 1000, "top": 580}
+		}
+	},
+	"controllers": {
+		"type": "WebControllers"
+	}
+}

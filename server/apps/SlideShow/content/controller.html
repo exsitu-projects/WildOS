@@ -1,0 +1,58 @@
+<h3>I am the SlideShow controller</h3>
+
+<p id="slide"></p>
+<input id="firstSlide" type="button" value="First"/>
+<input id="prevSlide" type="button" value="Prev"/>
+<input id="nextSlide" type="button" value="Next"/>
+<input id="lastSlide" type="button" value="Last"/>
+
+<script>
+	var SlideShow = App.subclass().name('SlideShow')
+		.fields({
+			slideShow: null,
+			slides: [],
+			currentSlideIndex: -1,
+			currentSlide: null,
+		})
+		.constructor(function(config) {
+			this._super(config);
+
+			this.wrapFields({
+				set currentSlide(path) { this._set(path); this.adjustSlide(); },
+			});
+		})
+		.methods({
+			adjustSlide: function() {
+				var html='';
+				var url = null;
+				if (this.slideShow) {
+					html+= 'Slide show: '+this.slideShow+'<br>';
+				}
+				if (this.currentSlide)
+					url = "/SlideShow/slides/"+this.currentSlide+"/thumbs/thumb200.png";
+				if (url)
+					html += '<img src="'+url+'" onclick="slideShow.nextSlide()"/><br/>';
+				$("#slide").html(html+'slide '+(this.currentSlideIndex+1)+'/'+this.slides.length+' - '+this.currentSlide);
+			},
+
+			// These are remote called on the server by shareState below
+			firstSlide: function() {},
+			prevSlide: function()  {},
+			nextSlide: function()  {},
+			lastSlide: function()  {},
+
+		})
+		.shareState('own', ['firstSlide', 'prevSlide', 'nextSlide', 'lastSlide'])
+	;
+
+	log.spyMethods(SlideShow);
+
+	var slideShow = SlideShow.create();
+
+	$("#slide").html("(Waiting for slide information)");
+	$('#firstSlide').click(function() { slideShow.firstSlide(); });
+	$('#prevSlide').click(function() { slideShow.prevSlide(); });
+	$('#nextSlide').click(function() { slideShow.nextSlide(); });
+	$('#lastSlide').click(function() { slideShow.lastSlide(); });
+
+</script>

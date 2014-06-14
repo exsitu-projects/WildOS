@@ -1,0 +1,31 @@
+{
+	"type": "Platform",
+	"name": "WILD room",
+	"UI": {
+		"frame": {
+			"left": 100,
+			"top": 300,
+			"width": 1200,
+			"height": 500
+		},
+		"wallZoom": 0.05
+	},
+	"wall": {		
+		"type": "Surface",
+		"name": "WILD",
+		"tileSize": {"width": 2560, "height": 1600},
+		"bezelSize": {"width": 200, "height": 240},
+		"numTiles": {"columns": 8, "rows": 4},
+		"tiles": [
+			[["a1", "L"], ["a1", "R"], ["b1", "L"], ["b1", "R"], ["c1", "L"], ["c1", "R"], ["d1", "L"], ["d1", "R"]],
+			[["a2", "L"], ["a2", "R"], ["b2", "L"], ["b2", "R"], ["c2", "L"], ["c2", "R"], ["d2", "L"], ["d2", "R"]],
+			[["a3", "L"], ["a3", "R"], ["b3", "L"], ["b3", "R"], ["c3", "L"], ["c3", "R"], ["d3", "L"], ["d3", "R"]],
+			[["a4", "L"], ["a4", "R"], ["b4", "L"], ["b4", "R"], ["c4", "L"], ["c4", "R"], ["d4", "L"], ["d4", "R"]]
+		],
+		"renderer": "perTile",
+		"restart": "walldo -l mbl WildOS/renderer/restart"
+	},
+	"controllers": {
+		"type": "WebControllers"
+	}
+}

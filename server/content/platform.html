@@ -1,0 +1,89 @@
+<html>
+<head>
+<title>WildOS platform controller</title>
+<style type="text/css">
+	html { 
+		/* -webkit-app-region: drag; */
+	}
+	body { 
+		position: absolute; 
+		overflow: hidden;
+		width: 1000px;
+		background-color: #def;
+
+		-webkit-user-select: none;
+  		/* -webkit-app-region: drag; */
+	}
+	#top {
+
+	}
+	#platform {
+
+	}
+	#bottom {
+
+	}
+
+	/* this is to support drag-and-drop zones
+		see http://jsfiddle.net/F6GDq/8/ and
+		http://stackoverflow.com/questions/7110353/html5-dragleave-fired-when-hovering-a-child-element
+		See also server/apps/SlideShow/ui.js
+	*/
+	.dropzone {
+		border-color: red !important;
+	}
+	.dropzone:after {
+	    content:'';
+	    position: absolute;
+	    top: 0;
+	    left: 0;
+	    bottom: 0;
+	    right: 0;
+	    z-index: 1;
+	}
+</style>
+<script src="jquery-mbl-1.8.3.min.js"></script>
+<script type="text/javascript">
+	var gui = require('nw.gui');
+	var platform = global.platform;
+
+	// Enable drag-and-drop on an element.
+	// Call `dropCB` with the list of files when dropped.
+	// If `dropCB` is null, drag-and-drop is disabled instead.
+	function dragAndDropFiles(element, dropCB) {
+		// See https://github.com/rogerwang/node-webkit/wiki/Dragging-files-into-page
+		window.ondragover = window.ondrop = function(ev) { ev.preventDefault(); return false; };
+
+		if (! dropCB) {
+			// Remove instead of install handlers
+			// Using jQuery's even namespaces helps a lot here!
+			$(element).off('dragover.slideShow').off('dragleave.slideShow').off('drop.slideShow');
+			return;
+		}
+
+		// To manage highlighting, see http://jsfiddle.net/F6GDq/8/ and
+		// http://stackoverflow.com/questions/7110353/html5-dragleave-fired-when-hovering-a-child-element
+		$(element)
+			.on('dragover.slideShow', function(ev) { ev.preventDefault(); $(element).addClass('dropzone'); })
+			.on('dragleave.slideShow', function(ev) { $(element).removeClass('dropzone'); })
+			.on('drop.slideShow', function(ev) {
+				ev.preventDefault();
+				$(this).removeClass('dropzone');
+				if (dropCB)
+					dropCB(ev.originalEvent.dataTransfer.files);
+			})
+		;
+	}
+</script>
+</head>
+<body>
+	<div id="top">
+		<button onclick='platform.restart()'>Restart</button>
+		<button onclick='platform.shutdown()'>Shutdown</button>
+	</div>
+	<div id="platform">
+	</div>
+	<div id="bottom">
+	</div>
+</body>
+</html>

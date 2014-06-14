@@ -1,0 +1,12 @@
+{
+	"type": "Platform",
+	"name": "WILD right half",
+	"inherit": "WILD",
+	"wall": {
+		"name": "WILD",
+		"left": 4,
+		"top": 0,
+		"right": 7,
+		"bottom": 3
+	}
+}

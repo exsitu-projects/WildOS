@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Sharing Objects in WildOS</title>
+
+    <link href="assets/css/bootstrap.min.css" rel="stylesheet">
+    <!-- HTML5 Shim and Respond.js IE8 support of HTML5 elements and media queries -->
+    <!-- WARNING: Respond.js doesn't work if you view the page via file:// -->
+    <!--[if lt IE 9]>
+      <script src="https://oss.maxcdn.com/libs/html5shiv/3.7.0/html5shiv.js"></script>
+      <script src="https://oss.maxcdn.com/libs/respond.js/1.4.2/respond.min.js"></script>
+    <![endif]-->
+    <link href="assets/css/highlight-docco.css" rel="stylesheet">
+    <link href="assets/css/custom.css" rel="stylesheet">
+  </head>
+  <body>
+    <nav class="navbar navbar-inverse navbar-fixed-top" role="navigation">
+      <div class="container-fluid">
+        <div class="navbar-header">
+          <a class="navbar-brand" href="#">Sharing Objects in WildOS</a>
+        </div>
+        <ul id="tocmenu" class="nav navbar-nav navbar-right">
+          <li class="dropdown">
+            <a href="#" class="dropdown-toggle" data-toggle="dropdown">Content <b class="caret"></b></a>
+            <ul class="dropdown-menu">
+              <li class="toc2"><a href="#relevantclassyconcepts">Relevant Classy concepts</a></li>
+<li class="toc2"><a href="#sharingobjectsconcept">Sharing objects concept</a></li>
+<li class="toc2"><a href="#objectsharers">Object sharers</a></li>
+<li class="toc3"><a href="#mastersandslaves">Masters and slaves</a></li>
+<li class="toc3"><a href="#typesofsharedvalues">Types of shared values</a></li>
+<li class="toc3"><a href="#objectlifecycle">Object lifecycle</a></li>
+<li class="toc2"><a href="#sharingserverandsharingclients">Sharing server and Sharing clients</a></li>
+<li class="toc3"><a href="#ontheserver">On the server</a></li>
+<li class="toc3"><a href="#onarenderingclient">On a rendering client</a></li>
+<li class="toc3"><a href="#onaweb-basedclient">On a web-based client</a></li>
+
+            </ul>
+          </li>
+        </ul>
+        <!--
+        <ul id="filemenu" class="nav navbar-nav navbar-right">
+          <li class="dropdown">
+            <a href="#" class="dropdown-toggle" data-toggle="dropdown">Files <b class="caret"></b></a>
+            <ul class="dropdown-menu">
+              <li><a href="doc/createapp.html">Creating an Application for WildOS</a></li>
+<li><a href="doc/createdev.html">Creating Devices for WildOS</a></li>
+<li><a href="doc/index.html">Overview</a></li>
+<li><a href="doc/logging.html">Logging in WildOS</a></li>
+
+            </ul>
+          </li>
+        </ul>
+        -->
+      </div><!-- /.container -->
+    </nav>
+
+    <div class="container-fluid">
+      <h1 id="sharingobjectsinwildos">Sharing Objects in WildOS</h1>
+
+<p>WildOS provides the ability to share objects between server and clients to facilitate de programming of distributed applications and devices.
+Object sharing uses the Classy object model and in particular the definition of mixins and wrappers to modify a class after it has been created.
+Object sharing supports a reactive style of programming, at least on the client side, by making it easy to react to changes in the state of a shared object.</p>
+
+<h2 id="relevantclassyconcepts">Relevant Classy concepts</h2>
+
+<p>A full description of the Classy object model is available on the [Classy website](https://github.com/mblinsitu/Classy].
+Here we only introduce the concepts necessary to the rest of this document.</p>
+
+<p>A <strong>class</strong> defines a set of <strong>fields</strong> and <strong>methods</strong> and can inherit from another class, as in classical object-oriented languages (Java, C++).
+Instances share the methods and have their own copy of the fields (which are implemented as Javascript properties).</p>
+
+<p>Unlike traditional object-oriented languages, it is possible to <strong>wrap</strong> a field or a method:
+Wrapping a field adds callbacks when the field is read or written;
+Wrapping a method adds callbacks before and after the method is called.
+Together, this makes it possible to monitor an object and trigger side effects when its state changes or its methods are called.
+Field wrappers and method wrappers can be specified in <strong>mixins</strong>.
+Adding a mixin to a class wraps its fields and methods as specified by the wrapper.</p>
+
+<h2 id="sharingobjectsconcept">Sharing objects concept</h2>
+
+<p>Sharing objects with WildOS is achieved by first registering one or more classes with an <code>ObjectSharer</code> and then attaching the object sharer to one or more sharing clients (on the server) or to a sharing server (on each client). </p>
+
+<p>An object sharer does three things:</p>
+
+<ul>
+<li>Monitor the classes it manages and emit events (in the sense of node.js) when new objects are created;</li>
+<li>Monitor the instances of the classes it manages and emit events (in the sense of node.js) when the value of a field changes or when a method is called;</li>
+<li>Listen to events (in the sense of node.js) from other object sharers to create instances, change field values or call methods of the object.</li>
+</ul>
+
+<p>A sharing client / sharing server object does two things:</p>
+
+<ul>
+<li>Monitor the network connection between client and server so that the link between object sharers is maintained across shutdowns;</li>
+<li>Relay events between the object sharers at each end of the connection so that the objects at both end are kept in a consistent state.</li>
+</ul>
+
+<h2 id="objectsharers">Object sharers</h2>
+
+<p>An object sharer can manage one or more classes. For each class, you can specify which fields and which methods are monitored.
+These can be specified as a list of field / method names in an array,
+or the special values <code>'own'</code> and <code>'all'</code>.
+The former shares only the fields or methods defined locally in the class,
+while the latter also shares the fields and methods defined in the superclasses.</p>
+
+<h3 id="mastersandslaves">Masters and slaves</h3>
+
+<p>An object sharer can act as a <strong>master</strong> or a <strong>slave</strong> for the classes it manages.
+A master monitors the state changes and broadcasts them to the slaves, which update their local copies.
+State changes performed by the slaves are <em>not</em> sent to the master, instead the slaves should use remote procedure calls.</p>
+
+<p>This asymmetry greatly simplifies the management of conflicts (when different clients change the object&#8217;s state in inconsistent ways)
+because the remote procedure call serializes the changes to the master object.
+Of course, this is at the expense of efficiency, although slaves can use optimistic updates:
+they can change the state locally and issue the remote procedure call.
+If the master makes a different change, they will be notified of the new value.</p>
+
+<p>To use an object sharer, create an instance of <code>ObjectSharer</code> and call <code>master</code> or <code>slave</code> to add classes to it.
+For each class, you can specify which fields are shared.
+For a master, you can also specify which methods can be called through remote procedure call,
+and which local method calls should be notified to the clients and when.
+For a slave, you can specify which methods can be called remotely by the master.
+The notification of method calls on the master will execute the corresponding method on the slave if it is defined.</p>
+
+<p>Here is a simple master that shares its fields <code>x</code> and <code>y</code> (specified by the special string <code>'own'</code>, which shares all the fields declared locally in the class) and allows the method <code>moveBy</code> to be called remotely.
+When its <code>playSound</code> method is called, the slaves are notified of the call after it is executed locally.</p>
+
+<pre><code>    var Sprite = OO.newClass().name('Sprite')
+        .fields({ x: 0, y: 0 })
+        .methods({
+            moveBy: function(dx, dy) {
+                this.x += dx; this.y += dy;
+            },
+            playSound: function(sound) {
+                // play the sound on the server
+                // (or do nothing if only the clients take care of it)
+            },
+        });
+
+    var sharer = ObjectSharer.create().master(Sprite, 'own', ['moveBy'], ['playSound'], 'after');
+</code></pre>
+
+<p>Here is a slave for that class:</p>
+
+<pre><code>    var Sprite = OO.newClass().name('Sprite')
+        .fields({ x: 0, y: 0 })
+        .methods({
+            moveBy: function(dx, dy) {
+                // the body is empty because the call will be forwarded to the master.
+            },
+            playSound_after: function(sound) {
+                // play the sound
+                ...
+            },
+        });
+
+    var sharer = ObjectSharer.create().slave(Sprite, 'own', ['moveBy']);
+</code></pre>
+
+<p>The slave shares the same fields and designates <code>moveBy</code> as a method to be called remotely.
+Note that remote calls are performed asynchronously, so the returned value computed by the master, if any, is not forwarded to the slave.</p>
+
+<p>The <code>playSound_after</code> method will be called when the <code>playSound</code> method is called on the master.
+Note the addition of <code>_after</code> to the name, which serves two purposes: to distinguish between the before and after notifications,
+and to make it clear that this method is called remotely.</p>
+
+<h3 id="typesofsharedvalues">Types of shared values</h3>
+
+<p>In order to exchange values and method arguments between masters and slaves, those values must be serialized in some way so that they are valid across the network. Currently, WildOS supports the following value types:</p>
+
+<ul>
+<li>numbers (integer and floating point);</li>
+<li>strings;</li>
+<li>Classy objects shared by the sharer;</li>
+<li>arrays of these;</li>
+<li>other objects.</li>
+</ul>
+
+<p>Numers are turned into strings. Shared classy objects are serialized using a unique internal object id that is added to the object as property <code>oid</code>. Arrays are serialized by the sequence of their serialized objects (recursively). Other objects are serialized by serializing each of their properties (recursively). On the receiving end, shared objects are mapped to the local copy, arrays are recreated as <code>Array</code> objects, and objects are created as literal objects (i.e. their prototype is <code>Object</code>).</p>
+
+<p>Note however that currently, if a shared field holds an array or an object, changes to the content of the array or to the properties of the object are <em>not</em> tracked and therefore are not broadcast to the slaves.
+For example, if you have the following class:</p>
+
+<pre><code>    var A = OO.newClass().fields({
+        color: {r: 0, g: 0, b: 1},
+        tags: [],
+    })
+</code></pre>
+
+<p>and the fields <code>color</code> and <code>tags</code> are shared, the following changes will <em>not</em> be tracked and the clients will not see them:</p>
+
+<pre><code>    var a = A.create();
+    a.color.r = 1;
+    a.tags.push('cool');
+</code></pre>
+
+<p>The current workaround is to explicitly notify the sharer after updating the array or object:</p>
+
+<pre><code>    sharer.notifySet(a, 'color', a.color);
+    sharer.notifySet(a, 'tags', a.tags);
+</code></pre>
+
+<p>A future version of WildOS may implement proper tracking of arrays and non-shared objects, but a complete and efficient implementation would require that the <code>Object.observe</code> Javascript feature be supported by node-webkit.</p>
+
+<h3 id="objectlifecycle">Object lifecycle</h3>
+
+<p>An object sharer shares all the instances of the classes it manages <em>that are created after the class was added to the sharer</em>.
+In other words, you need to add the class to the sharer before any instance is created.</p>
+
+<p>Javascript uses garbage collection to reclaim unused objects, but there is no way to know when an object is reclaimed.
+In addition, since sharers keep references to the objects they manage, the garbage collector would never reclaim them anyway.</p>
+
+<p>In order to &#8216;kill&#8217; an object, i.e. to tell the sharer that you do not need it anymore on the master side, the sharer adds a method <code>die</code> to the class.
+So when you do not need object <code>o</code> anymore, simply call <code>o.die()</code>.
+This will notify the slaves, which will also remove the object from their sharer.</p>
+
+<p>On the slave side, there is no <code>die</code> method, the slave should issue a remote procedure call to the master and let the master kill the object.</p>
+
+<p>An object that has been killed still exists, but its <code>oid</code> property is removed and it is therefore not considered anymore as a shared object.
+If the sharer held the last reference to the object, it will eventually be garbage collected by the Javascript runtime.</p>
+
+<h2 id="sharingserverandsharingclients">Sharing server and Sharing clients</h2>
+
+<p>The <code>ObjectSharer</code> class uses node.js events to notify changes and react to them. As such, it is insufficient to share objects across processes and machines. In order to send these events over the network, WildOS defines the class <code>SharingClient</code>, for use on the server, and <code>SharingServer</code>, for use on the clients.</p>
+
+<p>Both classes manage one or more object sharers and relay the events sent by the sharers to the other end of the connection and the events they receive from the other end to the relevant sharer. Both classes can also limit the set of objects being shared across the connection to a subset of the instances of the classes they manage. This can be useful on the server, for example, when there are multiple clients and each client should only see a subset of the objects. (This is used in the <code>Surface</code> device to manage a tiled display: the server creates a tile object for each tile of the display, but only shares the relevant tiles with each client managing a part of the display).</p>
+
+<p>Note that both <code>SharingClient</code> and <code>SharingServer</code> manage the state of the connection so that if the connection goes down, the client tries to reconnect at regular intervals (5 seconds) and the server waits for client connections. This means that the system should be reasonably resilient when the server or a client is shutdown and restarted.</p>
+
+<h3 id="ontheserver">On the server</h3>
+
+<p>On the server, WildOS notifies the devices and applications when a client connects / disconnects by calling the methods <code>clientConnected</code> and <code>clientDisconnected</code> of the relevant device objects and of each application object. Your device or application class will typically redefine these methods to create a <code>SharingClient</code> and add the relevant sharer(s) to it:</p>
+
+<pre><code>    ...
+    clientConnected: function(socket, server) {
+        // We assume that the sharer is in this.sharer
+        if (this.sharer)
+            server.registerClient(socket, SharingClient.create(socket).addSharer(this.sharer));
+    }
+    ...
+</code></pre>
+
+<p>In fact this is the default behavior for applications and therefore you have nothing to do if you are only sharing the application object. If you are sharing additional classes, you need to add these classes to the application sharer, and they will be picked up automatically by the sharing client.</p>
+
+<h3 id="onarenderingclient">On a rendering client</h3>
+
+<p>The rendering client creates a single instance of <code>SharingServer</code> (or, rather, creates a subclass and instantiates it).
+When an application is loaded, the application object creates a sharer and automatically adds it to the sharing server.
+As above, you do not need to do anything special if you are just sharing the application object.
+Simply declare how you are sharing the class with <code>MyApp.shareState(...)</code>.</p>
+
+<p>If you are sharing other classes, you need to add these to the application sharer with <code>MyApp.sharer.slave(...)</code>
+and they will automatically be shared with the server.</p>
+
+<h3 id="onaweb-basedclient">On a web-based client</h3>
+
+<p>The situation on a web-based client is similar to that of the rendering client:
+The <code>App</code> class creates a sharer for each app and automatically adds it to the sharing server.
+All you need to do is declare what you want to share (with <code>MyApp.shareState(...)</code>),
+and add other shared classes if any (with <code>MyApp.sharer.slave(...)</code>).</p>
+
+    </div>
+    <script type="text/javascript" src="assets/js/jquery-1.11.0.min.js"></script>
+    <script type="text/javascript" src="assets/js/bootstrap.min.js"></script>
+    <script type="text/javascript" src="assets/js/highlight.custom.js"></script>
+    <script type="text/javascript">hljs.initHighlightingOnLoad();</script>
+  </body>
+</html>

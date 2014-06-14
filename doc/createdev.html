@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Creating Devices for WildOS</title>
+
+    <link href="assets/css/bootstrap.min.css" rel="stylesheet">
+    <!-- HTML5 Shim and Respond.js IE8 support of HTML5 elements and media queries -->
+    <!-- WARNING: Respond.js doesn't work if you view the page via file:// -->
+    <!--[if lt IE 9]>
+      <script src="https://oss.maxcdn.com/libs/html5shiv/3.7.0/html5shiv.js"></script>
+      <script src="https://oss.maxcdn.com/libs/respond.js/1.4.2/respond.min.js"></script>
+    <![endif]-->
+    <link href="assets/css/highlight-docco.css" rel="stylesheet">
+    <link href="assets/css/custom.css" rel="stylesheet">
+  </head>
+  <body>
+    <nav class="navbar navbar-inverse navbar-fixed-top" role="navigation">
+      <div class="container-fluid">
+        <div class="navbar-header">
+          <a class="navbar-brand" href="#">Creating Devices for WildOS</a>
+        </div>
+        <ul id="tocmenu" class="nav navbar-nav navbar-right">
+          <li class="dropdown">
+            <a href="#" class="dropdown-toggle" data-toggle="dropdown">Content <b class="caret"></b></a>
+            <ul class="dropdown-menu">
+              <li class="toc2"><a href="#platformconfigurationfile">Platform configuration file</a></li>
+<li class="toc2"><a href="#loadingdevicesandthedevicelifecycle">Loading devices and the device life cycle</a></li>
+<li class="toc2"><a href="#creatinganewdeviceclass">Creating a new device class</a></li>
+<li class="toc2"><a href="#device-specificuserinterface">Device-specific user interface</a></li>
+<li class="toc2"><a href="#remotedevices">Remote devices</a></li>
+<li class="toc3"><a href="#serverside">Server side</a></li>
+<li class="toc3"><a href="#clientside">Client side</a></li>
+
+            </ul>
+          </li>
+        </ul>
+        <!--
+        <ul id="filemenu" class="nav navbar-nav navbar-right">
+          <li class="dropdown">
+            <a href="#" class="dropdown-toggle" data-toggle="dropdown">Files <b class="caret"></b></a>
+            <ul class="dropdown-menu">
+              <li><a href="doc/createapp.html">Creating an Application for WildOS</a></li>
+<li><a href="doc/index.html">Overview</a></li>
+<li><a href="doc/logging.html">Logging in WildOS</a></li>
+<li><a href="doc/sharing.html">Sharing Objects in WildOS</a></li>
+
+            </ul>
+          </li>
+        </ul>
+        -->
+      </div><!-- /.container -->
+    </nav>
+
+    <div class="container-fluid">
+      <h1 id="creatingdevicesforwildos">Creating Devices for WildOS</h1>
+
+<p>WildOS manages a tree of devices that describe the capabilities of the platform.
+The platform itself is the root of the device tree and is initialized from a json file.
+Devices can be created and deleted dynamically, and a device can become available or unavailable at any time.
+Other devices as well as applications can be notified of these changes.</p>
+
+<h2 id="platformconfigurationfile">Platform configuration file</h2>
+
+<p>When WildOS starts, it loads a <em>plaform configuration file</em> and creates the devices described in this file.
+The name of the file is defined by the <code>$WALL</code> environment variable (defaults to <code>'WILD'</code>).
+The <code>.json</code> suffix is added to the name and the resulting file, e.g. <code>WILD.json</code>, is looked up in the <code>../configs</code> and <code>../../configs</code> directories relative to the server.</p>
+
+<p>The platform configuration file must contain the following properties:</p>
+
+<ul>
+<li><code>&quot;type&quot;: &quot;Platform&quot;</code>, to tell WildOS that this is a platform description;</li>
+<li><code>&quot;name&quot;: &quot;&lt;platform name&gt;&quot;</code>, to give the platforme a name (used in )</li>
+</ul>
+
+<p>The platform configuration file may also contain the following properties:</p>
+
+<ul>
+<li><code>&quot;inherit&quot;: &quot;&lt;other platform&quot;</code>, to inherit the descripion in <code>&lt;other platform&gt;.json</code>: all properties in that file are copied in the current configuration;</li>
+<li><code>&quot;basedOn&quot;: &quot;&lt;other platform&quot;</code>, to reuse the descripion in <code>&lt;other platform&gt;.json</code>: only those properties that are defined in the device are merged with those of the other platform;</li>
+<li><code>&quot;UI&quot;: &quot;{ ... }&quot;</code>, to describe the user interface of the platform, in particular the property <code>frame</code> describes the position and size of the window holding the user interface (see <code>WILD.json</code> as an example).</li>
+</ul>
+
+<p>Finally the configuration file contains the devices that make up the platform.
+Each device is a property whose value is itself an object with a similar structure: the required <code>type</code> and <code>name</code> properties, the optional <code>inherit</code>, <code>basedOn</code> and <code>UI</code> properties, and any subdevices.
+Devices can (and usually do) have device-specific properties, e.g. a device describing a tiled display will have properties describing the number of tiles, their size and organization, etc.</p>
+
+<p>For a device to be successfully loaded, its <code>type</code> must correspond to a node.js module in the <code>../devices</code> folder.
+More precisely, if the type is <code>MyDev</code>, there must be a file <code>../devices/MyDev.js</code> or a folder <code>../devices/MyDev/</code> containing at least either an <code>index.js</code> file or a <code>package.json</code> file describing the organization of the module.
+This lets WildOS load the devices dynamically as needed by the platform.</p>
+
+<p>The best way to understand configuration files is to look at the existing files in the distribution, and to create your own devices and add their configuration in the platform configuration file.</p>
+
+<h2 id="loadingdevicesandthedevicelifecycle">Loading devices and the device life cycle</h2>
+
+<p>When a device described in the platform configuration file is loaded by WildOS, the device&#8217;s configuration is created by combining the properties of that device in that file with those of any configuration it is based on or inherits from. This configuration (a literal object), is passed to the device constructor which, by default, stores it in the device&#8217;s <code>config</code> property.
+(Devices can also be passed a set of options, but this is currently unused.)</p>
+
+<p>Devices can also be created dynamically, typically by other devices. In this case, the code creating the device is responsible for defining its configuration. Apart from that, devices created from the platform configuration file or dynamically are exactly the same.</p>
+
+<p>The life cycle of a device is as follows:</p>
+
+<ul>
+<li>The device is first created and the platform emits the message <code>deviceCreated</code> for that device;</li>
+<li>The parent device adds this device to its list of children, which calls the device&#8217;s <code>added</code> method</li>
+<li>Whenever the device decides that it can be used, it calls <code>deviceAvailable</code>, which emits an event by the same name;</li>
+<li>Similarly, when it becomes unavailable, it calls <code>deviceUnavailable</code>, which emits an event by the same name; Note that a device can become unavailable and available multiple times;</li>
+<li>When the device is removed from its parent and before it gets deleted, the method <code>removed</code> of the device is called; By default this method calls <code>deviceDeleted</code> to emit a message by the same name.</li>
+</ul>
+
+<p>The events (<code>deviceCreated</code>, <code>deviceAvailable</code>, <code>deviceUnavailable</code>, <code>deviceDeleted</code>) are useful to track the changes to the device tree, for example to watch for a particular device to become available. The root of the device tree, i.e. the platform, is the emitter of all device-related events. To listen to these events, use the methods <code>onDeviceCreated</code>, <code>onDeviceAvailable</code>, etc. of any device.</p>
+
+<h2 id="creatinganewdeviceclass">Creating a new device class</h2>
+
+<p>To create a new device class, say <code>MyDev</code>, you inherit from class <code>Device</code> or from an existing subclass. You typically redefine the constructor and the <code>added</code> method, which gets called when the device is actually added to its parent:</p>
+
+<pre><code>var MyDev = Device.subclass().name('MyDev')
+    .fields({
+        // device-specific fields
+    })
+    .constructor(function(config, options, events) {
+        this._super(config, options, events);
+        if (options)
+            this.set(options);
+
+        // Other initializations
+        // ...
+
+        // Notify of creation
+        this.deviceCreated();
+    })
+    .methods({
+        // Called when the device is added to the tree.
+        added: function() {
+            // Additional initialization 
+            // ...
+
+            // Notify availability
+            this.deviceAvailable();
+        },
+    });
+</code></pre>
+
+<p>You can also redefine the method <code>removed</code>, which is called before the device is removed from the device tree, to clean up.
+If you do redefine it, make sure to eventually call <code>this._super.removed()</code> or <code>this.deviceDeleted()</code> to signal that it is indeed removed. (In some cases, cleaning up the device is done asynchronously and therefore the notification must be sent when the asynchronous call completes).</p>
+
+<h2 id="device-specificuserinterface">Device-specific user interface</h2>
+
+<p>Device drivers often need a user interface to control them and/or monitor them.
+This can be done in one of two ways: a dedicated window on the server, or an embedded UI in the platform control window.
+The latter is preferred in order to minimize the number of windows, but the former can be useful in special cases.</p>
+
+<p>In order to add a device UI to the platform UI, use the following platform methods:</p>
+
+<pre><code>// Inject Javascript text or file
+platform.injectJSText(text, id, cb);
+platform.injectJSFile(path, id, cb);
+
+// Inject CSS text or file
+platform.injectCSSText(text, id, cb);
+platform.injectCSSFile(path, id, cb);
+
+// Inject HTML text or file
+platform.injectHTMLText(text, elementId, how);
+platform.injectHTMLFile(path, elementId, how);
+</code></pre>
+
+<p>The parameters are: </p>
+
+<ul>
+<li>The <code>text</code> or the <code>path</code> to the file to be injected; note that the path is relative to the <code>server/devices/MyDev/content</code> folder, i.e. a device-specific folder that you must create;</li>
+<li>For Javascript and CSS injection, the <code>id</code> (in the sense of the DOM) of the element to be created; make sure to use a unique id, e.g. by prefixing it with the name of the device, so that you can easily remove the element when the device is removed;</li>
+<li>For Javascript and CSS injection, an optional callback <code>cb</code> to be called once the element is fully loaded; this is especially useful for Javascript injection if you need to perform other actions after the code has been executed;</li>
+<li>For HTML injection, <code>elementId</code> specifies in which element to inject the HTML tree and <code>how</code> specifies where:</li>
+<li><code>replace</code> to replace the existing content of the element (if it exists)</li>
+<li><code>beforebegin</code> to insert before the element</li>
+<li><code>afterbegin</code> to insert at the beginning of the element</li>
+<li><code>beforeend</code> to insert at the end of the element (default)</li>
+<li><code>afterend</code> to insert after the element
+ Note that <code>elementId</code> defaults to <code>platform</code>, i.e. the part of the platform UI that is designed to be extended.
+ Note also that HTML code inserted this way will not run any embedded scripts. Use <code>injectJSText/File</code> for that.</li>
+</ul>
+
+<p>If you need to create a separate window to host the user interface of your device, use a method like this and call it from the constructor or the <code>added</code> method:</p>
+
+<pre><code>    createUI: function() {
+        var gui = process.mainModule.exports.gui;
+        var url = '../devices/MyDev/content/mydevUI.html';  // URL is relative to the server/lib folder
+        // See node-webkit documentation for available options
+        var win = gui.Window.open(url, {
+            width: 800,
+            height: 600,
+            toolbar: false,     
+        });
+        return win;
+    },
+</code></pre>
+
+<h2 id="remotedevices">Remote devices</h2>
+
+<p>In many cases, your device works hand in hand with a client process running on the same or a different machine.
+You can manage the connection with the client in one of two ways:</p>
+
+<ul>
+<li>Using web sockets, in which case you can use the websockets server built into WildOS;</li>
+<li>Using another protocol, such as OSC, in which case you are on your own to manage the connection.</li>
+</ul>
+
+<p>We only cover the first case here, since the second one does not rely on any specific support from WildOS.</p>
+
+<h3 id="serverside">Server side</h3>
+
+<p>To use a web socket connection to the WildOS server, your client must follow a simple protocol when connecting:</p>
+
+<ul>
+<li>The server sends the client a &#8216;helloClient&#8217; message with the following server information: the name of the platformm (property <code>platform</code>) and the list of apps currently running in the server (property <code>apps</code>);</li>
+<li>The client responds with a &#8216;helloServer&#8217; message with the following client information: the type of client (property <code>client</code>), which must be <code>&quot;device&quot;</code>, and the class of the device (property <code>device</code>);</li>
+<li>The server looks up if the platform has a device of this class; if it finds one, it calls the device&#8217;s <code>clientConnected</code> method and sends the client the message <code>deviceReady</code>, otherwise it sends the client the message <code>quit</code>;</li>
+<li>The client sends the message <code>clientReady</code>, at which point applications are notified that there is a new client, and the client and server can communicate with their own protocol.</li>
+</ul>
+
+<p>To summarize, the server side of the device only need to implement the method <code>clientConnected</code>:</p>
+
+<pre><code>    clientConnected: function(socket, server, clientInfo) {
+        // Communicate with the client using `socket`, created by `server`.
+        // Use information transmitted by the client in `clientInfo`
+    },
+</code></pre>
+
+<p>If multiple clients may connect to the server for the same device, you will probably want to dynamically create children devices for each connected client. For example :</p>
+
+<pre><code>    clientConnected: function(socket, server, clientInfo) {
+        this.addDevice(MyRemoteDev.create(socket, server, clientInfo));
+    },
+</code></pre>
+
+<p>Also, you will probably want to share some state between the client and server, using the <a href="sharing.html">sharing</a> facilities of WildOS.For example, you can create a sharer in the constructor of the device and set it up as a master of the device class. This way, the state of the device will be shared with the connected clients.</p>
+
+<h3 id="clientside">Client side</h3>
+
+<p>WildOS provides a set of classes that are very similar to those of the server to create clients implementing devices communicating with the server using web sockets. These classes are currently in the folder <code>renderer/lib</code> and must be copied to your client code:</p>
+
+<ul>
+<li><code>SocketIOServer.js</code> - A websocket connection to a WildOS server</li>
+<li><code>ObjectSharer.js</code> - The client side of the object sharing protocol</li>
+<li><code>SharingServer.js</code> - A subclass of <code>SocketIOServer</code> that supports object sharing</li>
+<li><code>App.js</code> - The client side of an application (useful only if applications can run code in the client)</li>
+</ul>
+
+<p>To implement a client, you typically create a subclass of <code>SharingServer</code> (or <code>SocketIOServer</code> if you do not need object sharing).
+In the <code>created</code> method, which is called when the connection is established, you implement the protocol described above:</p>
+
+<ul>
+<li>Wait for <code>helloClient</code> from the server;</li>
+<li>Send <code>helloServer</code> with client information, in particular the type of client (<code>device</code>) and the type of device (its class name);</li>
+<li>Wait for <code>deviceReady</code> to start operating;</li>
+<li>If you support applications, watch for <code>startApp</code> and <code>stopApp</code>.</li>
+</ul>
+
+<p>While the above description is targeted at clients implemented with node-webkit, it is also possible to create a device client within a regular web browser. For this to work, your client code must use the <code>wildos.js</code> script in <code>server/content</code>. This script contains all the necessary classes (including those described above in this section) to write client code that communicates with the server over websockets and that can share state with the server. The <code>WebSockets</code> device shows an example of how to use it.</p>
+
+    </div>
+    <script type="text/javascript" src="assets/js/jquery-1.11.0.min.js"></script>
+    <script type="text/javascript" src="assets/js/bootstrap.min.js"></script>
+    <script type="text/javascript" src="assets/js/highlight.custom.js"></script>
+    <script type="text/javascript">hljs.initHighlightingOnLoad();</script>
+  </body>
+</html>

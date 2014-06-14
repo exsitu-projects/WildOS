@@ -1,0 +1,95 @@
+<html>
+<head>
+<title>Server</title>
+<style type="text/css">
+body { background-color: #def; }
+p { margin: 5px; padding: 0;}
+
+#log .Indent { border: solid 1px black; margin-left: 10px; margin-right: 1px; }
+#log .closed { background-color: lightgrey; height: 1.5em; overflow: hidden; }
+#log p.Info { color: #111; }
+#log p.Warning { color: orange; }
+#log p.Error { color: red; }
+#log p.Fatal { color: brown; }
+</style>
+<script src="jquery-mbl-1.8.3.min.js"></script>
+<script type="text/javascript">
+	var util = require('util');
+	var logStatus = {
+		seqno: 0,
+		stack: ['log'],
+		indent: 0,
+		id: 'log',
+	};
+
+	global.log = function log(status /*varargs*/) {
+		//console.log.apply(console, arguments);
+
+		var args = Array.prototype.slice.call(arguments, 1);
+
+		var html = "";
+		if (typeof args[0] == 'string' && ! args[0].match(/^[<>]/))
+			html += '&nbsp;&nbsp;';
+		for (var i = 0; i < args.length; i++) {
+			var obj = args[i];
+			html += util.inspect(obj)
+					.replace(/^'/, '')
+					.replace(/'$/, '')
+					.replace(/&/g, '&amp;')
+					.replace(/</g, '&lt;')
+					.replace(/ /g, '&nbsp;')
+					.replace(/\\n/g, '<br/>') + '&nbsp;';
+		}
+		$('#'+logStatus.id).append('<p class="'+status.level+'">'+html+'</p>');
+		$(window).scrollTop(document.body.scrollHeight);
+	};
+
+	global.logIndent = function(indentLevel) {
+		// Manage the change in indent level:
+		// If it increases, create div(s) for each new level;
+		// if it decreases, pop the extra levels.
+		if (indentLevel !== logStatus.indent) {
+			while (indentLevel > logStatus.indent) {
+				var newId = 'log'+logStatus.seqno++;
+				logStatus.stack.push(newId);
+				// We put an inner div to perform the animation.
+				// See http://stackoverflow.com/questions/3149419/can-you-use-css3-to-transition-from-height0-to-the-variable-height-of-content
+				$('#'+logStatus.id).append('<div id="'+newId+'" class="Indent"></div>');
+				logStatus.indent++;
+			}
+			while (indentLevel < logStatus.indent) {
+				logStatus.stack.pop();
+				logStatus.indent--;
+			}
+			logStatus.id = logStatus.stack[logStatus.stack.length -1];			
+		}
+	};
+
+	function clearLog() {
+		$("#log").html("");
+	}
+
+	$(document).ready(function() {
+		//var gui = require('nw.gui');
+		//var w = gui.Window.get();
+		//w.showDevTools();
+
+		// Collapse/Expand log by clicking
+		$('#log').on("click", ".Indent", function(e) {
+			$(this).toggleClass('closed');
+
+			// Close only the innermost div
+			e.stopPropagation();
+		});
+
+		global.platform = process.mainModule.exports.init();
+	});
+</script>
+</head>
+<body>
+<h1>Server</h1>
+<!--<button onclick="newWindow()">New window</button>-->
+<div id="log"><p id="log_inner">log: </p></div>
+<button onclick='clearLog();'>Clear log</button>
+</body>
+</html>

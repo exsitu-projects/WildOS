@@ -1,0 +1,65 @@
+/* Customize bootstrap-3 CSS for our documentation */
+
+/* make sure headers dont go below the fixed navbar when using #links */
+/* http://css-tricks.com/hash-tag-links-padding/ */
+body { padding-top: 50px; }
+h2:before, h3:before, h4:before { 
+  display: block; 
+  content: " "; 
+  margin-top: -50px; 
+  height: 50px; 
+  visibility: hidden; 
+}
+
+/* remove the default behavior of the navbar for small width */
+.navbar-header { float: left; }
+.navbar-right { float: right; }
+
+/* figure captions */
+figcaption { font-style: italic; }
+figure { text-align: center;}
+
+/* styles for TOC menu */
+li.toc1 { display: none;}
+li.toc2 { padding-left: 0px; border-top: 1px solid rgba(0, 0, 0, 0.2);}
+li.toc2 a { font-weight: bold;}
+li.toc3 { padding-left: 15px; }
+li.toc4 { padding-left: 30px; }
+li.toc4 a { font-size: 12px; }
+li.toc5 { display: none; }
+
+/* source code with comments. Use flex box to ensure equal heights of the two cols in each segment */
+@media (min-width: 992px) {
+  .codesegment {  
+    display: -webkit-box;
+    display: -moz-box;
+    display: -ms-flexbox;
+    display: -webkit-flex;
+    display: flex;
+  }
+  .codesegment .comment, .codesegment .sourcecode {
+    -webkit-flex: 1 0 auto;
+    flex: 1 0 auto;
+  }
+}
+.codesegment {  
+  border-top: solid #ddd 1px;
+}
+.codesegment .comment {
+  padding-top: 5px;
+}
+.codesegment .sourcecode {
+  background-color: #f5f5f5;
+}
+.codesegment .sourcecode pre {
+  margin-bottom: 0px;
+  border: 0px;
+  padding: 5px;
+}
+.codesegment .sourcecode pre code {
+  padding: 0px;
+}
+.codesegment h2 { margin-top: 0px; color: #954121;}
+.codesegment h3 { margin-top: 0px; color: #954121;}
+.codesegment h4 { margin-top: 0px; color: #954121;}
+.codesegment h5 { margin-top: 0px; color: #954121;}
