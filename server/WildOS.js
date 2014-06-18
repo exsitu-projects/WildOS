@@ -110,7 +110,7 @@ function startServerAndApps(platform) {
 		// *** we should also use this callback to tell we are ready, in case it's done asynchronously (which is not the case at the moment)
 		appNames.forEach(function(app) {
 			if (apps.indexOf(app) < 0)
-				log.warn.message('startApps', '- App', appName, 'not found.');
+				log.warn.message('startApps', '- App', app, 'not found.');
 		})
 	});
 
