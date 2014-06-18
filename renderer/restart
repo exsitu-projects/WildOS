@@ -1,7 +1,9 @@
-#!/bin/bash
+#!/bin/bash -ex
 #
 # run the renderer according to the name of the local machine
 # or that of the first argument if provided
+
+MACHINE=`uname`
 
 # infer wall name or get it from argument
 if [ $# -eq 0 ]; then
@@ -26,7 +28,8 @@ declare -a env
 env=()
 case $WALL in
 	WILD)
-		DIR=~/WildOS/renderer
+		#DIR=~/WildOS/renderer
+		DIR=.
 		NWAPP=nw
 		NW=nw
 		env=(DISPLAY=:0.0 DISPLAY=:0.1)
@@ -40,7 +43,8 @@ case $WALL in
 		tiles=(Left Right)
 	;;
 	local)
-		cd ../renderer
+		cd renderer
+		DIR=.
 		NWAPP=node-webkit
 		NW=nw
 		tiles=(TL TR BL BR)
@@ -56,7 +60,11 @@ case $WALL in
 	local)
 		# avoid killall node-webkit on local machine as it will kill the server too!
 		# (this has only be tested on Mac OS)
-		kill `ps -e | grep WildOS/renderer | grep -v Helper | awk '{print $1}'`
+                if [ $MACHINE == 'Linux' ]; then 
+                  ps aux | fgrep /nw | fgrep -v server | fgrep -v -- --type= | awk '{print $2}' | xargs kill || true
+                else
+  		  kill `ps -e | grep WildOS/renderer | grep -v Helper | awk '{print $1}'`
+		fi
 	;;
 	*)
 		killall $NWAPP

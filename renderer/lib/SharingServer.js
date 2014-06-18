@@ -35,7 +35,7 @@ function getServer() {
 var SharingServer = SocketIOServer.subclass().name('SharingServer')
 	.classFields({
 		host: getServer(),
-		port: 8080,
+		port: 8088,
 	})
 	.fields({
 		sharers: [],		// list of ObjectSharer objects attached to this server
