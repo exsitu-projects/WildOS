@@ -1,6 +1,9 @@
 #!/bin/sh
 #
 # Run node-webkit from the command line on a Mac
+#
+# If the first argument is -X, run the executable directly,
+# which is useful to see error messages.
 
 # adjust to local install
 NWAPP=/Applications/node-webkit.app
@@ -18,9 +21,16 @@ if [ $# -ge 1 -a "$1" = "-X" ]
 then
         shift
         echo "running $NW"
+
         if [ $# -ge 1 -a -d "$1" -a -f "$1/package.json" ]
         then
-                "$NW" $*
+                # node-webkit wants a full path for the package
+                case $1 in
+                        /*) PACKAGE=$1 ;;
+                        *) PACKAGE=`pwd`/$1 ;;
+                esac
+                shift
+                "$NW" "$PACKAGE" $*
         else
                 "$NW" `pwd` $*
         fi
@@ -32,7 +42,13 @@ fi
 # if not, or if there is no argument, prepend `pwd` to the arguments
 if [ $# -ge 1 -a -d "$1" -a -f "$1/package.json" ]
 then
-        open -n "$NWAPP" --args $*
+        # node-webkit wants a full path for the package
+        case $1 in
+                /*) PACKAGE=$1 ;;
+                *) PACKAGE=`pwd`/$1 ;;
+        esac
+        shift
+        open -n "$NWAPP" --args "$PACKAGE" $*
 else
         open -n "$NWAPP" --args `pwd` $*
 fi

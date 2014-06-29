@@ -11,11 +11,14 @@
 //		"originX", "originY": the location of the tile in the overall surface 
 //			(must be consistent with the physical layout of the display)
 //		"host": the host name of the client running that tile
-//		"name": the name of the tile, e.g. "Left" or "Right" if a host manages two tiles
+//		"instanceName": the name of the tile, e.g. "Left" or "Right" if a host manages two tiles
 //		"instance": the instance name, of the form 
 //			<hostname> if there is a single client per host
 //			or <hostname>_<tilename> if there is one client per tile for each host
+//		"rank": if there are multiple tiles per instance, the rank of the instance (a number), or null otherwise
+//		"tileName": same as `instance` if there is one tile per host, otherwise `instance_rank`
 //
+// Note: the configuration with one instance per host has not been tested in a while.
 
 // Shared modules
 var OO = require('OO');
@@ -40,8 +43,9 @@ var Tile = Device.subclass().name('Tile')
 		originY: 0,
 		// Host name and instance name running that tile
 		host: null,
-		instance: null,	// `host` or `host_tile` if running one instance per tile
-		rank: null,		// `null` or a number denoting the rank of the instance when there are multiple instances per host
+		instanceName: null,	// name of the instance
+		instance: null,	// `host` or `host_instance` if running one instance per tile
+		rank: null,		// `null` or a number denoting the rank of the tile when there are multiple tiles per instance
 		tileName: null,	// same as `instance` if one tile per host, or `instance_rank` if multiple tiles per host.
 		// Note that `name` holds the full name : `host_instance_rank`
 	})

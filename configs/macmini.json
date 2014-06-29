@@ -25,7 +25,9 @@
 			"Left": [{ "left": 5, "top": 200}, { "left": 485, "top": 200}],
 			"Right": [{ "left": 965, "top": 200}, { "left": 1445, "top": 200}]
 		},
-		"restart": "walldo -l mbl WildOS/renderer/restart"
+		"domain": ".local",
+		"start": "ssh %HOST% PATH=\\$PATH:/usr/local/bin nw ~/WildOS/renderer -p %PORT% -i %INSTANCE%",
+		"stop": "ssh %HOST% killall node-webkit"
 	},
 	"wall3": {		
 		"type": "NonSurface",

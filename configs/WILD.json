@@ -23,7 +23,13 @@
 			[["a4", "L"], ["a4", "R"], ["b4", "L"], ["b4", "R"], ["c4", "L"], ["c4", "R"], ["d4", "L"], ["d4", "R"]]
 		],
 		"renderer": "perTile",
-		"restart": "walldo -l mbl WildOS/renderer/restart"
+		"domain": ".wild.lri.fr",
+		"env": {
+			"L": "DISPLAY=:0.0",
+			"R": "DISPLAY=:0.1"
+		},
+		"start": "ssh %HOST% PATH=\\$PATH:/usr/local/bin %ENV% nw ~/WildOS/renderer -p %PORT% -i %INSTANCE%",
+		"stop": "ssh %HOST% killall nw"
 	},
 	"controllers": {
 		"type": "WebControllers"

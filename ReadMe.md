@@ -36,12 +36,13 @@ To install `node-webkit`, go to the [node-webkit](https://github.com/rogerwang/n
 
 WildOS requires version 0.9.2 or later of node-webkit.
 
-On Mac OS X, node-webkit is an application and should be copied to the standard `Applications` folder.
-
 On Linux, node-webkit is an executable called `nw` and should be accessible in the `PATH`.
 The simplest way to install is to copy `nw` to `/usr/local/bin` or to create a symbolic link.
 To install in `/opt` and support mulitple versions, follow the instructions in [this web page](http://www.exponential.io/blog/install-node-webkit-on-ubuntu-linux).
 
+On Mac OS X, node-webkit is an application and should be copied to the standard `Applications` folder.
+If it is installed elsewhere, edit the `tools/nw` script so that `NWAPP` points to it. 
+This `nw` script is designed to be used on the command line in the same way as on Linux.
 
 ### Installing the WildOS server ###
 After you have checked out WildOS from the [SVN repository](https://www.lri.fr/svn/in-situ/code/WILD/WildOS) or extracted it from the archive, you need to finalize the installation as follows:
@@ -50,6 +51,12 @@ After you have checked out WildOS from the [SVN repository](https://www.lri.fr/s
 	% npm install  
 
 This will create a `node_modules` directory in the `WildOS/server` directory and install the node modules needed by WildOS there. (Make sure you are in the `server` directory).
+
+It is a good idea to add the `WildOS/tools/` directory to your PATH so that commands such as `wildos`, `walldo` and (on Mac OS X), `nw`, are directly accessible from the command line. 
+The rest of this documentation assumes this has been done:
+	
+	% cd WildOS/tools
+	% PATH=`pwd`:$PATH
 
 ### Configuring the installation ###
 This step is optional, but strongly recommended unless you have an alternative way of easily running commands on all the machines in your display cluster.
@@ -102,8 +109,11 @@ The `wall` property defines the geometry of the tiled display:
 - The `bezelSize` property defines the number of pixels "hidden" behind the bezels. If you specify 0, the bezels will be ignored;
 - The `numTiles` property defines the number of rows and columns of the tiled display (we assume a rectangular layout);
 - The `tiles` property defines which machine runs which tile (see below);
-- The `renderer` property can be set to `perTile` or `perHost`. The former means that one rendering client is launched for each tile, while the latter means that one rendering client is launched for each host (if the host runs multiple tiles, the client will create one window per tile). Currently, we use mostly `perTile` 
-- The `restart` property is the shell command for restarting all the clients.
+- The `renderer` property can be set to `perTile` or `perHost`. The former means that one rendering client is launched for each tile, while the latter means that one rendering client is launched for each host (if the host runs multiple tiles, the client will create one window per tile). Currently, we use mostly `perTile` (in fact, `perHost` has not been tested recently);
+- The `domain` property is optional, it is the domain name to add to the host names listed in the `tiles` array;
+- The `env` property is optional. It lists per-instance values that can be used in the `start`, `stop` and `restart` properties below. If defined, it must be an object whose properties are the instance names and the values are a string;
+- The `start` and `stop` properties are the shell commands to start / kill all the clients. Before execution, the following string substitutions take place: %HOST% is replaced by the client host name, %PORT% is replaced by the port number of the server, %INSTANCE% is replaced by the instance name to run on the client, and %ENV% is replaced by the content of the `env` property for the instance. Also process environment variables, e.g. `$PATH`, are replaced by their value. The % and $ signs can be protected by a backslash (which is specified as two backslashes in a JSON file);
+- The optional `restart` property is a shell command to kill then start all the clients. If absent, it is replaced by calling `stop` then `start`.
 
 The `tiles` property of the wall is a two-dimensional array (an array of lines, each line being an array of tiles). Each element of this two-dimensional array represents a tile and is itself an array with two elements:
 
@@ -157,23 +167,14 @@ Once everything is installed properly, you should be able to run WildOS.
 WildOS consists of multiple processes: a server and a set of clients. The order in which they are run (and stopped and restarted) should not matter. For example, you can stop the server, restart it, and the clients will automatically reconnect to it. However, if things go really wrong, it's better to kill everything, start the server, and then the clients.
 
 ### Running the server ###
-You run the WildOS server on the main computer. The server is a node-webkit application, however it is not packaged as a standalone application so you need to run it from the command line. Node-webkit is slightly different on Mac OS X and Linux so the command to run it is a bit different:
+You run the WildOS server on the main computer. 
 
-* On Mac OS X, we assume that node-webkit is in `/Applications`. If not, edit the `tools/nw` so that `NWAPP` points to it.
-* On Linux, node-webkit is expected to be in the PATH (typically in `/usr/local/bin`).
-
-Also, remember that the name of the platform must be set in the `WALL` environment variable.
+Also, remember that the name of the platform must be set in the `WALL` environment variable for `walldo` to work.
 In order to test on a single machine, you can set `WALL` to `local` and run the server and clients on the same machine.
 
-To run the server on Mac OS X:
-
-	% cd WildOS/server  
-	% ../tools/nw   
-
-To run the server on Linux:
-
-	% cd WildOS/server  
-	% nw .  
+To run the server (assuming the `tools/` directory is in the PATH):
+	
+	% wildos 
 
 This should open a window with lots of traces, and another window depicting the wall display with the buttons `Restart` and `Shutdown` at the top. 
 The `Applications` menu lists the available applications. In order to quickly test if the server works, even without any clients running, you can select the `Browser` application. A text entry field should appear in the main window and if you enter a URL, it will show up in the miniature wall, as shown on the screen dump below. Note that the tiles are pink and semi-transparent to show that there is no client running.
@@ -182,25 +183,21 @@ The `Applications` menu lists the available applications. In order to quickly te
 
 You can start the server with an initial set of running applications simply by adding them to the command line:
 
-	(macos)% ../tools/nw Browser  
-	(linux)% nw . Browser  
+	% wildos Browser  
 
 Note that you can pass the following command line arguments (before the application names):
 
 * `-w <config>` or `--wall <config>` to specify the platform configuration file (overrides any `$WALL` setting);
 * `-p <port>` or `--p <port>` to specify the port number the server listens to (overrides the `serverPort` property in the platform configuration file).
 
+For example :
+
+	% wildos -w local -p 8088 Browser
+
+On Mac OS X, you can pass `-X` as first argument to `nw` to run node-webkit as a Unix command instead of a Mac OS application. This can help in case of crashes at startup as it displays the error messages on standard output.
+
 ### Running the rendering clients ###
-To run the rendering clients, simply click the `Restart` button in the main window. or select `Restart` in the `Platform` menu.
-Alternatively, you can run the following command in a terminal window unless you are running the clients locally:
-
-	% walldo WildOS/renderer/restart -p <portnumber> 
-
-If you are running clients locally, the command instead is (assuming you are in the WildOS directory):
-
-	% renderer/restart --local -p <portnumber> 
-
-In both cases, `<portnumber>` is the portnumber specified in the platform configuration file or on the command line when you ran the server. The `-p <portnumber>` argument can be omitted if the port number is 8080.
+To run the rendering clients, simply click the `Restart` button in the main window or select `Restart` in the `Platform` menu.
 
 This command will kill any existing clients and then start them again. Each client machine should first show a window with lots of traces and then, as soon as it has managed to connect to the server, it should display a full-screen blank window with the same web page as the one you loaded on the server. (If you are running clients locally, it will create four small windows mimicking a small tiled display instead of running full screen).
 
@@ -229,16 +226,14 @@ This should open an empty page (except for the title "WILD controller") then, as
 ![Screendump of the browser web controller](doc/img/browser-controller.png)
 
 ### Shutting down ###
-Click the `Shutdown` button or select the `Shutdown` command in the `Platform` menu to stop the rendering clients. Note that this will only work if they are still responding. If they are not, you will have to kill them "by hand" with the following command:
+Click the `Shutdown` button or select the `Shutdown` command in the `Platform` menu to stop the rendering clients. Note that this will only work if they are still responding. If they are not, try the `Stop` command in the `Platform` menu, or kill them "by hand" with the following command:
 
-	% tools/walldo killall nw
+	% wildos stop
 
 (If you are running local clients, you can kill them in the usual way, e.g. by selecting their `Quit` command).
 
 To quit the server, select the `Quit` command in its menu or use the usual quit keyboard shortcut (command-Q on Mac OS X).
 Note that this does **not*** kill the clients (mostly so that you can test if they reconnect correctly when restarting the server).
-
-Note that the `Start` and `Stop` commands in the `Platform` menu are currently inactive.
 
 The applications
 --------

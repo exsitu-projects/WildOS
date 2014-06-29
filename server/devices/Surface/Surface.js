@@ -22,7 +22,6 @@
 // Node modules
 var util = require('util');
 var os = require('os');
-var childProcess = require('child_process');
 
 // Shared modules
 var OO = require('OO');
@@ -39,38 +38,6 @@ var Tile = require('./Tile');
 // *** To be tested:
 // *** It's not clear that we could manage multiple surfaces from one server ***
 // *** this is because of the sharing scheme, which is attached to classes  ***
-
-// Run a subprocess.
-function spawn(cmd, device) {
-	log.message('spawn', cmd);
-	if (!cmd)
-		return null;
-
-	// If we get an array, execute each command in the array (in parallel)
-	if (cmd instanceof Array) {
-		var results = [];
-		cmd.forEach(function(cmd) {
-			results.push(spawn(cmd));
-		});
-		return results;
-	}
-
-	// Simple (standard) case: one command string
-	var args = cmd.split(' ');
-	cmd = args[0];
-	args.splice(0, 1);
-
-	// Append -p <port> to the command
-	var platform = device.parent.findAncestor({type: 'Platform'});
-	if (platform) {
-		args.push('-p');
-		args.push(platform.serverPort);
-	}
-
-	// Run command
-	log.message('spawning', cmd, args);
-	return childProcess.spawn(cmd, args, {detached: true});
-}
 
 // The `Surface` class
 var Surface = Device.subclass().name('Surface')
@@ -92,13 +59,9 @@ var Surface = Device.subclass().name('Surface')
 		// Catch events to start/stop/restart the clients on the cluster.
 		// The commands are taken from the config file (if they exist)
 		var self = this;
-		['start', 'stop', 'restart'].forEach(function(cmd) {
-			log.message('on', cmd, config[cmd]);
-			if (config[cmd])
-				self.events.on(cmd, function() {
-					spawn(config[cmd], self);
-				});
-		});
+		this.events.on('start',   function() { self.start(); });
+		this.events.on('stop',    function() { self.stop(); });
+		this.events.on('restart', function() { self.restart(); });
 	})
 	.methods({
 		// Called when the Surface is added to the platform.
@@ -216,18 +179,18 @@ var Surface = Device.subclass().name('Surface')
 						fullName += '_'+rank;
 					}
 
-					// Full name of the tile
-
 					// Now we can create the tile.
 					this.addTile({
 						left: left, top: top, width: width, height: height,
 						originX: xO, originY: yO,
-						host: host,
-						name: fullName,
-						tileName: tileName,
-						instance: instance,
-						rank: rank,
+						host: host,			// e.g. "a1"
+						instanceName: name,	// e.g., "Left"
+						instance: instance,	// e.g., "a1_Left"
+						rank: rank,			// e.g., 1
+						tileName: tileName,	// e.g., "Left_1"
+						name: fullName,		// e.g., "a1_Left_1"
 					});
+
 					xO += width + hGap;
 				}
 				yO += height + vGap;
@@ -251,6 +214,56 @@ var Surface = Device.subclass().name('Surface')
 				renderer.setClient(socket, server, clientInfo);
 			} else
 				log.method(this, 'clientConnected', '- no renderer for', instance);
+		},
+
+		// Run `cmd` for each tile in the configuration
+		runCmd: function(cmd) {
+			var platform = this.parent.findAncestor({type: 'Platform'});
+			var env = this.config.env || {};
+			var domain = this.config.domain || '';
+
+			// This object has one entry per instance, i.e. per process running on a client.
+			// The index is either the hostname, when running one client per host,
+			// or hostname_instance when running one client per tile.
+			var ctxByClient = {};
+
+			// We create the set of contexts in which to run the command
+			// by going through the set of tiles.
+			this.mapDevices(function(tile) {
+				clientName = tile.instance;
+
+				ctxByClient[clientName] = {
+					HOST: tile.host + domain,
+					INSTANCE: tile.instanceName,
+					PORT: platform.serverPort,
+					ENV: env[tile.instanceName],
+				};
+			});
+
+			// Now we can run the command for each instance
+			for (var instance in ctxByClient)
+				this.spawn(cmd, ctxByClient[instance]);
+		},
+
+		// Run the start/stop/restart commands specified in the config file.
+		// If restart is not defined, run stop then start.
+		start: function() {
+			if (this.config.start)
+				this.runCmd(this.config.start);
+		},
+
+		stop: function() {
+			if (this.config.stop)
+				this.runCmd(this.config.stop);
+		},
+
+		restart: function() {
+			if (this.config.restart)
+				this.runCmd(this.config.restart);
+			else {
+				this.stop();
+				this.start();
+			}
 		},
 
 		// Invoke a javascript function on the clients managing the tiles of the surface.

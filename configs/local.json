@@ -28,7 +28,8 @@
 			"BL": { "left": 10, "top": 191},
 			"BR": { "left": 286, "top": 191}
 		},
-		"restart": "../renderer/restart --local"
+		"start": "../tools/nw ../renderer --local --port %PORT% --instance %INSTANCE%",
+		"stop": "../tools/wildos stop"
 	},
 	"controllers": {
 		"type": "WebControllers"

@@ -26,6 +26,9 @@
 //			`Device.addClass(Foo);`
 //
 
+// Node modules
+var childProcess = require('child_process');
+
 // Shared modules
 var OO = require('OO');
 var log = require('Log').shared();
@@ -219,6 +222,45 @@ var Device = OO.newClass().name('Device')
 				device = device.parent;
 			}
 			return null;
+		},
+
+		// Run a subprocess, substituting variables:
+		// %VAR% is substituted with `context['VAR']`,
+		// $VAR is susbstituted with `process.env['VAR']`.
+		// If the variable is not defined, it is replaced by the empty string.
+		spawn: function(cmd, context) {
+			if (!cmd)
+				return null;
+
+			// If we get an array, execute each command in the array (in parallel)
+			if (cmd instanceof Array) {
+				var results = [];
+				cmd.forEach(function(cmd) {
+					results.push(spawn(cmd));
+				});
+				return results;
+			}
+
+			// Simple (standard) case: one command string.
+			// Substitute %variables from `context` (% can be protected with a backslash)
+			cmd = cmd.replace(/([^\\]|^)%([^%]+)%/g, function(match, prevChar, varname) {
+				return prevChar + (context[varname] || '');
+			});
+
+			// Substitute $variables from env ($ can be protected with a backslash)
+			cmd = cmd.replace(/([^\\]|^)\$(\w+)/g, function(match, prevChar, varname) {
+				return prevChar + (process.env[varname] || '');
+			});
+
+			// Finally substitute \$ and \%
+			cmd = cmd.replace(/\\([%$])/g, '$1');
+
+			// Run command
+			var args = cmd.split(' ');
+			cmd = args[0];
+			args.splice(0, 1);
+			log.method(this, 'spawn', cmd, args);
+			return childProcess.spawn(cmd, args, {detached: true});
 		},
 
 		// Managing events.
