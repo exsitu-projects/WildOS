@@ -22,7 +22,8 @@ var SocketIOServer = OO.newClass().name('SocketIOServer')
 		this.socket = null;
 
 		this.hostname = hostname;
-		this.port = port || 8080;
+		if (port)
+			this.port = port;
 		if (path && ! path.match(/^\//))
 			path = '/'+path;
 		this.path = path || '';

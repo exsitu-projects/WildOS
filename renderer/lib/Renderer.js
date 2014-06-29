@@ -23,6 +23,18 @@ var ObjectSharer = require('./ObjectSharer');
 var App = require('./App');
 var Tile = require('./Tile');
 
+// Command line options
+var program = require('commander');
+
+program
+	.version('0.2.0')
+	.usage('[options] [app ...]')
+	.option('-l, --local', 'Run locally: server is on localhost')
+	.option('-s, --server <name[:port]>', 'Server to connect to (defaults to $SSH_CLIENT)')
+	.option('-p, --port <number>', 'Port number (defaults to 8080)', parseInt)
+	.option('-i, --instance <name>', 'Instance name (required)')
+;
+
 // Quit the application.
 function quit() {
 	if (gui)
@@ -43,12 +55,24 @@ var Renderer = SharingServer.subclass().name('Renderer')
 		
 		this.host = os.hostname().split('.')[0];
 		// If running clients locally, call ourselves 'localhost'
-		if (process.env.WALL === 'local') this.host = 'localhost';
+		if (program.local)
+			this.host = 'localhost';
+
+		// Parse the host name argument, if any.
+		// It can be a simple host, or of the form host:port
+		if (program.server) {
+			var h = program.server.split(':');
+			if (h[1]) {
+				program.server = h[0];
+				if (! program.port)
+					program.port = h[1];
+			}
+		}
 
 		this.instance = instance;
-		this._super();
+		this._super(program.server, program.port);
 
-		log.exit(this, 'constructor', this.host+'_'+instance, 'connected to server', os.hostname()+':'+this.port);
+		log.exit(this, 'constructor', this.host+'_'+instance, 'connected to server', this.hostname+':'+this.port);
 	})
 	.methods({
 		// Configure the sharer to manage objects of class `Tile`.
@@ -93,7 +117,7 @@ var Renderer = SharingServer.subclass().name('Renderer')
 
 				// Tell the server who we are.
 				// This will trigger the sending of the tile information.
-				log.event(self, 'helloClient', self.host, instance);
+				log.event(self, 'helloClient', self.host, self.instance);
 
 				self.emit('helloServer', {
 					client: 'device',
@@ -101,7 +125,7 @@ var Renderer = SharingServer.subclass().name('Renderer')
 						type: 'Surface',
 					},
 					host: self.host,
-					instance: instance,
+					instance: self.instance,
 				});
 
 				log.eventExit(self, 'helloClient');
@@ -166,12 +190,22 @@ log.spyMethods(Renderer);
 // This is so that we have access to that window during start-up (e.g., for logging).
 //
 exports.init = function () {
-	// *** use Commander to parse arguments, which should include the server to connect to
 	gui = exports.gui = window.require('nw.gui');
-	if (gui.App.argv.length > 0)
-		instance = gui.App.argv[0];
+
+	// Process arguments: need to prepend 2 arguments for commander to work
+	var args = ['nw', 'renderer'];
+	for (var i = 0; i < gui.App.argv.length; i++)
+		args.push(gui.App.argv[i]);
+	program.parse(args);
+
+	// Backward compatibility: if no --instance flag and only one loose argument, take it as instance name
+	if (! program.instance && program.args.length == 1)
+		program.instance = program.args[0];
+
+	if (! program.instance)
+		program.instance = 'default';
 
 	// Create and start the client.
-	App.server = Renderer.create(instance).connect();
+	App.server = Renderer.create(program.instance).connect();
 };
 

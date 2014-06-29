@@ -20,14 +20,19 @@ var WebControllers = Device.subclass().name('WebControllers')
 		if (options)
 			this.set(options);
 
-		// Notify of creation and availability
+		// Notify of creation
 		this.deviceCreated();
-		this.deviceAvailable();
-
-		// The window showing the QR code
-		this.window = this.createUI();
 	})
 	.methods({
+		// Called when the device is added to the device tree
+		added: function() {
+			// Notify of availability
+			this.deviceAvailable();
+
+			// Create the window showing the QR code
+			this.window = this.createUI();
+		},
+
 		// Callback when a new client has successfully connected.
 		clientConnected: function(socket, server, clientInfo) {
 			this.addDevice(WebController.create(socket, server, clientInfo));
@@ -43,7 +48,8 @@ var WebControllers = Device.subclass().name('WebControllers')
 		//
 		createUI: function() {
 			var gui = process.mainModule.exports.gui;
-			var url = '../content/qrcode.html#'+os.hostname()+':8080';	// URL is relative to the lib folder
+			var platform = this.findAncestor({type: 'Platform'});
+			var url = '../content/qrcode.html#'+os.hostname()+':'+platform.serverPort;	// URL is relative to the lib folder
 			// We can't set the position here so we hide the window and it positions and shows itself
 			var win = gui.Window.open(url, {
 				show: false,
@@ -71,9 +77,14 @@ var WebController = Device.subclass().name('WebController')
 
 		// Notify of creation
 		this.deviceCreated();
-		this.deviceAvailable();
 	})
 	.methods({
+		// Called when the device is added to the device tree
+		added: function() {
+			// Notify of availability
+			this.deviceAvailable();
+		},
+
 		disconnected: function() {
 			this.deviceUnavailable();
 			this.parent.removeDevice(this);

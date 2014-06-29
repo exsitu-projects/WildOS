@@ -75,6 +75,7 @@ var WebServer = OO.newClass().name('WebServer')
 			});
 
 			// Start http server.
+			log.method(this, 'start', '- listening to port', this.port);
 			this.http.listen(this.port);
 			this.running = true;
 

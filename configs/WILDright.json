@@ -2,6 +2,7 @@
 	"type": "Platform",
 	"name": "WILD right half",
 	"inherit": "WILD",
+	"serverPort": 8081,
 	"wall": {
 		"name": "WILD",
 		"left": 4,

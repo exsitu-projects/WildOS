@@ -91,6 +91,7 @@ Each object has a mandatory property: `type`. The root object must be of type `p
 
 The `WILD.json` configuration file defines a platform called `WILD room`:
 
+- The `serverPort` property defines the network port number the server will be listening to (defaults to 8080);
 - The `UI` property defines the position and size of the window created by the server to control the platform (`frame` property) and the zoom factor to apply to the miniature display of the wall in the control window;
 - The `wall` property defines the tiled display (see below);
 - The `controllers` property enables the use of web-based devices (tablets and smartphones, typically).
@@ -149,11 +150,6 @@ to generate `ReadMe.html` as well as the content of the `doc` directory.
 ### Updating an existing install ###
 If you update WildOS, e.g. with `svn update`, you need to update the clients with `make update`.
 
-If the update does not seem to work, try to remove the `node_modules` directories on each client machine and re-install :
-
-	% walldo -d WildOS/renderer rm -rf node_modules
-	% walldo -d WildOS/renderer npm install
-
 Running WildOS
 --------
 
@@ -189,29 +185,46 @@ You can start the server with an initial set of running applications simply by a
 	(macos)% ../tools/nw Browser  
 	(linux)% nw . Browser  
 
+Note that you can pass the following command line arguments (before the application names):
+
+* `-w <config>` or `--wall <config>` to specify the platform configuration file (overrides any `$WALL` setting);
+* `-p <port>` or `--p <port>` to specify the port number the server listens to (overrides the `serverPort` property in the platform configuration file).
+
 ### Running the rendering clients ###
 To run the rendering clients, simply click the `Restart` button in the main window. or select `Restart` in the `Platform` menu.
 Alternatively, you can run the following command in a terminal window unless you are running the clients locally:
 
-	% walldo WildOS/renderer/restart  
+	% walldo WildOS/renderer/restart -p <portnumber> 
 
 If you are running clients locally, the command instead is (assuming you are in the WildOS directory):
 
-	% renderer/restart  
+	% renderer/restart --local -p <portnumber> 
 
-This will kill any existing clients and then start them again. Each client machine should first show a window with lots of traces and then, as soon as it has managed to connect to the server, it should display a full-screen blank window with the same web page as the one you loaded on the server. (If you are running clients locally, it will create four small windows mimicking a small tiled display instead of running full screen).
+In both cases, `<portnumber>` is the portnumber specified in the platform configuration file or on the command line when you ran the server. The `-p <portnumber>` argument can be omitted if the port number is 8080.
+
+This command will kill any existing clients and then start them again. Each client machine should first show a window with lots of traces and then, as soon as it has managed to connect to the server, it should display a full-screen blank window with the same web page as the one you loaded on the server. (If you are running clients locally, it will create four small windows mimicking a small tiled display instead of running full screen).
 
 Note that on the server, the controller window will have its tiles turn fully transparent as the clients connect to the server. This tells you whether the server has successfully communicated with the clients:
 
 ![Screendump of the browser application when the rendering clients are running](doc/img/browser.png)
 
+Note that individual rendering instances can be run from the client machines with commands of the form:
+
+	[client] % cd ~/WildOS/renderer
+	[client] % nw . -s <server>:<portnumber> -i <instancename>
+
+where `<server>:<portnumber>` is the server address as specified in the QRcode window (see below) and `<instancename>` is the name of a tile as specified in the `tiles` property of the platform configuration file, e.g. `L` or `R`.
+
+If you are running everything locally, typically when testing, the command instead would be of the form:
+
+	[server] % nw . -l -i <instancename>
+
 ### Running the web clients ###
 The server application displays in the top-right corner a QRcode of the URL for web clients to connect to the server. Simply flash this code or enter the URL in your browser (smartphone, tablet or any computer with a recent Web browser). The URL is:
 
-	http://<server-hostname>:8080/controller.html  
+	http://<server>:<portnumber>/controller.html  
 
-
-This should open a page empty at first (except for the title "WILD controller"), then, assuming the Browser application is still running, it should display a text entry field to change the URL displayed in the browser of the tiled display:
+This should open an empty page (except for the title "WILD controller") then, assuming the Browser application is still running, it should display a text entry field to change the URL displayed in the browser of the tiled display:
 
 ![Screendump of the browser web controller](doc/img/browser-controller.png)
 

@@ -414,8 +414,10 @@ function main() {
 	if (! templateFile.match(/\//))
 		templateFile = inputDir+templateFile;
 
+	var templateModTime = null;
 	try {
 		template = fs.readFileSync(templateFile, {encoding: 'utf8'});
+		templateModTime = fs.statSync(templateFile).mtime.getTime();
 	} catch(err) {
 		console.log(err.toString());
 		process.exit(2);
@@ -444,6 +446,19 @@ function main() {
 		var cb = null;
 		var infile = fInfo.infile;
 		var outfile = fInfo.outfile;
+
+		// check times
+		try {
+			var infileModTime = fs.statSync(fInfo.infile).mtime.getTime();
+			var outfileModTime = fs.statSync(fInfo.outfile).mtime.getTime();
+
+			if (outfileModTime > templateModTime && outfileModTime > infileModTime) {
+				console.log(fInfo.outfile, 'up to date. Not processing it.');
+				return;
+			}
+		} catch(err) {
+			// continue
+		}
 
 		if (fInfo.name.match(/\.js$/)) {
 			// Preprocess javascript file:

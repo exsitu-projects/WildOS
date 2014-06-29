@@ -10,7 +10,8 @@
 		"toolbar": true
 	},
 	"dependencies": {
-		"socket.io-client": "0.9.16"
+		"socket.io-client": "0.9.16",
+		"commander": "2.2.0"
 	},
 	"scripts": {
 		"postinstall": "cp ../shared/*.js node_modules",

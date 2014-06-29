@@ -27,6 +27,16 @@ var Config = require('./lib/config');
 var Platform = require('./lib/Platform');
 var Server = require('./lib/Server');
 
+// Command line options
+var program = require('commander');
+
+program
+	.version('0.2.0')
+	.usage('[options] [app ...]')
+	.option('-w, --wall <config>', 'Platform name (defaults to $WALL)')
+	.option('-p, --port <number>', 'Port number (defaults to 8080)', parseInt)
+;
+
 // Load a platform config file and initialize it.
 // Call `cb` when ready with the platform as parameter.
 function loadPlatform(name, cb) {
@@ -42,6 +52,13 @@ function loadPlatform(name, cb) {
 		log.exit(null, 'loadPlatform', name, 'failed');
 		throw e;
 	}
+
+	// Override platform server port if --port argument is specified,
+	// Set it to default value if not specified
+	if (program.port)
+		config.serverPort = program.port;
+	else if (! config.serverPort)
+		config.serverPort = 8080;	// Default port
 
 	// The platform acts as an event emitter,
 	// notifying of devices being created and becoming available/unavailable
@@ -97,21 +114,21 @@ function loadPlatform(name, cb) {
 function startServerAndApps(platform) {
 	log.enter(null, 'startServerAndApps');
 
-	// Finally create the web and websocket servers.
-	var server = platform.server = Server.create(platform);
+	// Create the web and websocket servers.
+	var server = platform.server = Server.create(platform, { port: platform.serverPort });
 	server.start();
 
 	// Create the Applications menu
 	App.makeMenu();
 
-	// Run the apps
-	var appNames = exports.gui.App.argv;
+	// Run the apps (specified as the remaining arguments on the command line)
+	var appNames = program.args;
 	App.loadApps(appNames, function(apps) {
 		// *** we should also use this callback to tell we are ready, in case it's done asynchronously (which is not the case at the moment)
 		appNames.forEach(function(app) {
 			if (apps.indexOf(app) < 0)
-				log.warn.message('startApps', '- App', appName, 'not found.');
-		})
+				log.warn.message('startApps', '- App', app, 'not found.');
+		});
 	});
 
 	log.exit(null, 'startServerAndApps');
@@ -123,11 +140,20 @@ function startServerAndApps(platform) {
 exports.init = function() {
 	var gui = exports.gui = window.require('nw.gui');
 
-	// Create the platform using $WALL (default to WILD).
-	// When the platform is ready, start the server and the apps
+	// Process arguments: need to prepend 2 arguments for commander to work
+	var args = ['nw', 'server'];
+	for (var i = 0; i < gui.App.argv.length; i++)
+		args.push(gui.App.argv[i]);
+	program.parse(args);
+
+	// Get platform name: --wall argument, otherwise $WALL, defaulting to 'WILD'
 	/*jshint sub:true */
-	var platform = loadPlatform(process.env["WALL"] || 'WILD', startServerAndApps);
+	var platformName = program.wall || process.env["WALL"] || 'WILD';
 	/*jshint sub:false */
+
+	// Create the platform
+	// When the platform is ready, start the server and the apps
+	var platform = loadPlatform(platformName, startServerAndApps);
 
 	// Return the platform, which is also an event emitter,
 	// so that the UI can register listeners, etc. 

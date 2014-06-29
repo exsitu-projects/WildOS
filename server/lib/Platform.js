@@ -20,6 +20,9 @@ var Platform = Device.subclass().name('Platform')
 		this._super(config, options, events);
 		if (options)
 			this.set(options);
+
+		if (config.serverPort)
+			this.serverPort = config.serverPort;
 	})
 	.methods({
 		// Create the platform menu

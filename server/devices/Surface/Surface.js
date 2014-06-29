@@ -11,13 +11,13 @@
 //		"bezelSize": {"width": nn, "height": nn}
 //		"numTiles": {"columns": nn, "rows": nn}
 //		"tiles": array of row arrays of columns cells [ [r1c1]...[r1cn] ] [ [r2c1]...[r2cn] ] ... 
-//			each cell is either a host name or a pair ["hostname", "tilename"]
+//			Each cell is either a host name or a pair ["hostname", "tilename"]
 //			The latter is needed when each computer manages multiple tiles
 //		"renderer": "perTile" or "perHost" - optional, defaults to perHost
 //		"layout": literal object indexed by tile name - optional
-//			each entry in that object is of the form {"left": nn, "top": nn}
+//			Each entry in that object is of the form {"left": nn, "top": nn}
 //			and represents the position of the topleft corner of that tile
-//
+//		"start", "stop", "restart": commands to be run when starting/stopping/restarting the platform
 
 // Node modules
 var util = require('util');
@@ -41,7 +41,7 @@ var Tile = require('./Tile');
 // *** this is because of the sharing scheme, which is attached to classes  ***
 
 // Run a subprocess.
-function spawn(cmd) {
+function spawn(cmd, device) {
 	log.message('spawn', cmd);
 	if (!cmd)
 		return null;
@@ -59,6 +59,15 @@ function spawn(cmd) {
 	var args = cmd.split(' ');
 	cmd = args[0];
 	args.splice(0, 1);
+
+	// Append -p <port> to the command
+	var platform = device.parent.findAncestor({type: 'Platform'});
+	if (platform) {
+		args.push('-p');
+		args.push(platform.serverPort);
+	}
+
+	// Run command
 	log.message('spawning', cmd, args);
 	return childProcess.spawn(cmd, args, {detached: true});
 }
@@ -87,7 +96,7 @@ var Surface = Device.subclass().name('Surface')
 			log.message('on', cmd, config[cmd]);
 			if (config[cmd])
 				self.events.on(cmd, function() {
-					spawn(config[cmd]);
+					spawn(config[cmd], self);
 				});
 		});
 	})
@@ -95,9 +104,7 @@ var Surface = Device.subclass().name('Surface')
 		// Called when the Surface is added to the platform.
 		added: function() {
 			// Find the platform we are in
-			var platform = this.parent;
-			while (platform && platform.className() != 'Platform')
-				platform = platform.parent;
+			var platform = this.parent.findAncestor({type: 'Platform'});
 			if (! platform)
 				return;
 

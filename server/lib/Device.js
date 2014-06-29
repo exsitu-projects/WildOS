@@ -192,19 +192,31 @@ var Device = OO.newClass().name('Device')
 				f(this.devices[i], i);
 		},
 
+		// Return true if this devices matches the options in `o`.
+		matches: function(o) {
+			for (var p in o)
+				if (o[p] !== this.config[p])
+					return false;
+			return true;
+		},
+
 		// Find the first child device matching the properties in `o`.
 		findDevice: function(o) {
 			for (var i = 0; i < this.devices.length; i++) {
 				var device = this.devices[i];
-				var found = true;
-				for (var p in o) {
-					if (o[p] !== device.config[p]) {
-						found = false;
-						break;
-					}
-				}
-				if (found)
+				if (device.matches(o))
 					return device;
+			}
+			return null;
+		},
+
+		// Find the first device up the chain (including this one) matching the properties in `o`.
+		findAncestor: function(o) {
+			var device = this;
+			while (device) {
+				if (device.matches(o))
+					return device;
+				device = device.parent;
 			}
 			return null;
 		},

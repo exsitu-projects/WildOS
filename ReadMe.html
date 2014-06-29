@@ -165,6 +165,7 @@ Each object has a mandatory property: <code>type</code>. The root object must be
 <p>The <code>WILD.json</code> configuration file defines a platform called <code>WILD room</code>:</p>
 
 <ul>
+<li>The <code>serverPort</code> property defines the network port number the server will be listening to (defaults to 8080);</li>
 <li>The <code>UI</code> property defines the position and size of the window created by the server to control the platform (<code>frame</code> property) and the zoom factor to apply to the miniature display of the wall in the control window;</li>
 <li>The <code>wall</code> property defines the tiled display (see below);</li>
 <li>The <code>controllers</code> property enables the use of web-based devices (tablets and smartphones, typically).</li>
@@ -238,12 +239,6 @@ When this property is not present, which is the normal case, each tile is run fu
 
 <p>If you update WildOS, e.g. with <code>svn update</code>, you need to update the clients with <code>make update</code>.</p>
 
-<p>If the update does not seem to work, try to remove the <code>node_modules</code> directories on each client machine and re-install :</p>
-
-<pre><code>% walldo -d WildOS/renderer rm -rf node_modules
-% walldo -d WildOS/renderer npm install
-</code></pre>
-
 <h2 id="runningwildos">Running WildOS</h2>
 
 <p>Once everything is installed properly, you should be able to run WildOS.
@@ -287,20 +282,29 @@ The <code>Applications</code> menu lists the available applications. In order to
 (linux)% nw . Browser  
 </code></pre>
 
+<p>Note that you can pass the following command line arguments (before the application names):</p>
+
+<ul>
+<li><code>-w &lt;config&gt;</code> or <code>--wall &lt;config&gt;</code> to specify the platform configuration file (overrides any <code>$WALL</code> setting);</li>
+<li><code>-p &lt;port&gt;</code> or <code>--p &lt;port&gt;</code> to specify the port number the server listens to (overrides the <code>serverPort</code> property in the platform configuration file).</li>
+</ul>
+
 <h3 id="runningtherenderingclients">Running the rendering clients</h3>
 
 <p>To run the rendering clients, simply click the <code>Restart</code> button in the main window. or select <code>Restart</code> in the <code>Platform</code> menu.
 Alternatively, you can run the following command in a terminal window unless you are running the clients locally:</p>
 
-<pre><code>% walldo WildOS/renderer/restart  
+<pre><code>% walldo WildOS/renderer/restart -p &lt;portnumber&gt; 
 </code></pre>
 
 <p>If you are running clients locally, the command instead is (assuming you are in the WildOS directory):</p>
 
-<pre><code>% renderer/restart  
+<pre><code>% renderer/restart --local -p &lt;portnumber&gt; 
 </code></pre>
 
-<p>This will kill any existing clients and then start them again. Each client machine should first show a window with lots of traces and then, as soon as it has managed to connect to the server, it should display a full-screen blank window with the same web page as the one you loaded on the server. (If you are running clients locally, it will create four small windows mimicking a small tiled display instead of running full screen).</p>
+<p>In both cases, <code>&lt;portnumber&gt;</code> is the portnumber specified in the platform configuration file or on the command line when you ran the server. The <code>-p &lt;portnumber&gt;</code> argument can be omitted if the port number is 8080.</p>
+
+<p>This command will kill any existing clients and then start them again. Each client machine should first show a window with lots of traces and then, as soon as it has managed to connect to the server, it should display a full-screen blank window with the same web page as the one you loaded on the server. (If you are running clients locally, it will create four small windows mimicking a small tiled display instead of running full screen).</p>
 
 <p>Note that on the server, the controller window will have its tiles turn fully transparent as the clients connect to the server. This tells you whether the server has successfully communicated with the clients:</p>
 
@@ -309,14 +313,27 @@ Alternatively, you can run the following command in a terminal window unless you
 <figcaption>Screendump of the browser application when the rendering clients are running</figcaption>
 </figure>
 
+<p>Note that individual rendering instances can be run from the client machines with commands of the form:</p>
+
+<pre><code>[client] % cd ~/WildOS/renderer
+[client] % nw . -s &lt;server&gt;:&lt;portnumber&gt; -i &lt;instancename&gt;
+</code></pre>
+
+<p>where <code>&lt;server&gt;:&lt;portnumber&gt;</code> is the server address as specified in the QRcode window (see below) and <code>&lt;instancename&gt;</code> is the name of a tile as specified in the <code>tiles</code> property of the platform configuration file, e.g. <code>L</code> or <code>R</code>.</p>
+
+<p>If you are running everything locally, typically when testing, the command instead would be of the form:</p>
+
+<pre><code>[server] % nw . -l -i &lt;instancename&gt;
+</code></pre>
+
 <h3 id="runningthewebclients">Running the web clients</h3>
 
 <p>The server application displays in the top-right corner a QRcode of the URL for web clients to connect to the server. Simply flash this code or enter the URL in your browser (smartphone, tablet or any computer with a recent Web browser). The URL is:</p>
 
-<pre><code>http://&lt;server-hostname&gt;:8080/controller.html  
+<pre><code>http://&lt;server&gt;:&lt;portnumber&gt;/controller.html  
 </code></pre>
 
-<p>This should open a page empty at first (except for the title &#8220;WILD controller&#8221;), then, assuming the Browser application is still running, it should display a text entry field to change the URL displayed in the browser of the tiled display:</p>
+<p>This should open an empty page (except for the title &#8220;WILD controller&#8221;) then, assuming the Browser application is still running, it should display a text entry field to change the URL displayed in the browser of the tiled display:</p>
 
 <figure>
 <img src="doc/img/browser-controller.png" alt="Screendump of the browser web controller" />

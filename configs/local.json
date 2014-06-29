@@ -1,6 +1,7 @@
 {
 	"type": "Platform",
 	"name": "WILD home",
+	"serverPort": 8088,
 	"UI": {
 		"frame": {
 			"left": 100,
@@ -27,7 +28,7 @@
 			"BL": { "left": 10, "top": 191},
 			"BR": { "left": 286, "top": 191}
 		},
-		"restart": "../renderer/restart"
+		"restart": "../renderer/restart --local"
 	},
 	"controllers": {
 		"type": "WebControllers"

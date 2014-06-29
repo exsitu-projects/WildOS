@@ -3,21 +3,32 @@
 # run the renderer according to the name of the local machine
 # or that of the first argument if provided
 
-# infer wall name or get it from argument
-if [ $# -eq 0 ]; then
-	case `hostname` in
-		[a-d][1-4])
-			WALL=WILD
-		;;
-		Michels-Mac-mini.local)
-			WALL=macmini
+MACHINE=`uname`
+
+# infer wall name from hostname
+case `hostname` in
+	[a-d][1-4])
+		WALL=WILD
+	;;
+	Michels-Mac-mini.local)
+		WALL=macmini
+	;;
+	*)
+		WALL=local
+	;;
+esac
+
+# if there are arguments, check if first one is wall name
+if [ $# -ge 1 ]; then
+	case $1 in
+		-*)
+			break
 		;;
 		*)
-			WALL=local
+			WALL=$1
+			shift
 		;;
 	esac
-else
-	WALL=$1
 fi
 
 # configure according to wall
@@ -55,8 +66,12 @@ esac
 case $WALL in
 	local)
 		# avoid killall node-webkit on local machine as it will kill the server too!
-		# (this has only be tested on Mac OS)
-		kill `ps -e | grep WildOS/renderer | grep -v Helper | awk '{print $1}'`
+		if [ $MACHINE == 'Linux' ]; then 
+			ps aux | fgrep /nw | fgrep -v server | fgrep -v -- --type= | awk '{print $2}' | xargs kill || true
+		else
+			# Mac OS X
+			kill `ps -e | grep WildOS/renderer | grep -v Helper | awk '{print $1}'` || true
+		fi
 	;;
 	*)
 		killall $NWAPP
@@ -66,5 +81,5 @@ esac
 # run tile renderers
 for (( i = 0; i < ${#tiles[@]}; i++ )); do
 	sleep 1
-	eval WALL=$WALL ${env[$i]} $NW $DIR ${tiles[$i]} &
+	eval ${env[$i]} $NW $DIR $* -i ${tiles[$i]} &
 done
