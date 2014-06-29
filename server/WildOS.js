@@ -31,7 +31,7 @@ var Server = require('./lib/Server');
 var program = require('commander');
 
 program
-	.version('0.2.0')
+	.version('0.2.1')
 	.usage('[options] [app ...]')
 	.option('-w, --wall <config>', 'Platform name (defaults to $WALL)')
 	.option('-p, --port <number>', 'Port number (defaults to 8080)', parseInt)

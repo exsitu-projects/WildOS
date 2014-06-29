@@ -27,7 +27,7 @@ var Tile = require('./Tile');
 var program = require('commander');
 
 program
-	.version('0.2.0')
+	.version('0.2.1')
 	.usage('[options] [app ...]')
 	.option('-l, --local', 'Run locally: server is on localhost')
 	.option('-s, --server <name[:port]>', 'Server to connect to (defaults to $SSH_CLIENT)')
