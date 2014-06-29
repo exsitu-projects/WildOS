@@ -35,6 +35,7 @@ program
 	.usage('[options] [app ...]')
 	.option('-w, --wall <config>', 'Platform name (defaults to $WALL)')
 	.option('-p, --port <number>', 'Port number (defaults to 8080)', parseInt)
+	.option('-n, --no-clients', 'Do not start/stop clients with server')
 ;
 
 // Load a platform config file and initialize it.
@@ -129,6 +130,13 @@ function startServerAndApps(platform) {
 			if (apps.indexOf(app) < 0)
 				log.warn.message('startApps', '- App', app, 'not found.');
 		});
+
+		// Start clients
+		if (program.clients) {
+			setTimeout(function() {
+				platform.restart();
+			}, 1000);			
+		}
 	});
 
 	log.exit(null, 'startServerAndApps');
@@ -154,6 +162,16 @@ exports.init = function() {
 	// Create the platform
 	// When the platform is ready, start the server and the apps
 	var platform = loadPlatform(platformName, startServerAndApps);
+
+	// Kill clients on exit
+	if (program.clients) {
+		var win = gui.Window.get();
+		win.on('close', function() {
+			platform.stop();
+			this.close(true);
+		});
+	}
+		
 
 	// Return the platform, which is also an event emitter,
 	// so that the UI can register listeners, etc. 
