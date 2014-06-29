@@ -54,7 +54,7 @@ var SlideShow = App.subclass().name('SlideShow')
 			else if (! tile.window) log.warn.method(this, 'ajustSlide', 'No window!!');
 
 			if (tile && tile.ready && tile.window)
-				tile.window.window.location.href = 'app://localhost/slides/'+this.currentSlide+'/tiles_byhost/'+tileName+'.png';			
+				tile.window.window.location.href = 'app://localhost/content/slides/'+this.currentSlide+'/tiles_byhost/'+tileName+'.png';			
 		},
 	})
 	.shareState()

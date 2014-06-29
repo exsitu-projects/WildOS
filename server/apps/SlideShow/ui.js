@@ -3,7 +3,11 @@
 // Here we let the user load a slideshow and navigate slides.
 //
 
+/*
+ I don't understand why this does not work anymore:
 var slidesRoot = 'app://localhost/apps/SlideShow/content/slides/';	// where to find slide thumbs
+*/
+var slidesRoot = 'http://localhost:'+platform.serverPort+'/SlideShow/slides/';	// where to find slide thumbs
 
 var app = platform.apps.getApp('SlideShow');
 

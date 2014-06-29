@@ -10,7 +10,6 @@ case $DIR in
 	/*) ;;
 	*) DIR=`pwd`/$DIR ;;
 esac
-echo $DIR
 
 MACHINE=`uname`
 

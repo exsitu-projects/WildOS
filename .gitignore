@@ -1,1 +1,5 @@
 .svn
+nw.out
+nw.pid
+server/node_modules/
+renderer/node_modules/
