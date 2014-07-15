@@ -1,10 +1,46 @@
 <html>
 <head>
 	<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-	<title>WILD controller</title>
+	<title>Wild OS controller</title>
 	<script src="jquery-mbl-1.8.3.min.js"></script>
 	<!--<script src="/socket.io/socket.io.js"></script>-->
 	<script src="wildos.js"></script>
+
+	<style type="text/css">
+	html {
+		font-family: Helvetica, sans-serif;
+		background-color: lightgrey;
+	}
+	body {
+		margin: 0;
+	}
+	body > h2 {
+		margin: 8px;
+	}
+	#controller {
+	}
+	.controller {
+		background-color: white;
+		padding-bottom: 8px;
+	}
+	.controller-title {
+		padding-left: 8px;
+		padding-right: 8px;
+		background-color: black;
+		color: white;
+	}
+	.controller-body {
+		margin-left: 8px;
+		margin-right: 8px;
+	}
+	#status {
+		background-color: darkgrey;
+		color: lightgrey;
+		padding: 8px;
+		margin: 0;
+	}
+	</style>
+
 	<script>
 
 	function msg(message) {
@@ -45,7 +81,7 @@
 					url: url,
 				}).done(function(html) {
 					log.enter(self, 'loadApp.done', appName);
-					$('#controller').append('<div id="'+id+'">'+html+'</div>');
+					$('#controller').append('<div class="controller" id="'+id+'">'+html+'</div>');
 					var app = self.getApp(appName);
 					if (app)
 						app.start();
@@ -56,7 +92,7 @@
 					log.exit(self, 'loadApp.done', appName);
 				}).fail(function() {
 					log.enter(self, 'loadApp.fail', appName);
-					$('#controller').append('<div id="'+id+'"></div>');
+					$('#controller').append('<div class="controller" id="'+id+'"></div>');
 					if (cb)
 						cb(appName, false);
 					log.exit(self, 'loadApp.fail', appName);
@@ -312,7 +348,7 @@
 	</script>
 </head>
 <body>
-	<h2>WILD controller</h2>
+	<h2>WildOS web controller</h2>
 	<div id="controller"></div>
 	<p id="status">Waiting for connection</p>
 </body>
