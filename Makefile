@@ -44,3 +44,17 @@ ReadMe.html: ReadMe.md
 docs: ReadMe.html
 	tools/mmdoc -i doc/src -o doc
 
+# SlideShow app
+tilecutter=tools/tilecutter
+slides=../SlideShows
+tiles=slides
+desttiles=WildOS
+
+makeslides:
+	$(tilecutter) -r -d $(tiles) $(slides)
+
+updateslides: 
+	$(tilecutter) -r -u -d $(tiles) $(slides)
+
+syncslides:
+	$(walldo) rsync --filter '- thumbs' $(tiles) $(tilesRemote)

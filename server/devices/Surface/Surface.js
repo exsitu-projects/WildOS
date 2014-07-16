@@ -216,7 +216,7 @@ var Surface = Device.subclass().name('Surface')
 				log.method(this, 'clientConnected', '- no renderer for', instance);
 		},
 
-		// Run `cmd` for each tile in the configuration
+		// Run `cmd` for each tile in the configuration, separated by `delay`
 		runCmd: function(cmd, delay) {
 			if (! cmd)
 				return;
@@ -246,14 +246,19 @@ var Surface = Device.subclass().name('Surface')
 			// Now we can run the command for each instance.
 			// If delay is > 0 run them at delay interval
 			var self = this;
+			function delayedRun(cmd, ctx, delay) {
+				setTimeout(function() {
+					self.spawn(cmd, ctx);
+				}, delay);
+			}
+
 			var offset = 0;
 			for (var instance in ctxByClient) {
+				var ctx = ctxByClient[instance];
 				if (offset > 0)
-					setTimeout(function() {
-						self.spawn(cmd, ctxByClient[instance]);
-					}, delay);
+					delayedRun(cmd, ctx, offset);
 				else
-					this.spawn(cmd, ctxByClient[instance]);
+					this.spawn(cmd, ctx);
 				offset += delay;
 			}
 		},
