@@ -217,7 +217,10 @@ var Surface = Device.subclass().name('Surface')
 		},
 
 		// Run `cmd` for each tile in the configuration
-		runCmd: function(cmd) {
+		runCmd: function(cmd, delay) {
+			if (! cmd)
+				return;
+
 			var platform = this.parent.findAncestor({type: 'Platform'});
 			var env = this.config.env || {};
 			var domain = this.config.domain || '';
@@ -240,29 +243,74 @@ var Surface = Device.subclass().name('Surface')
 				};
 			});
 
-			// Now we can run the command for each instance
-			for (var instance in ctxByClient)
-				this.spawn(cmd, ctxByClient[instance]);
+			// Now we can run the command for each instance.
+			// If delay is > 0 run them at delay interval
+			var self = this;
+			var offset = 0;
+			for (var instance in ctxByClient) {
+				if (offset > 0)
+					setTimeout(function() {
+						self.spawn(cmd, ctxByClient[instance]);
+					}, delay);
+				else
+					this.spawn(cmd, ctxByClient[instance]);
+				offset += delay;
+			}
+		},
+
+		// Run cmd for one tile
+		runOneCmd: function(tile, cmd) {
+			if (! cmd)
+				return;
+
+			var platform = this.parent.findAncestor({type: 'Platform'});
+			var env = this.config.env || {};
+			var domain = this.config.domain || '';
+
+			var ctx = {
+				HOST: tile.host + domain,
+				INSTANCE: tile.instanceName,
+				PORT: platform.serverPort,
+				ENV: env[tile.instanceName],
+			};
+
+			this.spawn(cmd, ctx);
 		},
 
 		// Run the start/stop/restart commands specified in the config file.
 		// If restart is not defined, run stop then start.
 		start: function() {
-			if (this.config.start)
-				this.runCmd(this.config.start);
+			this.runCmd(this.config.start, this.config.startDelay);
 		},
 
 		stop: function() {
-			if (this.config.stop)
-				this.runCmd(this.config.stop);
+			this.runCmd(this.config.stop, this.config.stopDelay);
 		},
 
 		restart: function() {
 			if (this.config.restart)
-				this.runCmd(this.config.restart);
+				this.runCmd(this.config.restart, this.config.restartDelay);
 			else {
 				this.stop();
 				this.start();
+			}
+		},
+
+		// start/stop/restart one client
+		startOne: function(tile) {
+			this.runOneCmd(tile, this.config.start);
+		},
+
+		stopOne: function(tile) {
+			this.runOneCmd(tile, this.config.stop);
+		},
+
+		restartOne: function(tile) {
+			if (this.config.restart)
+				this.runOneCmd(tile, this.config.start);
+			else {
+				this.stopOne(tile);
+				this.startOne(tile);
 			}
 		},
 

@@ -28,6 +28,7 @@
 			"L": "DISPLAY=:0.0",
 			"R": "DISPLAY=:0.1"
 		},
+		"startDelay": 50,
 		"start": "ssh %HOST% PATH=\\$PATH:/usr/local/bin %ENV% nw ~/WildOS/renderer -p %PORT% -i %INSTANCE%",
 		"stop": "ssh %HOST% killall nw"
 	},

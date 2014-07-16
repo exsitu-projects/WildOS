@@ -26,6 +26,7 @@
 			"Right": [{ "left": 965, "top": 200}, { "left": 1445, "top": 200}]
 		},
 		"domain": ".local",
+		"startDelay": 1000,
 		"start": "ssh %HOST% PATH=\\$PATH:/usr/local/bin nw ~/WildOS/renderer -p %PORT% -i %INSTANCE%",
 		"stop": "ssh %HOST% killall node-webkit"
 	},
@@ -68,5 +69,8 @@
 	},
 	"controllers": {
 		"type": "WebControllers"
+	},
+	"WIS": {
+		"type": "WildInputServer"
 	}
 }

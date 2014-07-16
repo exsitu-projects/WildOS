@@ -57,7 +57,7 @@ var SlideShow = App.subclass().name('SlideShow')
 			this.browserWindow = gui.Window.open(url, {
 				width: 1200,
 				height: 800,
-				//toolbar: false,	
+				toolbar: false,	
 			});
 
 		},

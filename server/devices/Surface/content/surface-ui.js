@@ -35,7 +35,14 @@ function createTile (tile, id) {
 			 .css('border-left-width', hbezel)
 			 .css('border-right-width', hbezel)
 			 .css('border-top-width', vbezel)
-			 .css('border-bottom-width', vbezel);
+			 .css('border-bottom-width', vbezel)
+			 .on('contextmenu', function(event) { 
+			 	if ($(this).hasClass('connected'))
+			 		wall.stopOne(tile);
+			 	else
+				 	wall.startOne(tile); 
+			 	event.preventDefault(); 
+			 });
 }
 
 // Called when a tile becomes connected / disconnected
