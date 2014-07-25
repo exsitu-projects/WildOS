@@ -1,5 +1,7 @@
 // WebControllers - a set of devices running a web browser and socket.io
 //
+// Configuration properties:
+//	- "hostname": the host name to use in the URL. Defaults to `os.hostname()`
 
 // Node modules
 var os = require('os');
@@ -49,7 +51,8 @@ var WebControllers = Device.subclass().name('WebControllers')
 		createUI: function() {
 			var gui = process.mainModule.exports.gui;
 			var platform = this.findAncestor({type: 'Platform'});
-			var url = '../content/qrcode.html#'+os.hostname()+':'+platform.serverPort;	// URL is relative to the lib folder
+			var hostname = this.config.hostname || os.hostname();
+			var url = '../content/qrcode.html#'+hostname+':'+platform.serverPort;	// URL is relative to the lib folder
 			// We can't set the position here so we hide the window and it positions and shows itself
 			var win = gui.Window.open(url, {
 				show: false,

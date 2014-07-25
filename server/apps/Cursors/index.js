@@ -96,6 +96,7 @@ var Cursors = App.subclass().name('Cursors')
 	.methods({
 		// Called when the app is started
 		initPlatform: function(platform) {
+			log.warn.message('Cursors::initPlatform');
 			this.platform = platform;
 			// The path for `injectUIScript` is relative to the url of the document.
 			// Since we don't control this, we use an absolute path, based on
@@ -106,6 +107,19 @@ var Cursors = App.subclass().name('Cursors')
 
 			// Make the app an emitter to signal state changes to the local UI.
 			this.uievents = new events.EventEmitter();
+
+			// *** test ***
+			// Link the first cursor to the 'pointer' WISDevice, if any.
+			var self = this;
+			platform.onDeviceAvailable(function(device) {
+				if (device.className() === "WISDevice" && device.name === "pointer") {
+					device.onWISDeviceChanged(function(dev) {
+						if (self.cursors.length === 0)
+							return;
+						self.cursors[0].moveBy(dev.dx, dev.dy);
+					});
+				}
+			});
 		},
 
 		// Called when the app is about to be unloaded.

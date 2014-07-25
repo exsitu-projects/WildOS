@@ -136,6 +136,8 @@ var Device = OO.newClass().name('Device')
 			if (device) {
 				this.devices.push(device);
 				device.parent = this;
+				if (! device.events)
+					device.events = this.events;
 				device.added();
 			}
 			return device;
@@ -274,8 +276,11 @@ var Device = OO.newClass().name('Device')
 
 		// Emit an event.
 		emit: function(event) {
-			if (this.events)
+			if (this.events) {
+				log.event(this, event);
 				this.events.emit(event, this);
+			} else
+				log.warn.event(this, 'no event source to emit event', event);
 			return this;
 		},
 
@@ -294,6 +299,8 @@ var Device = OO.newClass().name('Device')
 					cb(device);
 					log.eventExit(self, event);
 				});
+			else
+				log.warn.method(this, 'on', 'no event source to set handler for event', event);
 			return this;
 		},
 

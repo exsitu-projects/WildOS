@@ -33,5 +33,11 @@
 	},
 	"controllers": {
 		"type": "WebControllers"
+	},
+	"WIS": {
+		"type": "WildInputServer",
+		"devices": {
+			"pointer": {"fields": {"dx": 0, "dy": 0}}
+		}
 	}
 }

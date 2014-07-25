@@ -1,0 +1,38 @@
+{
+	"type": "Platform",
+	"name": "WILDER room",
+	"UI": {
+		"frame": {
+			"left": 100,
+			"top": 300,
+			"width": 1200,
+			"height": 500
+		},
+		"wallZoom": 0.1
+	},
+	"wall": {		
+		"type": "Surface",
+		"name": "WILDER",
+		"tileSize": {"width": 3920, "height": 980},
+		"bezelSize": {"width": 0, "height": 0},
+		"numTiles": {"columns": 4, "rows": 5},
+		"tiles": [
+			[["a1", "L"], ["a1", "R"], ["b1", "L"], ["b1", "R"]],
+			[["a2", "L"], ["a2", "R"], ["b2", "L"], ["b2", "R"]],
+			[["a3", "L"], ["a3", "R"], ["b3", "L"], ["b3", "R"]],
+			[["a4", "L"], ["a4", "R"], ["b4", "L"], ["b4", "R"]]
+		],
+		"renderer": "perTile",
+		"domain": ".wilder.lri.fr",
+		"env": {
+			"L": "DISPLAY=:0.0",
+			"R": "DISPLAY=:0.1"
+		},
+		"startDelay": 50,
+		"start": "ssh %HOST% PATH=\\$PATH:/usr/local/bin %ENV% nw ~/WildOS/renderer -p %PORT% -i %INSTANCE%",
+		"stop": "ssh %HOST% killall nw"
+	},
+	"controllers": {
+		"type": "WebControllers"
+	}
+}
