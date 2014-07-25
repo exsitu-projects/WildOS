@@ -12,6 +12,7 @@
 	"dependencies": {
 		"express": "3.8.1",
 		"socket.io": "0.9.16",
+		"ws": "0.4.31",
 		"commander": "2.2.0"
 	},
 	"scripts": {

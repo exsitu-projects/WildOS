@@ -114,9 +114,13 @@ var Cursors = App.subclass().name('Cursors')
 			platform.onDeviceAvailable(function(device) {
 				if (device.className() === "WISDevice" && device.name === "pointer") {
 					device.onWISDeviceChanged(function(dev) {
+						log.warn.message('pointer moved to', dev.x, dev.y);
 						if (self.cursors.length === 0)
 							return;
-						self.cursors[0].moveBy(dev.dx, dev.dy);
+						if (dev.x || dev.y)
+							self.cursors[0].moveTo(dev.x, dev.y)
+						else
+							self.cursors[0].moveBy(dev.dx, dev.dy);
 					});
 				}
 			});
