@@ -58,8 +58,8 @@
 				"path": "SamsungPointer" 
 				},
 			"pointer": {
-				"path": "Struxx_3",
-				"fields": {"x": 0, "y": 0}
+				"path": "struxxPointer",
+				"fields": {"screen": "", "xs": 0, "ys": 0, "x": 0, "y": 0}
 				},
 			"stick": {
 				"path": "stick2" 

@@ -35,7 +35,7 @@ var OO = require('OO');
 var log = require('Log').shared();
 
 // Internal modules.
-var Device = require('../lib/Device');
+var Device = require('../../lib/Device');
 
 // The `WildInputServer` class.
 // Manages a set of `WISDevice` objects, as declared in the config file.
@@ -168,6 +168,6 @@ var WISDevice = Device.subclass().name('WISDevice')
 
 	});
 
-log.spyMethodsExcept(WISDevice, ['message']);
+log.spyMethodsExcept(WISDevice, []);//'WISDeviceChanged']);
 
 module.exports = WildInputServer;
