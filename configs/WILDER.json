@@ -29,7 +29,7 @@
 			"R": "DISPLAY=:0.1"
 		},
 		"startDelay": 50,
-		"start": "ssh %HOST% PATH=\\$PATH:/usr/local/bin %ENV% nw ~/WildOS/renderer -p %PORT% -i %INSTANCE%",
+		"start": "ssh %HOST% PATH=\\$PATH:/usr/local/bin %ENV% nw ~/WildOS/renderer -p %PORT% -i %INSTANCE% %DEBUG% %LOG%",
 		"stop": "ssh %HOST% killall nw"
 	},
 	"controllers": {

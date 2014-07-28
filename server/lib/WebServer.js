@@ -9,7 +9,7 @@ var http = require('http');
 
 // Shared modules
 var OO = require('OO');
-var log = require('Log').shared();
+var log = require('Log').logger('WebServer');
 
 // The `WebServer` class.
 var WebServer = OO.newClass().name('WebServer')

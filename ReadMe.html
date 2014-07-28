@@ -193,12 +193,13 @@ If you are on Mac OS X, try also the following command (from the <code>WildOS</c
 In this case, you can either:</p>
 
 <ul>
-<li><p>edit the <code>serverPort</code> property in <code>WildOS/config/local.json</code></p></li>
-<li><p>or (preferably), specify a different port on the command line by adding the argument <code>-p &lt;number&gt;</code> to the above commands, e.g.:</p>
-
-<p>% wildos -w local -p 8901
-% nw -X . -l -p 9801 -i TL</p></li>
+<li>edit the <code>serverPort</code> property in <code>WildOS/config/local.json</code></li>
+<li>or (preferably), specify a different port on the command line by adding the argument <code>-p &lt;number&gt;</code> to the above commands, e.g.:</li>
 </ul>
+
+<pre><code>    linux% wildos -w local -p 8901
+    macos% nw -X . -l -p 9801 -i TL
+</code></pre>
 
 <h2 id="configuringtheinstallation">Configuring the installation</h2>
 
@@ -373,7 +374,7 @@ The <code>Shutdown</code> button sends a message to the clients to quit them gra
 <p>The <code>Applications</code> menu lists the available applications. Select an application to load it, or to unloaded it if it is already loaded (a checkmark shows which applications are loaded). Select the <code>Browser</code> application. A text entry field should appear in the main window and if you enter a URL, it should show up in the miniature wall as well as in the client windows. You can also run <code>wildos</code> so that the <code>Browser</code> application (and/or other ones) start automatically.</p>
 
 <p>The general format of the <code>wildos</code> command is as follows:
- % wildos [start][-n|--no-clients] [-w|&#8211;wall config][-p|--port number] [app &#8230;]
+ % wildos [start][-n|--no-clients] [-w|&#8211;wall config][-p|--port number] [-d|&#8211;debug [0|1|2]][-l|--log file] [app &#8230;]
  % wildos stop</p>
 
 <p>The first form runs the server and takes the following arguments:</p>
@@ -382,6 +383,8 @@ The <code>Shutdown</code> button sends a message to the clients to quit them gra
 <li><code>-n|--no-clients</code> prevents the clients from being automatically started/stopped with the server;</li>
 <li><code>-w|--wall &lt;config&gt;</code> specifies a different config file, overriding the <code>$WALL</code> setting;</li>
 <li><code>-p|--port &lt;number&gt;</code> specifies a different port number than the one specified in the config file for the server to listen to;</li>
+<li><code>-d|--debug [0|1|2]</code> specifies debugging level: 0 (no logging), 1 (logging window hidden), 2 (logging window open);</li>
+<li><code>-l|--log file</code> specifies the log configuration file (defaults to <code>logdefault.js</code>);</li>
 <li><code>app ...</code> is an optional list of apps. The available apps, such as <code>Browser</code> are described later in this document.</li>
 </ul>
 

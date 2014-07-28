@@ -7,7 +7,7 @@
 //
 
 // Shared modules
-var log = require('Log').shared();
+var log = require('Log').logger('SharingServer');
 
 // Internal modules
 var SocketIOServer = require('./SocketIOServer');

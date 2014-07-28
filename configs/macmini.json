@@ -27,7 +27,7 @@
 		},
 		"domain": ".local",
 		"startDelay": 1000,
-		"start": "ssh %HOST% PATH=\\$PATH:/usr/local/bin nw ~/WildOS/renderer -p %PORT% -i %INSTANCE%",
+		"start": "ssh %HOST% PATH=\\$PATH:/usr/local/bin nw ~/WildOS/renderer -p %PORT% -i %INSTANCE% %DEBUG% %LOG%",
 		"stop": "ssh %HOST% killall node-webkit"
 	},
 	"wall3": {		

@@ -9,7 +9,7 @@
 
 // Shared modules
 var OO = require('OO');
-var log = require('Log').shared();
+var log = require('Log').logger('Tile');
 
 // Internal modules
 var App = require('./App');
@@ -100,6 +100,19 @@ var Tile = OO.newClass().name('Tile')
 			this.ready = false;
 		},
 
+		// Remote calls from/to server to manage the log remotely
+		getLog_after: function() {
+			this.remoteLog(App.logWindow.window.getLog());
+		},
+
+		clearLog_after: function() {
+			App.logWindow.window.clearLog();
+		},
+
+		remoteLog: function(html) {
+			// remote call to the server
+		},
+
 		// *** Not sure if this is still used or how it worked...
 		callJavascript_after: function(fun) {
 			log.method(this, 'callJavascript_after ', fun);
@@ -108,6 +121,6 @@ var Tile = OO.newClass().name('Tile')
 	})
 ;
 
-log.spyMethods(Tile);
+log.spyMethodsExcept(Tile, ['getLog_after', 'clearLog_after', 'remoteLog']);
 
 module.exports = Tile;

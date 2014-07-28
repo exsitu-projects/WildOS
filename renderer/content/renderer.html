@@ -6,11 +6,43 @@ body { background-color: #dfe; }
 p { margin: 5px; padding: 0;}
 
 #log .Indent { border: solid 1px black; margin-left: 10px; margin-right: 1px; }
+#log .show   { background-color: #dfe; }
 #log .closed { background-color: lightgrey; height: 1.5em; overflow: hidden; }
-#log p.Info { color: #111; }
+#log .error  { border: solid 1px red; }
+#log p.Info  { color: #111; }
 #log p.Warning { color: orange; }
 #log p.Error { color: red; }
 #log p.Fatal { color: brown; }
+
+#log .Renderer.closed,
+#log .SocketIOServer.closed,
+#log .SharingServer.closed,
+#log .ObjectSharer.closed
+	{ background-color: #F5E096}
+#log .Renderer.show,
+#log .SocketIOServer.show,
+#log .SharingServer.show,
+#log .ObjectSharer.show
+	{ background-color: #F3E8C4}
+
+#log .Surface.closed, 
+#log .Tile.closed
+	{ background-color: #F5CB9A}
+#log .Surface.show, 
+#log .Tile.show
+	{ background-color: #F3DFC8}
+
+#log .App.closed, 
+#log .Browser.closed, 
+#log .Cursors.closed, 
+#log .SlideShow.closed
+	{ background-color: #A9DAF5}
+#log .App.show, 
+#log .Browser.show, 
+#log .Cursors.show, 
+#log .SlideShow.show
+	{ background-color: #D7E9F3}
+
 </style>
 <script src="jquery-mbl-1.8.3.min.js"></script>
 <script type="text/javascript">
@@ -40,7 +72,30 @@ p { margin: 5px; padding: 0;}
 					.replace(/ /g, '&nbsp;')
 					.replace(/\\n/g, '<br/>') + '&nbsp;';
 		}
+
 		$('#'+logStatus.id).append('<p class="'+status.level+'">'+html+'</p>');
+
+		// Add classes to enclosing scope
+		if (status.domain)
+			$('#'+logStatus.id).addClass(status.domain);
+
+		// Add display status as class, unless status is closed but an error was reported
+		if (status.display !== 'closed' || ! $('#'+logStatus.id).hasClass('error'))
+			$('#'+logStatus.id).addClass(status.display);
+
+		// Open parent scopes if an error occurs
+		if (status.level != "Info") {
+			$('#'+logStatus.id)
+				.addClass('error')
+				.removeClass('closed')
+				.addClass('show')
+				.parentsUntil('#log')
+					.addClass('error')
+					.removeClass('closed')
+					.addClass('show')
+			;
+		}
+
 		$(window).scrollTop(document.body.scrollHeight);
 	};
 
@@ -65,8 +120,17 @@ p { margin: 5px; padding: 0;}
 		}
 	};
 
+	function getLog() {
+		return $("#log").html();
+	}
+
 	function clearLog() {
 		$("#log").html("");
+	}
+
+	function setTitle(title) {
+		$(document).attr('title', 'Renderer '+title);
+		$("#title").html(title);
 	}
 
 	$(document).ready(function() {
@@ -77,6 +141,7 @@ p { margin: 5px; padding: 0;}
 		// Collapse/Expand log by clicking
 		$('#log').on("click", ".Indent", function(e) {
 			$(this).toggleClass('closed');
+			$(this).toggleClass('show');
 
 			// Close only the innermost div
 			e.stopPropagation();
@@ -87,9 +152,8 @@ p { margin: 5px; padding: 0;}
 </script>
 </head>
 <body>
-<h1>Renderer</h1>
-<!--<button onclick="newWindow()">New window</button>-->
-<p id="log">log: </p>
+<h1>Renderer <span id="title"></span></h1>
+<div id="log"></div>
 <button onclick='clearLog();'>Clear log</button>
 </body>
 </html>

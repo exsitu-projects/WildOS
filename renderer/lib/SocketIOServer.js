@@ -7,7 +7,7 @@ var io = require('socket.io-client');
 
 // Shared modules
 var OO = require('OO');
-var log = require('Log').shared();
+var log = require('Log').logger('SocketIOServer');
 
 // The `SocketIOServer` class.
 var SocketIOServer = OO.newClass().name('SocketIOServer')

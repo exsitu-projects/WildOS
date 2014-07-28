@@ -15,7 +15,7 @@ var events = require('events');
 
 // Shared modules
 var OO = require('OO');
-var log = require('Log').shared();
+var log = require('Log').logger('ObjectSharer');
 
 // The server-side `ObjectSharer` class.
 var ObjectSharer = OO.newClass().name('ObjectSharer')

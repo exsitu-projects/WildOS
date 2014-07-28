@@ -109,9 +109,10 @@ In this case, you can either:
 * edit the `serverPort` property in `WildOS/config/local.json`
 * or (preferably), specify a different port on the command line by adding the argument `-p <number>` to the above commands, e.g.:
 
-	% wildos -w local -p 8901
-	% nw -X . -l -p 9801 -i TL
-
+```
+	linux% wildos -w local -p 8901
+	macos% nw -X . -l -p 9801 -i TL
+```
 
 Configuring the installation
 --------
@@ -270,7 +271,7 @@ The `Shutdown` button sends a message to the clients to quit them gracefully. If
 The `Applications` menu lists the available applications. Select an application to load it, or to unloaded it if it is already loaded (a checkmark shows which applications are loaded). Select the `Browser` application. A text entry field should appear in the main window and if you enter a URL, it should show up in the miniature wall as well as in the client windows. You can also run `wildos` so that the `Browser` application (and/or other ones) start automatically.
 
 The general format of the `wildos` command is as follows:
-	% wildos [start] [-n|--no-clients] [-w|--wall config] [-p|--port number] [app ...]
+	% wildos [start] [-n|--no-clients] [-w|--wall config] [-p|--port number] [-d|--debug [0|1|2]] [-l|--log file] [app ...]
 	% wildos stop
 
 The first form runs the server and takes the following arguments:
@@ -278,6 +279,8 @@ The first form runs the server and takes the following arguments:
 * `-n|--no-clients` prevents the clients from being automatically started/stopped with the server;
 * `-w|--wall <config>` specifies a different config file, overriding the `$WALL` setting;
 * `-p|--port <number>` specifies a different port number than the one specified in the config file for the server to listen to;
+* `-d|--debug [0|1|2]` specifies debugging level: 0 (no logging), 1 (logging window hidden), 2 (logging window open);
+* `-l|--log file` specifies the log configuration file (defaults to `logdefault.js`);
 * `app ...` is an optional list of apps. The available apps, such as `Browser` are described later in this document.
 
 The second form stops the rendering clients (but not the server).

@@ -12,7 +12,7 @@
 
 // Shared modules
 var OO = require('OO');
-var log = require('Log').shared();
+var log = require('Log').logger('ObjectSharer');
 
 // The client-side `ObjectSharer` class.
 var ObjectSharer = OO.newClass().name('ObjectSharer')

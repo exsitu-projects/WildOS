@@ -25,11 +25,15 @@
           <li class="dropdown">
             <a href="#" class="dropdown-toggle" data-toggle="dropdown">Content <b class="caret"></b></a>
             <ul class="dropdown-menu">
-              <li class="toc3"><a href="#simplemessages">Simple messages</a></li>
+              <li class="toc2"><a href="#viewinglogs">Viewing logs</a></li>
+<li class="toc3"><a href="#configuringloggers">Configuring loggers</a></li>
+<li class="toc2"><a href="#programmingwithloggers">Programming with loggers</a></li>
+<li class="toc3"><a href="#creatingalogger">Creating a logger</a></li>
+<li class="toc3"><a href="#usingalogger">Using a logger</a></li>
+<li class="toc3"><a href="#simplemessages">Simple messages</a></li>
 <li class="toc3"><a href="#enterexitmessage">Enter/Exit message</a></li>
-<li class="toc3"><a href="#spying">Spying</a></li>
+<li class="toc3"><a href="#spyingmethods">Spying methods</a></li>
 <li class="toc3"><a href="#loglevels">Log levels</a></li>
-<li class="toc3"><a href="#filteringlogs">Filtering logs</a></li>
 
             </ul>
           </li>
@@ -54,16 +58,91 @@
     <div class="container-fluid">
       <h1 id="logginginwildos">Logging in WildOS</h1>
 
-<p>The <code>Log</code> module provides facilities to log information to the output console or to a node-webkit window.
-In particular, it takes advantage of the Classy&#8217;s wrapping to systematically log method calls and field value changes.</p>
+<p>This page describes how to access logged data when running WildOS and how to add logging information in your code.</p>
 
-<p>The most common way to access logging is to import the shared logger at the beginning of your scripts:</p>
+<h2 id="viewinglogs">Viewing logs</h2>
+
+<p>For logging to be available, WildOS must be run in debug mode, i.e. with argument <code>-d|--debug [0|1|2]</code>.</p>
+
+<ul>
+<li><code>-d 0</code> or omitting the option is the default: no logging occurs;</li>
+<li><code>-d 1</code> or simply <code>-d</code> enables logging but the window showing the log is hidden; To open it click the <code>Log window</code> button in the platform control window;</li>
+<li><code>-d 2</code> enables logging and opens the log window.</li>
+</ul>
+
+<p>When running in debug mode, a configuration file is used to define what to log and how.
+By default, the configuration file in <code>logdefault.js</code>, but a different file can be specified with the <code>-l|--log &lt;file&gt;</code> argument. See the section below to create your own configuration file.</p>
+
+<p>The log entries in the log window are colored according to the class or file that issued them and to their type:
+the class or file determine the background color, while the type determines the text color (black for Info, orange for Warning, red for Error, brown for Fatal).
+Log messages that are nested are surrounded by a box. Clicking such entries open/closes the box to make it easier to browse the log.</p>
+
+<p>In addition to accessing the log window of the server application, it is possible to view the logs of the rendering clients.
+Right click on a tile in the visualization of the tiled display and select <code>Show remote log</code> in the menu.
+This will open a window with the remote log and clear the remote log. Subsequent calls to the menu (or clicking the <code>Append remote log</code> at the end of the window) retrieve the remote log and append it to the window.
+Note that for performance reasons, the remote log is not updated in real time.</p>
+
+<h3 id="configuringloggers">Configuring loggers</h3>
+
+<p>The log configuration file is a Javascript module that must export a single literal object with two properties:</p>
+
+<ul>
+<li><code>display</code> specifies the default logging mode: <code>show</code> to show log entries, <code>closed</code> to show log entries but in closed state, <code>skip</code> to suppress log entries;</li>
+<li><code>domains</code> specifies the logging mode at the level of each domain and each entry of a domain.
+A domain is a class, or in some cases a file name; an entry is a method, function or event name.</li>
+</ul>
+
+<p>The example below illustrates the various possibilities:</p>
+
+<pre><code>    module.exports = {
+        display: 'closed',      // by default, log in 'closed' modes (uses less space)
+        domains: {
+            MyClass: 'skip',    // do not log MyClass
+            MyOtherClass: {     // log MyOtherClass with some special cases
+                display: 'show',    // log in 'open' mode
+                entries: {          // except these entries:
+                    myMethod: 'skip',   // skip myMethod
+                    _object: 'closed',  // special entry for log.newObject
+                    _message: 'closed', // special entry for log.message
+                    ...
+                }
+            }
+            ...
+        }
+    }
+</code></pre>
+
+<p>At present, the colors associated with each domain cannot be easily modified:
+you need to edit the CSS in the files <code>server/content/server.html</code> for the server log, <code>server/content/log.html</code> and <code>renderer/content/renderer.html</code> for the renderer log.
+This may be improved in a future version.</p>
+
+<h2 id="programmingwithloggers">Programming with loggers</h2>
+
+<p>The <code>Log</code> module provides facilities to log information to the output console or to a node-webkit window.
+In particular, it takes advantage of Classy&#8217;s wrapping to systematically log method calls.</p>
+
+<p>Adding loggers to your own code is very simple.
+In most cases, all you need to do is to create a logger for your class, and tell it to trace the methods of your class.
+If needed, you can sprinkle your code with additional traces where needed.</p>
+
+<h3 id="creatingalogger">Creating a logger</h3>
+
+<p>The most common way to access logging is to create a logger at the beginning of each of your scripts:</p>
+
+<pre><code>    var log = require('Log').logger('myDomain');
+</code></pre>
+
+<p><code>'myDomain'</code> is typically the name of the class defined in the file, but it can be anything.
+It is used by the logging configuration (see below) to control which messages are logged.</p>
+
+<p>You are free to create as many loggers as you want by instantiating the <code>Log</code> class returned by the module,
+but in general using one logger per file, or per class, should be sufficient.
+You can also use a shared logger, with no attached domain:</p>
 
 <pre><code>    var log = require('Log').shared();
 </code></pre>
 
-<p>You are free to create different loggers by instantiating the <code>Log</code> class returned by the module,
-but in general using the shared logger should be sufficient.</p>
+<h3 id="usingalogger">Using a logger</h3>
 
 <p>Most logging methods take a variable number of arguments holding arbitrary values.
 These are printed according to their type: </p>
@@ -100,7 +179,7 @@ If present they are checked against those specified at entry and if they do not 
 
 <p><code>log.eventEnter(obj, event, ...)</code> / <code>log.eventExit(obj, event, ...)</code>, similar to the above for event handlers.</p>
 
-<h3 id="spying">Spying</h3>
+<h3 id="spyingmethods">Spying methods</h3>
 
 <p>Adding logging instructions by hand is cumbersome, especially to systematically log enter/exit of methods.
 The logger supports <code>spying</code> of methods of Classy objects so that all calls to the specified methods are logged.
@@ -118,12 +197,12 @@ This is achieved with the following call:</p>
 </code></pre>
 
 <p>All WildOS classes are currently spied to facilitate debugging.
-This provides a log of output and affects performance slightly.
-Fitering facilities will be provided soon to alleviate these problems (see below).</p>
+This provides a log of output but may affect performance slightly.
+Configuration facilities (see below) can help alleviate these problems, since spying the methods of a class for which logging is disabled does not incur any overhead.</p>
 
 <h3 id="loglevels">Log levels</h3>
 
-<p>All the above methods log info-level messages.
+<p>All the above methods log messages of type &#8216;Info&#8217;.
 To log warnings, errors and fatal errors, use the same methods but apply them respectively to <code>log.warn</code>, <code>log.error</code>, or <code>log.fatal</code>.
 For example:</p>
 
@@ -133,12 +212,6 @@ For example:</p>
 
 <p>Warning and error messages are prefixed by <code>Warning</code> and <code>Error</code> respectively.
 In addition, fatal errors cause the program to quit immediately.</p>
-
-<h3 id="filteringlogs">Filtering logs</h3>
-
-<p>Filtering capabilities are not yet available.
-The plan is to support a configuration file that defines what is logged and how.
-In particular, the HTML output can hide logging output so it is only shown upon demand.</p>
 
     </div>
     <script type="text/javascript" src="assets/js/jquery-1.11.0.min.js"></script>

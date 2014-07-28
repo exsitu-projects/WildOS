@@ -32,7 +32,7 @@ case $1 in
 			ps aux | fgrep /nw | fgrep -v server | fgrep -v -- --type= | awk '{print $2}' | xargs kill || true
 		else
 			# Mac OS X
-			kill `ps -e | grep lib/Renderer.js | awk '{print $1}'` || true
+			kill `ps -e | grep renderer.js | awk '{print $1}'` || true
 		fi
 
 		if [ $WALL != 'local' ]; then

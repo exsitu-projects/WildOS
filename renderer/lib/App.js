@@ -21,7 +21,7 @@ var events = require('events');
 
 // Shared modules
 var OO = require('OO');
-var log = require('Log').shared();
+var log = require('Log').logger('App');
 var SearchPath = require('searchpath');
 
 // Local modules

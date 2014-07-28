@@ -11,7 +11,7 @@ var fs = require('fs');
 
 // Shared modules
 var OO = require('OO');
-var log = require('Log').shared();
+var log = require('Log').logger('SlideShow');
 
 // Server modules
 var App = require('../../lib/App');
@@ -57,7 +57,7 @@ var SlideShow = App.subclass().name('SlideShow')
 			this.browserWindow = gui.Window.open(url, {
 				width: 1200,
 				height: 800,
-				toolbar: false,	
+				toolbar: platform.program.showToolbar,
 			});
 
 		},

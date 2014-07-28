@@ -15,28 +15,67 @@ process.on('SIGINT', function() {
 	gui.App.quit();
 });
 
-// Node modules
-var events = require('events');
-
-// Shared modules
-var log = require('Log').shared();
-
-// Internal modules
-var App = require('./lib/App');
-var Config = require('./lib/config');
-var Platform = require('./lib/Platform');
-var Server = require('./lib/Server');
-
 // Command line options
 var program = require('commander');
 
 program
-	.version('0.2.1')
+	.version('0.2.2')
 	.usage('[options] [app ...]')
 	.option('-w, --wall <config>', 'Platform name (defaults to $WALL)')
 	.option('-p, --port <number>', 'Port number (defaults to 8080)', parseInt)
 	.option('-n, --no-clients', 'Do not start/stop clients with server')
+	.option('-d, --debug [level]', 'Enable debugging')
+	.option('-l, --log file', 'Log config file')
 ;
+
+// Node modules
+var events = require('events');
+
+// Shared modules
+var Log = require('Log');
+var log = null;
+
+// Internal modules - initialized after logging has been configured
+var App = null; // require('./lib/App');
+var Config = null; // require('./lib/config');
+var Platform = null; // require('./lib/Platform');
+var Server = null; // require('./lib/Server');
+
+// Process the logging and debugging options.
+function processLogDebugOptions(program) {
+	// Process debug level
+	if (program.debug === undefined) // no -d argument
+		program.debug = 0;
+	else if (program.debug === true) // -d argument without level
+		program.debug = 1;
+
+	// Interpretation of debug level:
+	// - 0: no trace, no titlebars (i.e. no access to debugger), trace windows hidden
+	// - 1: trace all, show titlebars, hide trace windows
+	// - 2: trace all, show titlebars, show trace windows
+	program.showToolbar = (program.debug >= 1);
+	program.showWindows = (program.debug >= 2);
+
+	// Load load config file if debugging is enabled
+	if (program.debug) {
+		var logFile = program.log || 'logdefault';
+		// Prepend ../ unless path starts with / because starting path is node_modules
+		if (!logFile.match(/^\//))
+			logFile = '../'+logFile;
+		Log.loadConfig(logFile);
+	} else {
+		Log.display = 'skip';
+	}
+
+	// Create logger now that we have configured logging and debugging
+	log = Log.logger('WildOS');
+
+	// Now that the logger is configured, load modules
+	App = require('./lib/App');
+	Config = require('./lib/config');
+	Platform = require('./lib/Platform');
+	Server = require('./lib/Server');
+}
 
 // Load a platform config file and initialize it.
 // Call `cb` when ready with the platform as parameter.
@@ -89,6 +128,9 @@ function loadPlatform(name, cb) {
 	// Make it easier for devices to access apps (although at this point they are not yet loaded).
 	platform.apps = App;
 
+	// Give access to program arguments
+	platform.program = program;
+
 	// Create the platform UI, if any, start the platform and notify the apps.
 	// If there is a UI, we only start the platform and notify the apps once the UI is loaded,
 	// so that both the platform and the apps have access to it.
@@ -102,6 +144,13 @@ function loadPlatform(name, cb) {
 	if (win) {
 		log.message('loadPlatform', name, '- will start when window ready');
 		win.once('loaded', init);
+
+		// Kill clients on exit
+		win.on('close', function() {
+			if (program.clients)
+				platform.stop();
+			exports.gui.App.quit();
+		});
 	} else {
 		// Start the platform after the init sequence is finished.
 		setImmediate(init);
@@ -154,6 +203,19 @@ exports.init = function() {
 		args.push(gui.App.argv[i]);
 	program.parse(args);
 
+	// Process logging and debugging options
+	processLogDebugOptions(program);
+
+	// Hide trace window when not debugging
+	var win = gui.Window.get();
+	if (program.showWindows)
+		win.show();
+
+	// Closing log window only hides it so it can be reopened
+	win.on('close', function() {
+		this.hide();
+	});
+
 	// Get platform name: --wall argument, otherwise $WALL, defaulting to 'WILD'
 	/*jshint sub:true */
 	var platformName = program.wall || process.env["WALL"] || 'WILD';
@@ -162,16 +224,6 @@ exports.init = function() {
 	// Create the platform
 	// When the platform is ready, start the server and the apps
 	var platform = loadPlatform(platformName, startServerAndApps);
-
-	// Kill clients on exit
-	if (program.clients) {
-		var win = gui.Window.get();
-		win.on('close', function() {
-			platform.stop();
-			this.close(true);
-		});
-	}
-		
 
 	// Return the platform, which is also an event emitter,
 	// so that the UI can register listeners, etc. 

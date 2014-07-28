@@ -2,13 +2,19 @@
 //
 // A platform represents the various equipments available, typically in a room.
 // It is described by a configuration file (a json file).
+//
+// Once the platform is initialized, the following properties are set:
+//	- apps: App class, to access loaded apps
+//	- program: program arguments
+//	- menu: menubar
+//	- window: platform control window
 
 // Node modules
 var fs = require('fs');
 
 // Shared modules
 var OO = require('OO');
-var log = require('Log').shared();
+var log = require('Log').logger('Platform');
 var Path = require('path');
 
 // Internal modules
@@ -96,6 +102,7 @@ var Platform = Device.subclass().name('Platform')
 				if (UI.url)	// interpret it relative to the config file folder
 					url = 'file://'+Path.resolve(this.dirname(), UI.url);
 				log.method(this, 'makeUI', '- url', url);
+				UI.frame.toolbar = this.program.showToolbar;
 				win = gui.Window.open(url, UI.frame);
 				this.window = win;
 			}
@@ -108,6 +115,18 @@ var Platform = Device.subclass().name('Platform')
 			if (!this.window)
 				return null;
 			return this.window.window;
+		},
+
+		// show main window, show platform window's dev tools
+		showTraceWindow: function() {
+			var gui = window.require('nw.gui');
+			var win = gui.Window.get();
+			win.show();
+		},
+
+		showDevTools: function() {
+			if (this.window)
+				this.window.showDevTools();
 		},
 
 		// Inject a script file (by creating and adding a <script> tag) into the platform UI.

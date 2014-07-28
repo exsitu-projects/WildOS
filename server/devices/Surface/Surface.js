@@ -25,7 +25,7 @@ var os = require('os');
 
 // Shared modules
 var OO = require('OO');
-var log = require('Log').shared();
+var log = require('Log').logger('Surface');
 
 // Server modules
 var Device = require('../../lib/Device');
@@ -54,7 +54,7 @@ var Surface = Device.subclass().name('Surface')
 		// Create a sharer to share the state of `Surface` and `Tile` objects with clients
 		this.surfaceSharer = ObjectSharer.create().name('surfaceSharer');
 		this.surfaceSharer.master(Surface, 'own', ['callJavascript']);
-		Renderer.sharer.master(Tile, 'own', null, ['callJavascript'], 'after');
+		Renderer.sharer.master(Tile, 'own', ['remoteLog'], ['getLog', 'clearLog', 'callJavascript'], 'after');
 
 		// Catch events to start/stop/restart the clients on the cluster.
 		// The commands are taken from the config file (if they exist)
@@ -224,6 +224,7 @@ var Surface = Device.subclass().name('Surface')
 			var platform = this.parent.findAncestor({type: 'Platform'});
 			var env = this.config.env || {};
 			var domain = this.config.domain || '';
+			var program = platform.program;
 
 			// This object has one entry per instance, i.e. per process running on a client.
 			// The index is either the hostname, when running one client per host,
@@ -233,13 +234,15 @@ var Surface = Device.subclass().name('Surface')
 			// We create the set of contexts in which to run the command
 			// by going through the set of tiles.
 			this.mapDevices(function(tile) {
-				clientName = tile.instance;
+				var clientName = tile.instance;
 
 				ctxByClient[clientName] = {
 					HOST: tile.host + domain,
 					INSTANCE: tile.instanceName,
 					PORT: platform.serverPort,
 					ENV: env[tile.instanceName],
+					DEBUG: program.debug ? ("--debug "+program.debug) : "",
+					LOG: program.log ? ("--log "+program.log) : "",
 				};
 			});
 
@@ -271,12 +274,15 @@ var Surface = Device.subclass().name('Surface')
 			var platform = this.parent.findAncestor({type: 'Platform'});
 			var env = this.config.env || {};
 			var domain = this.config.domain || '';
+			var program = platform.program;
 
 			var ctx = {
 				HOST: tile.host + domain,
 				INSTANCE: tile.instanceName,
 				PORT: platform.serverPort,
 				ENV: env[tile.instanceName],
+				DEBUG: program.debug ? ("--debug "+program.debug) : "",
+				LOG: program.log ? ("--log "+program.log) : "",
 			};
 
 			this.spawn(cmd, ctx);

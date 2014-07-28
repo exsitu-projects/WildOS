@@ -22,7 +22,7 @@
 
 // Shared modules
 var OO = require('OO');
-var log = require('Log').shared();
+var log = require('Log').logger('Tile');
 
 // Server modules
 var Device = require('../../lib/Device');
@@ -89,6 +89,24 @@ var Tile = Device.subclass().name('Tile')
 			this.deviceUnavailable();
 		},
 
+		// Get and clear remote log window
+		getLog: function() {
+			// remote call
+		},
+
+		clearLog: function() {
+			// remote call
+		},
+
+		remoteLog: function(html) {
+			if (!this.logWindow) {
+				log.warning.method(this, 'remoteLog', 'no window to insert log');
+				return;
+			}
+
+			this.logWindow.window.appendLog(html);
+		},
+
 		// *** Not sure if this is still used or how it worked...
 		callJavascript: function(fun /* args */) {
 			// calling javascript in the background page
@@ -97,7 +115,7 @@ var Tile = Device.subclass().name('Tile')
 	})
 ;
 
-log.spyMethods(Tile);
+log.spyMethodsExcept(Tile, ['getLog', 'clearLog', 'remoteLog']);
 
 module.exports = Tile;
 

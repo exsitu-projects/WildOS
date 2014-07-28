@@ -5,7 +5,7 @@ var events = require('events');
 var fs = require('fs');
 
 // Shared modules
-var log = require('Log').shared();
+var log = require('Log').logger('Server');
 
 // Internal modules
 var App = require('./App');

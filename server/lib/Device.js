@@ -31,7 +31,7 @@ var childProcess = require('child_process');
 
 // Shared modules
 var OO = require('OO');
-var log = require('Log').shared();
+var log = require('Log').logger('Device');
 
 // The `Device` class.
 var Device = OO.newClass().name('Device')

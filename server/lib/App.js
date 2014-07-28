@@ -22,7 +22,7 @@ var events = require('events');
 // Shared modules
 var OO = require('OO');
 var SearchPath = require('searchpath');
-var log = require('Log').shared();
+var log = require('Log').logger('App');
 
 // Local modules
 var ObjectSharer = require('./ObjectSharer');
@@ -155,7 +155,7 @@ var App = OO.newClass().name('App')
 						path = '../'+path;
 					module = require(path);
 				} catch(e) {
-					log.method(this, 'loadClass', '- require failed: ', e);
+					log.error.method(this, 'loadClass', '- require failed: ', e);
 				}
 			} else
 				log.method(this, 'loadClass', '- app not found');

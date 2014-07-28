@@ -4,10 +4,13 @@
 
 // Shared modules
 var OO = require('OO');
-var log = require('Log').shared();
+var log = require('Log').logger('Cursors');
 
 // Renderer modules
 var App = require('../lib/App');
+
+// Use different logger for Cursor class
+var cursorLog = require('Log').logger('Cursor');
 
 // The Cursor class: a single cursor.
 var Cursor = OO.newClass().name('Cursor')
@@ -89,7 +92,7 @@ var Cursor = OO.newClass().name('Cursor')
 	})
 ;
 
-log.spyMethods(Cursor);
+cursorLog.spyMethods(Cursor);
 
 
 // The `Cursors` app class.

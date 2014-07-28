@@ -8,7 +8,7 @@
 	body { 
 		position: absolute; 
 		overflow: hidden;
-		width: 1000px;
+/*		width: 1000px;*/
 		background-color: #def;
 
 		-webkit-user-select: none;
@@ -74,13 +74,33 @@
 			})
 		;
 	}
+
+	function rollDown(menu, item, event) {
+		// Create a copy of `menu` because reusing the one from the menu bar 
+		// does not seem to work (popup shows it at the wrong position)
+		var rollDownMenu = new gui.Menu();
+		menu.items.forEach(function(m) {
+			rollDownMenu.append(new gui.MenuItem({
+				label: m.label,
+				type: m.type,
+				checked: m.checked,
+				click: m.click,
+			}));
+		});
+		var offset = $(item).offset();
+		var height = $(item).outerHeight();
+		rollDownMenu.popup(Math.round(offset.left), Math.round(offset.top)+height+5);
+	}
+
 </script>
 </head>
 <body>
 	<div id="top">
-		<button onclick='platform.restart()'>Restart</button>
-		<button onclick='platform.shutdown()'>Shutdown</button>
-		<span style="color:grey">(Right click tile to start/stop individual clients)</span>
+		<button onmousedown='rollDown(platform.menu, this, event)'>Platform</button>
+		<button onmousedown='rollDown(platform.apps.menu, this, event)'>Apps</button>
+		<span style="color:grey">(Right click tiles for renderer menu)</span>
+		<button style="float: right" onclick='platform.showTraceWindow()'>Open log</button>
+		<button style="float: right" onclick='platform.showDevTools()'>Dev tools</button>
 	</div>
 	<div id="platform">
 	</div>

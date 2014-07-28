@@ -5,7 +5,7 @@
 
 // Shared modules
 var OO = require('OO');
-var log = require('Log').shared();
+var log = require('Log').logger('SlideShow');
 
 // Renderer modules
 var App = require('../lib/App');

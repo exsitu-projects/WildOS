@@ -1,4 +1,4 @@
-// Renderer - main module for the client
+// Renderer - rendering server
 //
 // A `Renderer` object is a sharing client that shares 
 // instances of `Tile` with the server.
@@ -11,37 +11,14 @@
 // Node modules
 var os = require('os');
 
-// Node-Webkit module
-var gui;
-
 // Shared modules
-var log = require('Log').shared();
+var log = require('Log').logger('Renderer');
 
 // Internal modules
 var SharingServer = require('./SharingServer');
 var ObjectSharer = require('./ObjectSharer');
 var App = require('./App');
 var Tile = require('./Tile');
-
-// Command line options
-var program = require('commander');
-
-program
-	.version('0.2.1')
-	.usage('[options] [app ...]')
-	.option('-l, --local', 'Run locally: server is on localhost')
-	.option('-s, --server <name[:port]>', 'Server to connect to (defaults to $SSH_CLIENT)')
-	.option('-p, --port <number>', 'Port number (defaults to 8080)', parseInt)
-	.option('-i, --instance <name>', 'Instance name (required)')
-;
-
-// Quit the application.
-function quit() {
-	if (gui)
-		gui.App.quit();
-	else
-		process.exit(0);
-}
 
 // The `Renderer` class
 var Renderer = SharingServer.subclass().name('Renderer')
@@ -50,9 +27,9 @@ var Renderer = SharingServer.subclass().name('Renderer')
 		host: null,		// the base name of the host we are on
 		instance: 0,	// distinguishes multiple renderer instances on the same machine
 	})
-	.constructor(function(instance) {
+	.constructor(function(program) {
 		log.enter(this, 'constructor');
-		
+
 		this.host = os.hostname().split('.')[0];
 		// If running clients locally, call ourselves 'localhost'
 		if (program.local)
@@ -69,10 +46,10 @@ var Renderer = SharingServer.subclass().name('Renderer')
 			}
 		}
 
-		this.instance = instance;
+		this.instance = program.instance || 'default';
 		this._super(program.server, program.port);
 
-		log.exit(this, 'constructor', this.host+'_'+instance, 'connected to server', this.hostname+':'+this.port);
+		log.exit(this, 'constructor', this.host+'_'+this.instance, 'connected to server', this.hostname+':'+this.port);
 	})
 	.methods({
 		// Configure the sharer to manage objects of class `Tile`.
@@ -82,7 +59,7 @@ var Renderer = SharingServer.subclass().name('Renderer')
 			if (this.sharer)
 				return;
 
-			this.sharer = ObjectSharer.create().name('renderingSharer').slave(Tile, 'own');
+			this.sharer = ObjectSharer.create().name('renderingSharer').slave(Tile, 'own', ['remoteLog']);
 			this.addSharer(this.sharer);
 		},
 
@@ -157,15 +134,14 @@ var Renderer = SharingServer.subclass().name('Renderer')
 
 			this.on('stopApp', function(appName) {
 				log.eventEnter(self, 'stopApp', appName);
-
 				App.unloadApp(appName);
-
 				log.eventExit(self, 'stopApp');
 			});
 
 			// Set up a listener for the `'quit'` message, which tells us to ... quit!
 			this.on('quit', function() {
-				quit();
+				log.event(self, 'quit', appName);
+				process.mainModule.exports.quit();
 			});
 		},
 		
@@ -186,26 +162,4 @@ var Renderer = SharingServer.subclass().name('Renderer')
 
 log.spyMethods(Renderer);
 
-// The main function, called from the window created when node-webkit starts.
-// This is so that we have access to that window during start-up (e.g., for logging).
-//
-exports.init = function () {
-	gui = exports.gui = window.require('nw.gui');
-
-	// Process arguments: need to prepend 2 arguments for commander to work
-	var args = ['nw', 'renderer'];
-	for (var i = 0; i < gui.App.argv.length; i++)
-		args.push(gui.App.argv[i]);
-	program.parse(args);
-
-	// Backward compatibility: if no --instance flag and only one loose argument, take it as instance name
-	if (! program.instance && program.args.length == 1)
-		program.instance = program.args[0];
-
-	if (! program.instance)
-		program.instance = 'default';
-
-	// Create and start the client.
-	App.server = Renderer.create(program.instance).connect();
-};
-
+module.exports = Renderer;
