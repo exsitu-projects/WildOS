@@ -1,3 +1,4 @@
+<!-- Platform control UI. Devices and application can add content in the `top`, `bottom` and `platform` divs -->
 <html>
 <head>
 <title>WildOS platform controller</title>
@@ -75,6 +76,8 @@
 		;
 	}
 
+	// Roll down a menu from a button.
+	// Makes a copy of `menu` and opens it under `item`.
 	function rollDown(menu, item, event) {
 		// Create a copy of `menu` because reusing the one from the menu bar 
 		// does not seem to work (popup shows it at the wrong position)

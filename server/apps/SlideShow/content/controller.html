@@ -1,4 +1,5 @@
-<h3 class="controller-title">SlideShow controller</h3>
+<!-- Web controller for the SlideShow app -->
+<h3 class="controller-title">SlideShow</h3>
 <div class="controller-body">
 <link rel="stylesheet" href="/SlideShow/css/blueimp-gallery.min.css">
 
@@ -18,6 +19,8 @@ img.current {
 </style>
 
 <script type="text/javascript">
+// We leave these in the global namespace because we need them in the script at the end of this file
+
 var SlideShow = App.subclass().name('SlideShow')
 	.fields({
 		slideShow: null,
@@ -110,6 +113,9 @@ var slideShowApp = SlideShow.create();
 </script>
 <script src="/SlideShow/js/jquery.blueimp-gallery.min.js"></script>
 <script>
+// Wrap in a function to protect global name space
+(function() {
+
 	// Rather dirty trick to disable the turning off of controls when clicking the slide in the gallery
     // (because the option toggleControlsOnReturn only affects what happens with the Return key)
     blueimp.Gallery.prototype.toggleControls = function() {};
@@ -184,5 +190,9 @@ var slideShowApp = SlideShow.create();
     });
 
     updateSlides(false);
+
+// Invoke the main function
+}) ();
+
 </script>
 </div>

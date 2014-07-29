@@ -1,8 +1,12 @@
-// Code injected in the platform control window
+// Code injected in the platform control window for the Browser app.
 //
-// Here we let the user load pages and control the position and zoom factor 
-// of the page being displayed on the wall.
+// The user can load pages and control the position and zoom factor 
+// of the page being displayed on the wall by interacting with the
+// representation of the tiled display.
 //
+
+// Wrap in a function to protect global space
+var browserApp = (function () {
 
 var panZoomBrowser = null;
 
@@ -208,3 +212,11 @@ PanZoom.prototype.stop = function() {
 
 // Go!
 startBrowser();
+
+// Return the exported functions.
+return {
+	stop: stopBrowser,
+};
+
+// Invoke the main function
+}) ();

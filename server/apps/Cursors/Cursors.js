@@ -63,7 +63,7 @@ var Cursors = App.subclass().name('Cursors')
 			this._super();
 
 			if (this.platform.window)
-				this.platform.window.window.stopCursors();
+				this.platform.window.window.cursorsApp.stop();
 		},
 
 		// Find a cursor by name.

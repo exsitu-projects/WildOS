@@ -1,10 +1,13 @@
-<h3 class="controller-title">I am the Browser controller</h3>
+<!-- Web controller for the Browser app -->
+<h3 class="controller-title">Browser</h3>
 <div class="controller-body">
 
 <p id="browser"></p>
 <input id="browserURL" size="60" type="text"/><input id="browserSetURL" type="button" value="Set URL"/>
 
 <script>
+// Wrap in a function to protect global name space
+(function() {
 	var Browser = App.subclass().name('Browser')
 		.fields({
 			url: null,
@@ -37,5 +40,7 @@
 	$('#browserURL').keypress(function(ev) { if (ev.which == 13) $('#browserSetURL').click(); });
 	$('#browserSetURL').click(function() { browser.setBackgroundURL($('#browserURL').val()); });
 
+// Invoke the main function
+}) ();
 </script>
 </div>

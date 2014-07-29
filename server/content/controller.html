@@ -1,3 +1,4 @@
+<!-- Web controller for WildOS apps -->
 <html>
 <head>
 	<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
@@ -26,12 +27,24 @@
 	.controller-title {
 		padding-left: 8px;
 		padding-right: 8px;
+		margin-top: 0;
+		margin-bottom: 0;
 		background-color: black;
 		color: white;
 	}
+
+	/* provide a hint that tapping the title opens/closes the controller */
+	.controller-title:before {
+		content: "\25BE  "; /* triangle down */
+	}
+	.controller-title.closed:before {
+		content: "\25B8  "; /* triangle right */
+	}
+
 	.controller-body {
 		margin-left: 8px;
 		margin-right: 8px;
+		margin-top: 6px;
 	}
 	#status {
 		background-color: darkgrey;
@@ -42,6 +55,8 @@
 	</style>
 
 	<script>
+	// All these declarations are in the global scope so that app controllers can use them.
+	// However app controllers themselves should avoid polluting the global scope.
 
 	function msg(message) {
 		$('#status').html(message);
@@ -342,7 +357,15 @@
 
 	function startController() {
 		App.server = Controller.create().connect();
+
+		// Open / close controller when tapping its title
+		$('#controller').click(function(event) {
+			$(event.target).closest('.controller-title')
+				.toggleClass('closed')
+				.next('.controller-body').toggle();
+		});
 	}
+
 
 	$(document).ready(startController);
 	</script>

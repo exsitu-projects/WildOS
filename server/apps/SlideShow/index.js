@@ -67,7 +67,7 @@ var SlideShow = App.subclass().name('SlideShow')
 			this._super();
 
 			if (this.platform.window)
-				this.platform.window.window.stopSlideShow();
+				this.platform.window.window.slideShowApp.stop();
 
 			if (this.browserWindow)
 				this.browserWindow.close();

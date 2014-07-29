@@ -1,3 +1,13 @@
+// User interface for a Surface device
+//
+// Show the tiled display and the connected state of each tile.
+// Attach a context menu to each tile.
+// Applications can enrich the display using the `#wall` element.
+//
+
+// Wrap in a function to protect global space
+(function () {
+
 var wall = null;
 
 var wallZoom = 0.5;
@@ -155,3 +165,6 @@ function initSurface() {
 }
 
 initSurface();
+
+// Invoke the main function
+}) ();

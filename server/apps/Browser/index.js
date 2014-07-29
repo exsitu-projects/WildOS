@@ -44,7 +44,7 @@ var Browser = App.subclass().name('Browser')
 			this._super();
 
 			if (this.platform.window)
-				this.platform.window.window.stopBrowser();
+				this.platform.window.window.browserApp.stop();
 		},
 
 		// Called by the UI to change the background URL.

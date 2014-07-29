@@ -1,7 +1,12 @@
-// Code injected in the platform control window
+// Code injected in the platform control window for the SlideShow app.
 //
-// Here we let the user load a slideshow and navigate slides.
+// The user can load a slideshow and navigate slides.
+// Note that the main interface for this application is in a separate window,
+// whose content is in `content/serverBrowser.html`.
 //
+
+// Wrap in a function to protect global space
+var slideShowApp = (function () {
 
 var slidesRoot = 'apps/SlideShow/content/slides/';	// where to find slide thumbs
 
@@ -123,3 +128,11 @@ function stopSlideShow() {
 
 // Go!
 startSlideShow();
+
+// Return the exported functions.
+return {
+	stop: stopSlideShow,
+};
+
+// Invoke the main function
+}) ();
