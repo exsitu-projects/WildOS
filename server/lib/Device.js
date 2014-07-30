@@ -33,6 +33,9 @@ var childProcess = require('child_process');
 var OO = require('OO');
 var log = require('Log').logger('Device');
 
+// Absolute path to `tools` directory (../../tools)
+var toolsDir = __dirname.split('/').slice(0, -2).join('/')+'/tools';
+
 // The `Device` class.
 var Device = OO.newClass().name('Device')
 	.fields({
@@ -230,15 +233,29 @@ var Device = OO.newClass().name('Device')
 		// %VAR% is substituted with `context['VAR']`,
 		// $VAR is susbstituted with `process.env['VAR']`.
 		// If the variable is not defined, it is replaced by the empty string.
-		spawn: function(cmd, context) {
+		// `options` is a set of options passed to the node.js `child_process.spawn` command.
+		// It defaults to `{detached: true}` and an environment where the path to the `tools` directory 
+		// is added to `$PATH` unless it is already in the path.
+		spawn: function(cmd, context, options) {
 			if (!cmd)
 				return null;
+			if (!options) {
+				options = {
+					detached: true,
+				};
+			}
+			if (!options.env) {
+				var path = process.env.PATH.split(':');
+				if (path.indexOf(toolsDir) < 0)
+					process.env.PATH += ":"+toolsDir;
+				options.env = process.env;
+			}
 
 			// If we get an array, execute each command in the array (in parallel)
 			if (cmd instanceof Array) {
 				var results = [];
 				cmd.forEach(function(cmd) {
-					results.push(spawn(cmd));
+					results.push(spawn(cmd, context, options));
 				});
 				return results;
 			}
@@ -261,8 +278,8 @@ var Device = OO.newClass().name('Device')
 			var args = cmd.split(' ');
 			cmd = args[0];
 			args.splice(0, 1);
-			log.method(this, 'spawn', cmd, args);
-			return childProcess.spawn(cmd, args, {detached: true});
+			log.method(this, 'spawn', cmd, args, options);
+			return childProcess.spawn(cmd, args, options);
 		},
 
 		// Managing events.

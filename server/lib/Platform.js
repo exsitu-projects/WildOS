@@ -71,7 +71,7 @@ var Platform = Device.subclass().name('Platform')
 			menuBar.insert(new gui.MenuItem({
 				label: 'Platform',
 				submenu: platformMenu,
-			}), 2);
+			}), process.platform === 'darwin' ? 2 : 0);	// only Mac OS has predefined menus
 
 			this.menu = platformMenu;
 		},

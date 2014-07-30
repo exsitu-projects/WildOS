@@ -83,7 +83,7 @@ var App = OO.newClass().name('App')
 			menuBar.insert(new gui.MenuItem({
 				label: 'Applications',
 				submenu: appsMenu,
-			}), 3);
+			}), process.platform === 'darwin' ? 3 : 0);	// only Mac OS has predefined menus
 
 			this.menu = appsMenu;
 		},
