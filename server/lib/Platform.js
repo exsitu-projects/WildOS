@@ -44,9 +44,13 @@ var Platform = Device.subclass().name('Platform')
 			}
 
 			var win = gui.Window.get();
-			if (!win.menu)
-				win.menu = new gui.Menu({ type: 'menubar' });
 			var menuBar = win.menu;
+			if (!menuBar) {
+				menuBar = new gui.Menu({ type: 'menubar' });
+				if (menuBar.createMacBuiltin)	// only available since node-webkit v0.10.1
+					menuBar.createMacBuiltin("WildOS server");
+				win.menu = menuBar;
+			}
 
 			var platformMenu = new gui.Menu();
 			var self = this;

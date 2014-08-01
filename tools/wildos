@@ -35,7 +35,7 @@ case $1 in
 			kill `ps -e | grep renderer.js | awk '{print $1}'` || true
 		fi
 
-		if [ $WALL != 'local' ]; then
+		if [ "$WALL" != 'local' ]; then
 			$DIR/walldo killall nw node-webkit
 		fi
 	;;
