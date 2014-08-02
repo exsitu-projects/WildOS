@@ -16,8 +16,10 @@ var util = require('util');
 // Shared modules
 var SearchPath = require('searchpath');
 
-var searchPath = new SearchPath('../configs:../../configs');
+// Default search path
+var searchPath = new SearchPath('./configs:../configs');
 searchPath.extensions('.json');
+searchPath.lookupCwd = false;
 
 // Load `file` and merge its properties into `config`.
 // If `inherit` is true, all properties are merged,

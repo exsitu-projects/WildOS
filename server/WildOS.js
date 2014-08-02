@@ -22,6 +22,7 @@ program
 	.version('0.2.2')
 	.usage('[options] [app ...]')
 	.option('-w, --wall <config>', 'Platform name (defaults to $WALL)')
+	.option('-c, --config <dir>', 'Config path (defaults to ./configs)')
 	.option('-p, --port <number>', 'Port number (defaults to 8080)', parseInt)
 	.option('-n, --no-clients', 'Do not start/stop clients with server')
 	.option('-d, --debug [level]', 'Enable debugging')
@@ -81,6 +82,10 @@ function processLogDebugOptions(program) {
 // Call `cb` when ready with the platform as parameter.
 function loadPlatform(name, cb) {
 	log.enter(null, 'loadPlatform', name);
+
+	// Update the config path
+	if (program.config)
+		Config.searchPath.prepend(program.config);
 
 	// Load the json file representing the platform.
 	// In case of an error, we throw an error because
@@ -196,6 +201,7 @@ function startServerAndApps(platform) {
 // to make sure the UI is available
 exports.init = function() {
 	var gui = exports.gui = window.require('nw.gui');
+	var win = gui.Window.get();
 
 	// Process arguments: need to prepend 2 arguments for commander to work
 	var args = ['nw', 'server'];
@@ -203,11 +209,26 @@ exports.init = function() {
 		args.push(gui.App.argv[i]);
 	program.parse(args);
 
+	// Use preferences if called without any argument
+	if (args.length == 2) {
+		var preferences = win.window.localStorage.preferences;
+		if (preferences) {
+			preferences = JSON.parse(preferences);
+			console.log('preferences=', preferences);
+			program.wall = preferences.platform;
+			program.config = preferences.configPath;
+			program.port = preferences.port;
+			program.clients = preferences.runClients;
+			program.debug = preferences.debug;
+			program.log = preferences.logConfig;
+			program.args = preferences.apps;
+		}
+	}
+
 	// Process logging and debugging options
 	processLogDebugOptions(program);
 
 	// Hide trace window when not debugging
-	var win = gui.Window.get();
 	if (program.showWindows)
 		win.show();
 

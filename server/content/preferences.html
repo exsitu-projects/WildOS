@@ -1,0 +1,343 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title>WildOS Preferences</title>
+	<style type="text/css">
+		body {
+			font-family: Helvetica, sans-serif;
+			margin-left: 10px; margin-right: 10px;
+			margin-top: 0px; margin-bottom: 0px;
+		}
+		h2 {
+			margin-top: 10px; margin-bottom: 10px;
+		}
+		.section h3 {
+			margin-left: -10px; margin-right: -10px;
+			margin-top: 0px; margin-bottom: 5px;
+			padding-left: 10px; padding-right: 10px;
+			padding-top: 5px; padding-bottom: 5px;
+			background-color: darkgrey;
+			color: white;
+		}
+		.section {
+			margin-bottom: 10px;
+		}
+		label {
+			margin-left: 5px;
+		}
+		.setting {
+			font-size: 10pt;
+			color: #666;
+		}
+		.buttons {
+			text-align: right;
+			margin: 15px;
+		}
+		.important {
+			font-size: 10pt;
+			color: red;
+		}
+		.error {
+			color: red;
+		}
+	</style>
+	<script src="jquery-mbl-1.8.3.min.js"></script>
+	<script type="text/javascript">
+	
+	var defaultPreferences = {
+		platform: 'local',
+		apps: ['Browser'],
+		configPath: '',
+		port: 0,
+		runClients: false,
+		debug: 0,
+		logConfig: '',
+	};
+
+	var preferences = null;	// preference record
+
+	var allPlatforms = [];	// list of all platform names
+	var allApps = [];		// list of all app names
+
+	// Get preferences from localStorage, or from defaults
+	function loadPreferences() {
+		try {
+			preferences = JSON.parse(localStorage.preferences);
+		} catch(e) {
+			preferences = {};
+		}
+		
+		for (var item in defaultPreferences)
+			if (preferences[item] === undefined)
+				preferences[item] = defaultPreferences[item];
+	}
+
+	// Init preferences
+	function initPreferences() {
+		// Platform
+		if (allPlatforms.indexOf(preferences.platform) >= 0) {
+			// known: select in menu and empty text field
+			$('#platforms option[value='+preferences.platform+']').prop('selected', true);
+			$('#otherPlatform').val('');
+		} else {
+			// unknown: put it in text field
+			$('#otherPlatform').val(preferences.platform);
+		}
+
+		// Applications
+		var otherApps = [];
+		$('').prop('checked', false);	// uncheck everything
+		preferences.apps.forEach(function(appName) {
+			if (allApps.indexOf(appName) >= 0) {
+				// known app: check it
+				$('#app'+appName).prop('checked', true);
+			} else {
+				// unknown app: add to text field
+				otherApps.push(appName);
+			}
+		});
+		$('#otherApps').val(otherApps.join(' '));
+
+		// Options
+		$('#configPath').val(preferences.configPath);
+		$('#portNumber').val(preferences.port);
+		$('#runClients').attr('checked', preferences.runClients)
+		$('input:radio[name=debug]').prop('checked', false);
+
+		// Debugging
+		$('input:radio[name=debug][value='+preferences.debug+']').prop('checked', true);
+		$('#logConfig').val(preferences.logConfig);		
+	}
+
+	$(document).ready(function() {
+		var platform = global.platform;
+		if (!platform)
+			return;
+		var apps = platform.apps;
+		if (! apps)
+			return;
+
+		loadPreferences();
+
+		// Insert list of platforms
+		//	- get the list
+		require('./lib/config').searchPath.find().forEach(function(fileName) {
+			var name = fileName.match(/^(.*)\.json$/)[1];
+			if (name)
+				allPlatforms.push(name);
+		});
+		// 	- create the menu
+		allPlatforms.forEach(function(name) {
+			$('#platforms').append('<option value="'+name+'">'+name+'</option>');
+		});
+
+		// Edit platform name
+		//	- select from menu
+		$('#platforms').change(function() {
+			preferences.platform = $(this).val();
+			$('#otherPlatform').val('');	// reset text field
+		});
+		//	- edit text field
+		//	  select in menu when entered text matches a known name
+		function editPlatform(value, done) {
+			// update preference and select empty entry in menu
+			preferences.platform = value;
+			$('#platforms option[value=undefined]').prop('selected', true); // reset menu to empty entry
+			// if done, check if entry matches menu item, if so select it and empty text field
+			if (done && allPlatforms.indexOf(value) >= 0) {
+				$('#platforms option[value='+value+']').prop('selected', true);
+				$('#otherPlatform').val('');
+			}
+		}
+		$('#otherPlatform')
+			.on('input', function()	{ editPlatform($(this).val(), false); })
+			.change(function()		{ editPlatform($(this).val(), true); })
+		;
+
+		// Insert list of available apps
+		allApps = apps.availableApps();
+		allApps.forEach(function(appName) {
+			var appId = 'app'+appName;
+			$('#apps').append('<div class="setting"><input id="'+appId+'" type="checkbox" data-app="'+appName+'"/>'
+				+'<label for="'+appId+'">'+appName+'</label></div>');
+		});
+
+		// Edit apps list
+		//	- selecting a checkbox
+		$('#apps input').change(function() {
+			var name = $(this).data('app');
+			if ($(this).prop('checked')) {
+				preferences.apps.push(name);
+			} else {
+				var index = preferences.apps.indexOf(name);
+				if (index >= 0)
+					preferences.apps.splice(index, 1);
+			}
+		});
+		//	- edit text field
+		//	  select checkboxes for apps that match
+		function editApps(value, done) {
+			if (done) {
+				// collect checked ones
+				var apps = [];
+				$('#apps input[checked="checked"]').each(function() {
+					apps.push($(this).data('app'));
+				});
+				
+				// add those in text area
+				var text = [];
+				value.split(' ').forEach(function(name) {
+					if (! name)
+						return;
+
+					if (allApps.indexOf(name) >= 0) {
+						// existing app: check it and remove from text field
+						$('#app'+name).prop('checked', true);
+					} else 
+					if (apps.indexOf(name) < 0) {
+						// apps not already listed: add it to list and keep in text field
+						apps.push(name);
+						text.push(name);
+					}
+				});
+
+				// edit the text field to reflect those that are not checked
+				$('#otherApps').val(text.join(' '));
+
+				preferences.apps = apps;
+			}
+		}
+		$('#otherApps')
+			.on('input', function()	{ editApps($(this).val(), false); })
+			.change(function()		{ editApps($(this).val(), true); })
+		;
+
+		// Edit options
+		//	- config Path
+		$('#configPath')
+			.on('input', function()	{ preferences.configPath = $(this).val(); })
+		$('#selectConfigPath').click(function() {
+			// open file dialog
+		    $('#configPathDialog').attr('nwworkingdir', process.env.HOME || '/').click();
+		});
+		$('#configPathDialog').change(function(event) {
+			// record selection: append to path if ends with ':'
+			var path = $('#configPath').val();
+			var val = $(this).val();
+			if (path.match(':$'))
+				path += val+':';
+			else
+				path = val+':';
+		    $('#configPath').val(path);
+			preferences.configPath = path;
+		});
+
+		//	- port number
+		function editPort(elem, done) {
+			var port = parseInt($(elem).val());
+			var error = isNaN(port) || (port < 0) || (port > 65535);
+			if (error)
+				$(elem).addClass('error');
+			else
+				$(elem).removeClass('error');
+			if (done) {
+				if (! error)
+					preferences.port = port;
+			}			
+		}
+		$('#portNumber')
+			.on('input', function()	{ editPort(this, false); })
+			.change(function() 		{ editPort(this, true); })
+		;
+		//	- run clients at startup
+		$('#runClients').change(function() {
+			preferences.runClients = $(this).prop('checked');
+		});
+
+		// Edit debugging & logging
+		$('input:radio[name=debug]').change(function() {
+			if ($(this).prop('checked'))
+				preferences.debug = parseInt($(this).val());
+		});
+
+		//	- log config file
+		$('#logConfig')
+			.on('input', function()	{ preferences.logConfig = $(this).val(); })
+		$('#selectLog').click(function() {
+			// open file dialog
+		    $('#selectLogDialog').attr('nwworkingdir', process.env.HOME || '/').click();
+		});
+		$('#selectLogDialog').change(function(event) {
+			// record selection
+			preferences.logConfig = $(this).val();
+		    $('#logConfig').val(preferences.logConfig);
+		});
+
+		// Save & reset buttons
+		$('#save').click(function() {
+			localStorage.preferences = JSON.stringify(preferences);
+			window.close();
+		});
+		$('#reset').click(function() {
+			delete localStorage.preferences;
+			loadPreferences();
+			initPreferences();
+		});
+
+		// Show current state
+		initPreferences();
+
+		// Resize window to fit content
+		var win = require('nw.gui').Window.get();
+		var extra = window.outerHeight - window.innerHeight + 25;
+		//alert('resize to '+ $('body').height() + ' extra= '+extra);
+		win.resizeTo(400, $('body').height() + extra);
+	});
+	
+	</script>
+</head>
+<body>
+<!--<h2>WildOS Preferences</h2>-->
+
+<div class="section">
+	<h3>Platform</h3>
+	<div class="setting"><select id="platforms"><option value="undefined"></option></select></div>
+	<div class="setting"><input id="otherPlatform" type="text"/><label for="otherPlatform">Other platform</label></div>
+</div>
+
+<div class="section">
+	<h3>Applications</h3>
+	<div id="apps"></div>
+	<div class="setting"><input id="otherApps" type="text" size="40"/><label for="otherApps">Other apps</label></div>
+</div>
+
+<div class="section">
+	<h3>Options</h3>
+	<div class="setting"><input id="configPath" size="40"/>
+		<button id="selectConfigPath">...</button>
+		<input style="display:none;" id="configPathDialog" type="file" nwdirectory/>
+		<label for="configPath">Path to config files</label>
+	</div>
+	<div class="setting"><input id="portNumber" type="number"/><label for="portNumber">Port number (0 for default value)</label></div>
+	<div class="setting"><input id="runClients" type="checkbox" checked/><label for="runClients">Run clients at startup</label></div>
+</div>
+
+<div class="section">
+	<h3>Debugging</h3>
+	<div class="setting"><input type="radio" name="debug" value="0"/><label for="debug0">No debugging</label></div>
+	<div class="setting"><input type="radio" name="debug" value="1"/><label for="debug1">Record traces</label></div>
+	<div class="setting"><input type="radio" name="debug" value="2"/><label for="debug2">Show traces</label></div>
+	<div class="setting"><input id="logConfig" type="text" size="40"/>
+		<button id="selectLog">...</button>
+		<input style="display:none;" id="selectLogDialog" type="file" accept=".js,.json"/>
+		<label for="logConfig">Log config file</label>
+	</div>
+</div>
+
+<div class="buttons">
+	<span class="important">Changes take effect on restart</span>
+	<button id="save">Save</button>
+	<button id="reset">Reset</button>
+</div>
+</body>
+</html>

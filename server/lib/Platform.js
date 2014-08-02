@@ -56,6 +56,7 @@ var Platform = Device.subclass().name('Platform')
 			var self = this;
 			var name = this.name || 'devices';
 
+			// Start/Stop/Restart/Shutdown platform
 			platformMenu.append(new gui.MenuItem({
 				label: 'Start '+ name,
 				click: function() { self.start(); },
@@ -72,6 +73,31 @@ var Platform = Device.subclass().name('Platform')
 				label: 'Shutdown '+ name,
 				click: function() { self.shutdown(); },
 			}));
+
+			// Preferences
+			var preferencePanel = null;
+			platformMenu.append(new gui.MenuItem({
+				type: 'separator',
+			}));
+			platformMenu.append(new gui.MenuItem({
+				label: 'Preferences ',
+				click: function() { 
+					if (preferencePanel)
+						preferencePanel.show();
+					else {
+						preferencePanel = gui.Window.open('../content/preferences.html', {
+							width: 400,
+							height: 800,
+							toolbar: platform.program.showToolbar,
+						});
+						preferencePanel.on('close', function() {
+							preferencePanel.close(true);
+							preferencePanel = null;
+						});
+					}
+				},
+			}));
+
 			menuBar.insert(new gui.MenuItem({
 				label: 'Platform',
 				submenu: platformMenu,

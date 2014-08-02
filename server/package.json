@@ -1,5 +1,5 @@
 {
-	"name": "server",
+	"name": "WildOS-server",
 	"version": "0.2.2",
 	"main": "content/server.html",
 	"node-main": "WildOS.js",
