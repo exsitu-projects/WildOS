@@ -1,0 +1,32 @@
+{
+	"type": "Platform",
+	"name": "Theater Layout",
+	"UI": {
+		"frame": {
+			"left": 100,
+			"top": 500,
+			"width": 1200,
+			"height": 300
+		},
+		"wallZoom": 0.5
+	},
+	"wall": {		
+		"type": "Surface",
+		"name": "Theater Layout",
+		"tileSize": {"width": 256, "height": 160},
+		"bezelSize": {"width": 20, "height": 23},
+		"numTiles": {"columns": 1, "rows": 3},
+		"tiles": [
+			[["localhost", "TL"], ["localhost", "TC"], ["localhost", "TR"]]
+		],
+		"renderer": "perTile",
+		"layout": {
+			"TL": { "left": 10, "top": 20},
+			"TC": { "left": 286, "top": 20},
+			"TR": { "left": 562, "top": 20}
+		},
+	},
+	"controllers": {
+		"type": "WebControllers"
+	}
+}
