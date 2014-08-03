@@ -287,15 +287,15 @@ function runall {
 			#	-v 				verbose
 			#	-a = -rlptgoD	archive = recursive, recreate symlinks, copy permissions, modification times, owner and group, copy devices and special files
 			#	-C 				exclude version control files and many other temporary files (a filter adds .DS_Store to these). 
-			#	--delete		delete destination files not in the source (only for directories being copied)
+			#	--delete-after	delete destination files not in the source (only for directories being copied)
 			#	--filters 		in directories matching $BYHOST, only copy files (and dirs) that have the same name as the remote host
-			#	-F 				use the rules in .rsync-filter files as well as those in $RSYNCFILTER
+			#	-F 				use the rules in $RSYNCFILTER
 			# Other options of interest (can be specified on the command line):
 			#	-n 				dry run
 			#	--progress		to see what is going on
 			for host in ${hosts[*]}; do
 				protectedDir=`protect "$USER@$host$DOMAIN:$dest"`
-				runcmd rsync -v -a -C --delete \
+				runcmd rsync -v -a -C --delete-after \
 					-F --filter="+ /**/$BYHOST/${host}*" --filter="- /**/$BYHOST/*" --filter='- .DS_Store' --filter=": /$RSYNCFILTER" \
 					"$@" "$protectedDir"
 			done

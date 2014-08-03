@@ -11,7 +11,7 @@ var fs = require('fs');
 
 // Shared modules
 var OO = require('OO');
-var log = require('Log').shared();
+var log = require('Log').logger('SlideShow');
 
 // Server modules
 var App = require('../../lib/App');
@@ -27,6 +27,7 @@ var appSlideDir = 'apps/SlideShow/content/slides/'; 		// relative from nw app
 var SlideShow = App.subclass().name('SlideShow')
 	.fields({
 		slideShow: null,
+		slideShowTitle: null,
 		slides: [],
 		currentSlideIndex: -1,
 		currentSlide: null,
@@ -41,6 +42,8 @@ var SlideShow = App.subclass().name('SlideShow')
 		initPlatform: function(platform) {
 			log.method(this, 'initPlatform');
 			this.platform = platform;
+			this.slideshowDir = this.__dirname+'/content/slides';
+
 			// The path for `injectJSFile` is relative to the url of the document.
 			// Since we don't control this, we use an absolute path, based on
 			// `this.__dirname`, the absolute path from which the app was loaded.
@@ -48,6 +51,15 @@ var SlideShow = App.subclass().name('SlideShow')
 
 			// Make the app an emitter to signal state changes to the local UI.
 			this.uievents = new events.EventEmitter();
+
+			var gui = process.mainModule.exports.gui;
+			var url = '../apps/SlideShow/content/serverBrowser.html';	// URL is relative to the lib folder
+			this.browserWindow = gui.Window.open(url, {
+				width: 1200,
+				height: 800,
+				toolbar: platform.program.showToolbar,
+			});
+
 		},
 
 		// Called when the app is about to be unloaded.
@@ -55,21 +67,29 @@ var SlideShow = App.subclass().name('SlideShow')
 			this._super();
 
 			if (this.platform.window)
-				this.platform.window.window.stopSlideShow();
+				this.platform.window.window.slideShowApp.stop();
+
+			if (this.browserWindow)
+				this.browserWindow.close();
 		},
 
 		// Load a slideshow stored as an array of slide names exported by a js file.
 		loadSlideShow: function(name) {
 			this.slideShow = name;
 			log.message("Loading slide show", name);
+			var slideShow = null;
 			try {
-				this.slides = require(name).slides;
+				slideShow = require(name);
+				this.slideShowTitle = slideShow.title;
+				this.slides = slideShow.slides;
 			} catch (e) {
+				this.slideShowTitle = null;
 				this.slides = null;
 				return false;
 			}
 
-			this.slideChanged();
+			this.slideShowChanged();
+			//this.slideChanged();
 			this.currentSlideIndex = -1;
 			this.firstSlide();
 			return true;
@@ -95,7 +115,9 @@ var SlideShow = App.subclass().name('SlideShow')
 		loadSlideList: function(list, name) {
 			this.slideShow = name || list.join(' ');
 			this.slides = list;
-			this.slideChanged();
+			this.slideShowTitle = null;
+			this.slideShowChanged();
+			//this.slideChanged();
 
 			this.currentSlideIndex = -1;
 			this.firstSlide();
@@ -104,6 +126,8 @@ var SlideShow = App.subclass().name('SlideShow')
 		// Return an object describing the content of the file/directory at `path`
 		// or `null` if the path is invalid.
 		getSlides: function(path) {
+			var slides;
+
 			// Check if it is a .json file, i.e. a slideshow file
 			m = path.match(/\.json$/);
 			if (m) {
@@ -146,7 +170,7 @@ var SlideShow = App.subclass().name('SlideShow')
 
 			// If it is a regular directory, we collect its content (NOT RECURSIVE yet)
 			var stats = fs.statSync(appSlideDir+dir);
-			var slides = [];
+			slides = [];
 			if (stats.isDirectory()) {
 				var names = fs.readdirSync(appSlideDir+dir);
 				for (var i = 0; i < names.length; i++) {
@@ -237,7 +261,7 @@ var SlideShow = App.subclass().name('SlideShow')
 		onSlideShowChanged: function(cb) { return this.on('slideShowChanged', cb); },
 
 	})
-	.shareState('own', ['nextSlide', 'prevSlide', 'firstSlide', 'lastSlide'])
+	.shareState('own', ['nextSlide', 'prevSlide', 'firstSlide', 'lastSlide', 'gotoSlide'])
 ;
 
 log.spyMethods(SlideShow);

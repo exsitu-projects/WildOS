@@ -14,13 +14,11 @@ WildOS relies on Web technologies, most notably [Javascript](http://en.wikipedia
 
 WildOS is still in a very preliminary stage, so expect bugs, crashes and weird behaviors!
 
-Installing WildOS
+Before installing WildOS
 --------
-
-### Before installing WildOS ###
 First you need to have [node.js](http://nodejs.org) and [node-webkit](https://github.com/rogerwang/node-webkit) installed both on the machine where you will be running the WildOS server and on the machines where you will be running clients, such as the display cluster. (You do not need to install anything on those machines where the WildOS clients will run in a regular browser, such as tablets and smartphones). 
 
-#### Installing node.js and npm ####
+### Installing node.js and npm ###
 
 If `node.js` is already installed on your machine, make sure that it is a recent version (at least 0.10.28) by typing
 
@@ -30,28 +28,98 @@ If node.js is not installed or the version is too old, follow the instructions o
 
 `npm`, the node package manager, is installed together with node.js and is used by the WildOS installer.
 
-#### Installing node-webkit ####
+### Installing node-webkit ###
 
 To install `node-webkit`, go to the [node-webkit](https://github.com/rogerwang/node-webkit) web site and download the version for your OS. Do **not** install node-webkit with the npm package 'nodewebkit' as this does not work well. 
 
 WildOS requires version 0.9.2 or later of node-webkit.
 
-On Mac OS X, node-webkit is an application and should be copied to the standard `Applications` folder.
-
 On Linux, node-webkit is an executable called `nw` and should be accessible in the `PATH`.
 The simplest way to install is to copy `nw` to `/usr/local/bin` or to create a symbolic link.
 To install in `/opt` and support mulitple versions, follow the instructions in [this web page](http://www.exponential.io/blog/install-node-webkit-on-ubuntu-linux).
 
+On Mac OS X, node-webkit is an application and should be copied to the standard `Applications` folder.
+If it is installed elsewhere, edit the `tools/nw` script so that `NWAPP` points to it. 
+This `nw` script is designed to be used on the command line in the same way as on Linux.
 
-### Installing the WildOS server ###
-After you have checked out WildOS from the [SVN repository](https://www.lri.fr/svn/in-situ/code/WILD/WildOS) or extracted it from the archive, you need to finalize the installation as follows:
+Installing the WildOS server
+--------
+After you have checked out WildOS from the [git repository](https://bitbucket.org/mblinsitu/wildos), the [SVN repository](https://www.lri.fr/svn/in-situ/code/WILD/WildOS) or extracted it from the archive, you need to finalize the installation as follows:
 
 	% cd WildOS/server
 	% npm install  
 
 This will create a `node_modules` directory in the `WildOS/server` directory and install the node modules needed by WildOS there. (Make sure you are in the `server` directory).
 
-### Configuring the installation ###
+It is a good idea to add the `WildOS/tools/` directory to your PATH so that commands such as `wildos`, `walldo` and (on Mac OS X) `nw`, are directly accessible from the command line. 
+The rest of this documentation assumes this has been done:
+	
+	% cd WildOS/tools
+	% PATH=`pwd`:$PATH
+
+### Testing the server ###
+To test the server run the following command:
+
+	% wildos -n -w local Browser
+
+The server will create two windows: one with lots of traces, the other depicting the wall display with the buttons `Restart` and `Shutdown` at the top, similar to the image below. 
+Enter a URL in the text box: It should load 
+
+![Screendump of the browser application when no rendering clients are running](doc/img/browser-noclients.png)
+
+If the server does not work correctly, look at error messages in the terminal and in the window with all the traces: errors are displayed in orange or red.
+If you are on Mac OS X, try also the following command (from the `WildOS` directory):
+
+	% nw -X server [same options as wildos]
+
+The `-X` argument runs node-webkit as a Unix command instead of a Mac OS application so that error messages are displayed on standard output instead of being hidden.
+
+### Testing the server with local clients ###
+To test the server with rendering clients running on the same machine, first finish installing the clients:
+
+	% cd WildOS/renderer
+	% npm install
+
+then run the following command (i.e. the same as before without the `-n` argument):
+
+	% wildos -w local Browser
+
+This will run the server as before, plus four rendering clients. Each rendering client has a window with a light green background displaying numerous traces, and a content window in the top-left corner of the screen.
+
+The content windows should display the URL specified in the server window, tiled in a consistent way so that the page appears to cross the windows. Moreover, the tiles in the server window should become transparent, to show that the server has establised connections with the clients, as in the picture below.
+
+![Screendump of the browser application when the rendering clients are running](doc/img/browser.png)
+
+If things don't work try again to look at error messages in the terminal and in the windows with the traces.
+
+You can also run the server without the clients, as in the previous section, and then run one client by hand:
+
+	% cd WildOS/renderer
+	% nw . -l -i TL
+
+(The last argument corresponds to the name of the tile and can be `TL`, `TR`, `BL` or `BR`).
+
+On Mac OS X, add the `-X` option as before to see the potential errors in the terminal:
+
+	% nw -X . -l -i TL
+
+A possible issue is that the port number used by the server (8080 in this case) is already in use.
+In this case, you can either:
+
+* edit the `serverPort` property in `WildOS/config/local.json`
+* or (preferably), specify a different port on the command line by adding the argument `-p <number>` to the above commands, e.g.:
+
+```
+	linux% wildos -w local -p 8901
+	macos% nw -X . -l -p 9801 -i TL
+```
+
+Configuring the installation
+--------
+
+Before installing and running the clients on the rendering cluster, it is important to properly configure the installation.
+
+### Configuring `walldo` ###
 This step is optional, but strongly recommended unless you have an alternative way of easily running commands on all the machines in your display cluster.
 
 The script `walldo` (in directory `tools`) is a utility that runs commands on a set of client machines. Type `tools/walldo -h` to see a description.
@@ -91,6 +159,7 @@ Each object has a mandatory property: `type`. The root object must be of type `p
 
 The `WILD.json` configuration file defines a platform called `WILD room`:
 
+- The `serverPort` property defines the network port number the server will be listening to (defaults to 8080);
 - The `UI` property defines the position and size of the window created by the server to control the platform (`frame` property) and the zoom factor to apply to the miniature display of the wall in the control window;
 - The `wall` property defines the tiled display (see below);
 - The `controllers` property enables the use of web-based devices (tablets and smartphones, typically).
@@ -101,8 +170,11 @@ The `wall` property defines the geometry of the tiled display:
 - The `bezelSize` property defines the number of pixels "hidden" behind the bezels. If you specify 0, the bezels will be ignored;
 - The `numTiles` property defines the number of rows and columns of the tiled display (we assume a rectangular layout);
 - The `tiles` property defines which machine runs which tile (see below);
-- The `renderer` property can be set to `perTile` or `perHost`. The former means that one rendering client is launched for each tile, while the latter means that one rendering client is launched for each host (if the host runs multiple tiles, the client will create one window per tile). Currently, we use mostly `perTile` 
-- The `restart` property is the shell command for restarting all the clients.
+- The `renderer` property can be set to `perTile` or `perHost`. The former means that one rendering client is launched for each tile, while the latter means that one rendering client is launched for each host (if the host runs multiple tiles, the client will create one window per tile). Currently, we use mostly `perTile` (in fact, `perHost` has not been tested recently);
+- The `domain` property is optional, it is the domain name to add to the host names listed in the `tiles` array;
+- The `env` property is optional. It lists per-instance values that can be used in the `start`, `stop` and `restart` properties below. If defined, it must be an object whose properties are the instance names and the values are a string;
+- The `start` and `stop` properties are the shell commands to start / kill all the clients. Before execution, the following string substitutions take place: %HOST% is replaced by the client host name, %PORT% is replaced by the port number of the server, %INSTANCE% is replaced by the instance name to run on the client, and %ENV% is replaced by the content of the `env` property for the instance. Also process environment variables, e.g. `$PATH`, are replaced by their value. The % and $ signs can be protected by a backslash (which is specified as two backslashes in a JSON file);
+- The optional `restart` property is a shell command to kill then start all the clients. If absent, it is replaced by calling `stop` then `start`.
 
 The `tiles` property of the wall is a two-dimensional array (an array of lines, each line being an array of tiles). Each element of this two-dimensional array represents a tile and is itself an array with two elements:
 
@@ -113,32 +185,55 @@ Note that the `local.json` configuration file includes a property `layout` in th
 This property is used to map the names of the tiles to the position of their corresponding window on the screen.
 When this property is not present, which is the normal case, each tile is run full-screen.
 
-### Installing the clients ###
-At present, WildOS features a rendering client for tiled displays and a web client for tablets and smartphones. Only the former (the rendering client) needs to be installed on the machine(s) running your tiled display. (See below what to do to run a test version locally on your machine).
+
+Installing the rendering clients
+--------
+
+At present, WildOS features a rendering client for tiled displays and a web client for tablets and smartphones. Only the former (the rendering client) needs to be installed on the machine(s) running your tiled display.
 
 Assuming that the configuration of your display cluster is properly described in the `configs` directory (see previous section), all you need to do to install the clients for the platform `MyWall` is:
 
 	% WALL=MyWall export WALL  
 	% make install  
 
-Also, if you need to log in as a different user on the remote machines, make sure to either set the `LOGNAME` environment variable to that user or to edit the Makefile and change the `walldo` command on the second line (see the example in the commented-out first line). 
+If you need to log in as a different user on the remote machines, make sure to either set the `LOGNAME` environment variable to that user or to edit the Makefile and change the `walldo` command on the second line (see the example at the top of the script itself). 
 
-#### Installing the clients by hand ####
+### Installing the rendering clients by hand ###
 Alternatively, you can install the clients by hand by following these steps:
 
 * Create the `WildOS` directory on the destination machines (preferably under the home directory of the target user);
 * Recursively copy the `renderer`, `shared` and, optionally, `slides` directories to the destination machines under `WildOS`;
 * Install the node.js packages by running `npm install` in the `WildOS/renderer` directory in each destination machine.
 
-### Testing with local clients ###
-If you do not have access to a tiled display, you can test locally on your machine by setting the `WALL` environment variable to `local`:
+### Testing the rendering clients ###
+To test the remote clients, proceed as before.
+First, try to run the server in the simplest way:
 
-	% WALL=local export WALL  
+	% wildos Browser
 
-In this case, there is no need to install the client as described above: it is already in the `renderer` directory.
+This should display the server windows on the server machine, and a full-screen window on each tile run by a client machine. Entering a URL in the server window should display it both in the server window and on the clients. You can pan and zoom the web page in the server window with the mouse: drag to move the page within the tiled display, use the mousewheel to zoom it in and out.
+
+In case of problems, troubleshoot as follows.
+
+Run the server without launching the clients:
+
+	% wildos -n Browser
+
+then start the clients by clicking the `Restart` button in the server window, or log in a client machine and run a rendering client by hand as follows:
+	
+	(client) % nw . -s <server>:<portnumber> -i <instancename>
+
+where `server` is the name of the server machine, `portnumber` the port number the server is running on and `instancename` the name of the renderer instance as specified in the configuration file, such as 'Left' or 'Right' for a configuration where each machine runs two tiles.
+
+
+Installing updates
+--------
+
+### Updating an existing install ###
+If you update WildOS, e.g. with `svn update` or from the git repository, you need to update the clients with `make update`.
 
 ### Extras ###
-If you want to re-generate the documentation (which you don't need to do unless you plan to edit it), you will also need to install [MultiMarkdown](http://fletcherpenney.net/multimarkdown/), a tool to compile Markdown files into HTML.
+If you want to re-generate the documentation (which you shouldn't need to do unless you have edited it), you will also need to install [MultiMarkdown](http://fletcherpenney.net/multimarkdown/), a tool to compile Markdown files into HTML.
 
 Then simply run
 
@@ -146,86 +241,74 @@ Then simply run
 
 to generate `ReadMe.html` as well as the content of the `doc` directory.
 
-### Updating an existing install ###
-If you update WildOS, e.g. with `svn update`, you need to update the clients with `make update`.
-
-If the update does not seem to work, try to remove the `node_modules` directories on each client machine and re-install :
-
-	% walldo -d WildOS/renderer rm -rf node_modules
-	% walldo -d WildOS/renderer npm install
 
 Running WildOS
 --------
 
 Once everything is installed properly, you should be able to run WildOS.
+
 WildOS consists of multiple processes: a server and a set of clients. The order in which they are run (and stopped and restarted) should not matter. For example, you can stop the server, restart it, and the clients will automatically reconnect to it. However, if things go really wrong, it's better to kill everything, start the server, and then the clients.
 
-### Running the server ###
-You run the WildOS server on the main computer. The server is a node-webkit application, however it is not packaged as a standalone application so you need to run it from the command line. Node-webkit is slightly different on Mac OS X and Linux so the command to run it is a bit different:
+### Running the server and rendering clients ###
 
-* On Mac OS X, we assume that node-webkit is in `/Applications`. If not, edit the `tools/nw` so that `NWAPP` points to it.
-* On Linux, node-webkit is expected to be in the PATH (typically in `/usr/local/bin`).
+Make sure that you have set the `WALL` environment variable to the appropriate value, and that the `WildOS/tools` directory is in the `PATH`:
 
-Also, remember that the name of the platform must be set in the `WALL` environment variable.
-In order to test on a single machine, you can set `WALL` to `local` and run the server and clients on the same machine.
+	% WALL=MyWall export WALL
+	% PATH=`pwd`/tools:$PATH
 
-To run the server on Mac OS X:
+The simplest way to run the WildOS server and rendering clients is to run the following command on the server machine:
 
-	% cd WildOS/server  
-	% ../tools/nw   
+	% wildos
 
-To run the server on Linux:
+This will run the server, kill any rendering clients and restart them. 
+When quitting the server (with the Quit menu item or keyboard equivalent), the rendering clients will be killed.
 
-	% cd WildOS/server  
-	% nw .  
+The server will create two windows: one with lots of traces, the other depicting the wall display with the buttons `Restart` and `Shutdown` at the top. As the clients come up, the tiles in the server window become transparent (i.e. they turn form pink to blue), denoting that the server has established the connection. When a clients disappears, the corresponding tile turns pink again.
 
-This should open a window with lots of traces, and another window depicting the wall display with the buttons `Restart` and `Shutdown` at the top. 
-The `Applications` menu lists the available applications. In order to quickly test if the server works, even without any clients running, you can select the `Browser` application. A text entry field should appear in the main window and if you enter a URL, it will show up in the miniature wall, as shown on the screen dump below. Note that the tiles are pink and semi-transparent to show that there is no client running.
+The `Restart` button kills any running clients and then restarts them.
+The `Shutdown` button sends a message to the clients to quit them gracefully. If this does not work, you can use the `Stop` command in the `Platform` menu to kill them.
 
-![Screendump of the browser application when no rendering clients are running](doc/img/browser-noclients.png)
+The `Applications` menu lists the available applications. Select an application to load it, or to unloaded it if it is already loaded (a checkmark shows which applications are loaded). Select the `Browser` application. A text entry field should appear in the main window and if you enter a URL, it should show up in the miniature wall as well as in the client windows. You can also run `wildos` so that the `Browser` application (and/or other ones) start automatically.
 
-You can start the server with an initial set of running applications simply by adding them to the command line:
+The general format of the `wildos` command is as follows:
+	% wildos [start] [-n|--no-clients] [-w|--wall config] [-p|--port number] [-d|--debug [0|1|2]] [-l|--log file] [app ...]
+	% wildos stop
 
-	(macos)% ../tools/nw Browser  
-	(linux)% nw . Browser  
+The first form runs the server and takes the following arguments:
 
-### Running the rendering clients ###
-To run the rendering clients, simply click the `Restart` button in the main window. or select `Restart` in the `Platform` menu.
-Alternatively, you can run the following command in a terminal window unless you are running the clients locally:
+* `-n|--no-clients` prevents the clients from being automatically started/stopped with the server;
+* `-w|--wall <config>` specifies a different config file, overriding the `$WALL` setting;
+* `-p|--port <number>` specifies a different port number than the one specified in the config file for the server to listen to;
+* `-d|--debug [0|1|2]` specifies debugging level: 0 (no logging), 1 (logging window hidden), 2 (logging window open);
+* `-l|--log file` specifies the log configuration file (defaults to `logdefault.js`);
+* `app ...` is an optional list of apps. The available apps, such as `Browser` are described later in this document.
 
-	% walldo WildOS/renderer/restart  
+The second form stops the rendering clients (but not the server).
 
-If you are running clients locally, the command instead is (assuming you are in the WildOS directory):
+For example :
 
-	% renderer/restart  
+	% wildos -w local -p 8088 Browser
 
-This will kill any existing clients and then start them again. Each client machine should first show a window with lots of traces and then, as soon as it has managed to connect to the server, it should display a full-screen blank window with the same web page as the one you loaded on the server. (If you are running clients locally, it will create four small windows mimicking a small tiled display instead of running full screen).
-
-Note that on the server, the controller window will have its tiles turn fully transparent as the clients connect to the server. This tells you whether the server has successfully communicated with the clients:
-
-![Screendump of the browser application when the rendering clients are running](doc/img/browser.png)
+uses the `local` config file to run server and clients on the local machine, uses port 8088 and loads the `Browser` app.
 
 ### Running the web clients ###
 The server application displays in the top-right corner a QRcode of the URL for web clients to connect to the server. Simply flash this code or enter the URL in your browser (smartphone, tablet or any computer with a recent Web browser). The URL is:
 
-	http://<server-hostname>:8080/controller.html  
+	http://<server>:<portnumber>/controller.html  
 
-
-This should open a page empty at first (except for the title "WILD controller"), then, assuming the Browser application is still running, it should display a text entry field to change the URL displayed in the browser of the tiled display:
+This should open an empty page (except for the title "WILD controller") then, assuming the Browser application is still running, it should display a text entry field to change the URL displayed in the browser of the tiled display:
 
 ![Screendump of the browser web controller](doc/img/browser-controller.png)
 
 ### Shutting down ###
-Click the `Shutdown` button or select the `Shutdown` command in the `Platform` menu to stop the rendering clients. Note that this will only work if they are still responding. If they are not, you will have to kill them "by hand" with the following command:
+To quit the server, select the `Quit` command in its menu or use the usual quit keyboard shortcut (command-Q on Mac OS X). Unless the server was run with the `-n` flag, this will also kill the clients.
 
-	% tools/walldo killall nw
+You can also click the `Shutdown` button or select the `Shutdown` command in the `Platform` menu to stop the rendering clients. Note that this will only work if they are still responding. If they are not, try the `Stop` command in the `Platform` menu, or kill them "by hand" with the following command:
+
+	% wildos stop
 
 (If you are running local clients, you can kill them in the usual way, e.g. by selecting their `Quit` command).
 
-To quit the server, select the `Quit` command in its menu or use the usual quit keyboard shortcut (command-Q on Mac OS X).
-Note that this does **not*** kill the clients (mostly so that you can test if they reconnect correctly when restarting the server).
-
-Note that the `Start` and `Stop` commands in the `Platform` menu are currently inactive.
 
 The applications
 --------

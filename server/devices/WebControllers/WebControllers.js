@@ -1,15 +1,19 @@
 // WebControllers - a set of devices running a web browser and socket.io
 //
+// Configuration properties:
+//	- "hostname": the host name to use in the URL. Defaults to `os.hostname()`
 
 // Node modules
 var os = require('os');
 
 // Shared modules
-var OO = require('OO');
-var log = require('Log').shared();
+var log = require('Log').logger('WebControllers');
 
-// Internal modules.
-var Device = require('../lib/Device');
+// Internal modules
+var Device = require('../../lib/Device');
+
+// Local modules
+var WebController = require('./WebController');
 
 // The `WebControllers` class
 var WebControllers = Device.subclass().name('WebControllers')
@@ -20,14 +24,19 @@ var WebControllers = Device.subclass().name('WebControllers')
 		if (options)
 			this.set(options);
 
-		// Notify of creation and availability
+		// Notify of creation
 		this.deviceCreated();
-		this.deviceAvailable();
-
-		// The window showing the QR code
-		this.window = this.createUI();
 	})
 	.methods({
+		// Called when the device is added to the device tree
+		added: function() {
+			// Notify of availability
+			this.deviceAvailable();
+
+			// Create the window showing the QR code
+			this.window = this.createUI();
+		},
+
 		// Callback when a new client has successfully connected.
 		clientConnected: function(socket, server, clientInfo) {
 			this.addDevice(WebController.create(socket, server, clientInfo));
@@ -43,7 +52,9 @@ var WebControllers = Device.subclass().name('WebControllers')
 		//
 		createUI: function() {
 			var gui = process.mainModule.exports.gui;
-			var url = '../content/qrcode.html#'+os.hostname()+':8080';	// URL is relative to the lib folder
+			var platform = this.findAncestor({type: 'Platform'});
+			var hostname = this.config.hostname || os.hostname();
+			var url = '../content/qrcode.html#'+hostname+':'+platform.serverPort;	// URL is relative to the lib folder
 			// We can't set the position here so we hide the window and it positions and shows itself
 			var win = gui.Window.open(url, {
 				show: false,
@@ -57,35 +68,5 @@ var WebControllers = Device.subclass().name('WebControllers')
 	});
 
 log.spyMethods(WebControllers);
-
-// Internal class to manage the individual controllers
-var WebController = Device.subclass().name('WebController')
-	.fields({
-		socket: null,	// The socket to communicate with this client
-	})
-	.constructor(function(socket, server, clientInfo) {
-		this._super({}, {});
-		this.socket = socket;
-
-		server.registerClient(socket, this);
-
-		// Notify of creation
-		this.deviceCreated();
-		this.deviceAvailable();
-	})
-	.methods({
-		disconnected: function() {
-			this.deviceUnavailable();
-			this.parent.removeDevice(this);
-			this.socket = null;
-		},
-
-		emit: function(msg, data) {
-			if (this.socket)
-				this.socket.emit(msg, data);
-		}
-	});
-
-log.spyMethods(WebController);
 
 module.exports = WebControllers;

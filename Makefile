@@ -1,32 +1,26 @@
 
 #walldo=tools/walldo -l mbl
 walldo=tools/walldo
-tilecutter=tools/tilecutter
-
-slides=../SlideShows
-tiles=slides
-desttiles=WildOS
 
 what:
-	@echo "make start: (re)start the rendering clients"
-	@echo "make stop: kill the rendering clients"
+	@echo "make start: start server and rendering clients"
+	@echo "make stop: kill server and rendering clients"
 	@echo
-	@echo "make renderer: create the wildos.js library"
+	@echo "make server: create the wildos.js library"
 	@echo "make install: copy the rendering client to the display cluster"
-	@echo "make update: update the rendering clients"
+	@echo "make sync: update files on rendering clients"
+	@echo "make update: sync rendering clients and reinstall node modules"
 	@echo "make docs: generate the HTML documentation"
-	@echo
-	@echo "make makeslides: create the slides with tilecutter"
-	@echo "make updateslides: update the slides with tilecutter"
-	@echo "make syncslides: update the slides on the display cluster"
 
 start:
+	cd server; nw `pwd`
 	$(walldo) WildOS/renderer/restart
 
 stop:
+	killall nw node-webkit
 	$(walldo) killall nw node-webkit
 
-renderer:
+server:
 	cd renderer/lib; browserify -r OO -r Log -r ./ObjectSharer -r ./SharingServer -r ./SocketIOServer -r socket.io-client > ../../server/content/wildos.js
 
 install:
@@ -35,21 +29,32 @@ install:
 	$(walldo) rsync . WildOS
 	$(walldo) -d WildOS/renderer npm install
 
-update:
+sync:
 	# update WildOS on clients
-	$(walldo) rsync renderer shared WildOS
-	$(walldo) -d WildOS/renderer npm update
+	$(walldo) rsync . WildOS
 
-docs: 
+update: sync
+	# sync reinstall node modules
+	$(walldo) -d WildOS/renderer rm -rf node_modules
+	$(walldo) -d WildOS/renderer npm install
+
+ReadMe.html: ReadMe.md
 	tools/mmdoc -a doc/assets -t doc/src/template.html ReadMe.md
+
+docs: ReadMe.html
 	tools/mmdoc -i doc/src -o doc
 
+# SlideShow app
+tilecutter=tools/tilecutter
+slides=../SlideShows
+tiles=slides
+desttiles=WildOS
+
 makeslides:
-	$(tilecutter) -r -d $(srcslides) $(tiles)
+	$(tilecutter) -r -d $(tiles) $(slides)
 
 updateslides: 
-	$(tilecutter) -r -u -d $(srcslides) $(tiles)
+	$(tilecutter) -r -u -d $(tiles) $(slides)
 
 syncslides:
-	$(walldo) rsync --filter '- thumbs' $(tiles) $(desttiles)
-
+	$(walldo) rsync --filter '- thumbs' $(tiles) $(tilesRemote)

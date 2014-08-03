@@ -1,7 +1,11 @@
-// Code injected in the platform control window
+// Code injected in the platform control window for the Cursors app.
 //
-// Here we let create and move cursors.
+// Show the available cursors and let the user create/delete cursors.
+// Cursors are also displayed in the tiled display representation, and can be moved by dragging them.
 //
+
+// Wrap in a function to protect global space
+var cursorsApp = (function () {
 
 var app = platform.apps.getApp('Cursors');
 
@@ -244,3 +248,11 @@ Drag.prototype.stop = function() {
 
 // Go!
 startCursors();
+
+// Return the exported functions.
+return {
+	stop: stopCursors,
+};
+
+// Invoke the main function
+}) ();

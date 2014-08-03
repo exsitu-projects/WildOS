@@ -9,7 +9,7 @@ var http = require('http');
 
 // Shared modules
 var OO = require('OO');
-var log = require('Log').shared();
+var log = require('Log').logger('WebServer');
 
 // The `WebServer` class.
 var WebServer = OO.newClass().name('WebServer')
@@ -75,6 +75,7 @@ var WebServer = OO.newClass().name('WebServer')
 			});
 
 			// Start http server.
+			log.method(this, 'start', '- listening to port', this.port);
 			this.http.listen(this.port);
 			this.running = true;
 

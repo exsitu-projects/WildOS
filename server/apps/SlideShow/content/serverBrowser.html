@@ -1,0 +1,313 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>WildOS slide viewer</title>
+    <link rel="stylesheet" href="css/blueimp-gallery.min.css">
+
+    <style type="text/css">
+    html {
+        height: 100%;
+    }
+
+    body {
+        margin-top: 40px;   /* make room for fixed menu bar */
+        min-height: 100%;   /* together with html height, ensures body is at least as high as window so we can drag anywhere in it */
+        background-color: #222;
+        color: #ddd;
+        font-family: Helvetica, sans-serif;
+    }
+
+    /* separate the thumbnails from each other */
+    #links a {
+        margin-right: 4px;
+    }
+
+    /* set background to grey when dragging file/folder to it */
+    .dropzone, .dropzone #blueimp-gallery {
+        background-color: grey;
+    }
+
+    /* yellow border shows selected slide */
+    img.slide {
+        border: 2px solid #222;
+    }
+    img.current {
+        border-color: yellow;
+    }
+
+    /* menu bar */
+    #topbar {
+        position: fixed;
+        display: block;
+        left: 0; top: 0; width: 100%;
+        background-color: #444;
+        border-bottom: 1px solid #ddd;
+        padding-left: 5px;
+        cursor: default;
+    }
+    #topbar .menu:hover {
+        background-color: #ddd;
+        color:  #444;
+    }
+    #topbar .menu {
+        display: inline-block;
+        padding: 5px;
+        margin-right: 10px;
+    }
+
+    /* help panel */
+    .close {
+        text-align: right;
+        padding-bottom: 5px;
+    }
+    #help {
+        display: none;
+        position: fixed;
+        padding: 5px;
+        background-color: #444;
+        right: 20px;
+    }
+    </style>
+
+    <script type="text/javascript">
+    // Enable drag-and-drop on an element.
+    // Call `dropCB` with the list of files when dropped.
+    // If `dropCB` is null, drag-and-drop is disabled instead.
+    function dragAndDropFiles(element, dropCB) {
+        // See https://github.com/rogerwang/node-webkit/wiki/Dragging-files-into-page
+        window.ondragover = window.ondrop = function(ev) { ev.preventDefault(); return false; };
+
+        if (! dropCB) {
+            // Remove instead of install handlers
+            // Using jQuery's even namespaces helps a lot here!
+            $(element).off('dragover.slideShow').off('dragleave.slideShow').off('drop.slideShow');
+            return;
+        }
+
+        // To manage highlighting, see http://jsfiddle.net/F6GDq/8/ and
+        // http://stackoverflow.com/questions/7110353/html5-dragleave-fired-when-hovering-a-child-element
+        $(element)
+            .on('dragover.slideShow', function(ev) { ev.preventDefault(); $(element).addClass('dropzone'); })
+            .on('dragleave.slideShow', function(ev) { $(element).removeClass('dropzone'); })
+            .on('drop.slideShow', function(ev) {
+                ev.preventDefault();
+                $(this).removeClass('dropzone');
+                if (dropCB)
+                    dropCB(ev.originalEvent.dataTransfer.files);
+            })
+        ;
+    }
+    </script>
+</head>
+<body>
+<div id="topbar">
+<div class="menu" onclick="openSlideshow()">Open slideshow</div><input style="display:none;" id="fileDialog" type="file" accept=".json"/>
+<div class="menu" onclick="openFolder()">Open folder</div><input style="display:none;" id="folderDialog" type="file" nwdirectory/>
+<div class="menu" onclick="showInFinder()">Show in Finder</div>
+<div class="menu" onclick="toggleGallery()">Gallery</div>
+<div class="menu" onclick="$('#help').css('display', 'block')">Help</div>
+</div>
+
+<div id="help">
+<div class="close" onclick="$('#help').css('display', 'none')">&#x2716;</div>
+<div>Show slide: click thumbnail</div>
+<div>Next slide: <button onclick="app.nextSlide()">&rarr;</button> or <button onclick="app.nextSlide()">space</button></div>
+<div>Previous slide: <button onclick="app.prevSlide()">&larr;</button></div>
+<div>Gallery: <button onclick="$('.slide.current').click()">&#x21a9;</button> or click selected slide or "Gallery" menu</div>
+<div>Load slideshow: use menu or drag file/folder to window</div>
+</div>
+
+<h2 id="title"></h2>
+<!-- The Gallery as lightbox dialog, should be a child element of the document body -->
+<div id="blueimp-gallery" class="blueimp-gallery blueimp-gallery-controls" data-continuous="false" data-toggleControlsOnReturn="false" data-toggleSlideshowOnSpace="false">
+    <div class="slides"></div>
+    <h3 class="title"></h3>
+    <a class="prev">‹</a>
+    <a class="next">›</a>
+    <a class="close">×</a>
+    <!--<a class="play-pause"></a>-->
+    <ol class="indicator"></ol>
+</div>
+
+<!-- placeholder for lighttable -->
+<div id="links">
+</div>
+
+<script src="../../../content/jquery-2.1.1.min.js"></script>
+<script type="text/javascript">
+    // Get the slideshow app
+    var app = global.platform.apps.getApp('SlideShow');
+
+    // Setup a handler on the thumbnails so that the gallery is not started 
+    // unless when clicking on the selected slide.
+    $(document).on('click', '[data-gallery]', function(event) {
+        if (! $(event.target).hasClass('current')) {
+            var index = $(event.target).data('slide-index');
+            app.gotoSlide(index);
+            event.stopImmediatePropagation();   // prevent further handlers, i.e. opening the gallery
+            return false;
+        }
+    });
+
+    // Navigate with arrow keys + space bar + launch gallery with return
+    // Note that we hijack the bindings from the gallery by setting our
+    // handler first and by stopping propagation.
+    $(document).on('keydown', function(event) {
+            switch (event.which || event.keyCode) {
+            case 13: // Return
+                var gallery = $('#blueimp-gallery').data('gallery');
+                if (gallery)
+                    gallery.close();
+                else
+                    $('.slide.current').click();
+                event.stopImmediatePropagation();
+                return false;
+
+            case 37: // Left
+                app.prevSlide();
+                event.stopImmediatePropagation();
+                return false;
+
+            case 39: // Right
+            case 32: // Space
+                app.nextSlide();
+                event.stopImmediatePropagation();
+                return false;
+
+            }
+    });
+
+    // Handler for navigating to the next slide simply by clicking an image in the gallery
+    // Must be before the blueimp-gallery
+    $(document).on('click', '.slide-content', function(event) {
+        app.nextSlide();
+        event.stopImmediatePropagation();   // prevent further handlers, i.e. switching controls on/off
+        return false;
+    });
+
+</script>
+<script src="js/jquery.blueimp-gallery.min.js"></script>
+<script>
+    // Rather dirty trick to disable the turning off of controls when clicking the slide in the gallery
+    // (because the option toggleControlsOnReturn only affects what happens with the Return key)
+    blueimp.Gallery.prototype.toggleControls = function() {};
+
+    // File dialog to open a slideshow
+    $('#fileDialog').change(function(event) {
+        app.loadSlideShow($(this).val());
+    });
+    function openSlideshow() {
+        var chooser = $('#fileDialog');
+        chooser.attr('nwworkingdir', app.slideshowDir);
+        chooser.click();  
+    }
+
+    $('#folderDialog').change(function(event) {
+        app.loadFiles([$(this).val()]);
+    });
+    function openFolder() {
+        var chooser = $('#folderDialog');
+        chooser.attr('nwworkingdir', app.slideshowDir);
+        chooser.click();  
+    }
+
+    // Open the slides folder in the Finder
+    function showInFinder() {
+        var spawn = require('child_process').spawn;
+        spawn('open', ['../slides']);
+    }
+
+    // Toggle gallery on/off
+    function toggleGallery() {
+        var gallery = $('#blueimp-gallery').data('gallery');
+        if (gallery)
+            gallery.stop();
+        else
+            $('.slide.current').click();
+    }
+
+    // Load the slide deck in the browser
+    function updateSlides(startGallery) {
+        var slides = [];
+
+        // Update the list of slides
+        $('#links').empty();
+        if (!app.slides)
+            return null;
+
+        var index = 0;
+        var total = app.slides.length;
+        app.slides.forEach(function(slideName) {
+            var thumb = 'slides/'+slideName+'/thumbs/thumb500.png';
+            var img = 'slides/'+slideName+'/thumbs/thumb1000.png';
+            slides.push(img);
+            var title = 'slide '+(index+1)+'/'+total+' - '+slideName;
+            $('#links').append('<a href="'+img+'" title="'+title+'" data-gallery>'+
+                '<img src="'+thumb+'" class="slide" id="slide_'+index+'" data-slide-index="'+index+'"></a>');
+            index++;
+        });
+
+        // Highlight current slide
+        if (app.currentSlideIndex >= 0)
+            $('#slide_'+app.currentSlideIndex).addClass('current');
+
+        // Add title
+        $('#title').html(app.slideShowTitle || app.slideShow || '');
+
+        // start Gallery mode if needed
+        if (startGallery) {
+            if (app.slides && app.slides.length > 0)
+                $('#links').children().first().click();
+        }
+
+        return slides;
+    }
+
+    // Notify app when changing slide
+    $('#blueimp-gallery')
+        .on('slideend', function(event, index, slide) {
+            if (index != app.currentSlideIndex)
+                app.gotoSlide(index);
+        });
+
+    // Update carrousel when current slide changes
+    app.onSlideChanged(function(app) {
+        $('.slide').removeClass('current');
+        $('#slide_'+app.currentSlideIndex).addClass('current');
+
+        var gallery = $('#blueimp-gallery').data('gallery');
+        if (!gallery)
+            return;
+        gallery.slide(app.currentSlideIndex);
+    });
+
+    // Update lightbox and gallery when slideshow changes
+    app.onSlideShowChanged(function(app) {
+        var gallery = $('#blueimp-gallery').data('gallery');
+        if (gallery) {
+            // Update only after gallery is closed
+            $('#blueimp-gallery').on('closed', function(event) {
+                updateSlides(false);
+                $('#blueimp-gallery').off('closed');
+            });
+            gallery.close();
+        } else {
+            updateSlides(false);
+        }
+    });
+
+    updateSlides(false);
+
+    dragAndDropFiles('body', function(files) {
+        var paths = [];
+        for (var i = 0; i < files.length; i++) {
+            paths.push(files[i].path);
+        }
+
+        app.loadFiles(paths);
+    });
+</script>
+
+</body>
+</html>

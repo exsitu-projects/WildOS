@@ -60,33 +60,55 @@ function expandEnv(path) {
 	return path;
 }
 
-// Append one or more paths to the search path.
+// Append/Prepend one or more paths to the search path.
 // The arguments to this function can be a string with one or more paths
 // separated by colons ('path1:path2'), or an array of such paths.
 // Environment variables ('$MYPATH') are substituted, as well
 // as leading ~ (replaced by $HOME).
 // Returns `this` so that other calls (e.g. to suffixes) can be chained.
 //
-SearchPath.prototype.append = function() {
-	// Go over the arguments
-	for (var a = 0; a < arguments.length; a++) {
-		var newPath = arguments[a];
+SearchPath.prototype.append = function(/* args... */) {
+	this.concat('after', arguments);
+}
+
+SearchPath.prototype.prepend = function(/* args... */) {
+	this.concat('before', arguments);
+}
+
+// Helper function for append/prepend. 
+// `where` is 'before' or 'after'; `path` must be an array.
+SearchPath.prototype.concat = function(where, path) {
+	var start = 0, stop = path.length, incr = 1;
+
+	// To insert at head and keep the order, start from the end
+	if (where == 'before') {
+		start = stop-1;
+		stop = -1;
+		incr = -1;
+	}
+	// Go over the arguments, skipping the first one
+	for (var a = start; a != stop; a += incr) {
+		var newPath = path[a];
 		if (! newPath)
 			continue;
 
 		if (util.isArray(newPath))
-			this.append.apply(this, newPath);	// Apply recursively if it's an array
+			this.concat(where, newPath);	// Apply recursively if it's an array
 		else {
 			// We assume it's a string.
 			newPath = expandEnv(newPath);
 			if (newPath.match(/:/))
-				this.append(newPath.split(':'));	// Apply recursively after splitting by ':'
+				this.concat(where, newPath.split(':'));	// Apply recursively after splitting by ':'
 			else {
 				// Expand leading ~
 				newPath = expandTilde(newPath);
 				// Avoid duplicates
-				if (this.paths.indexOf(newPath) < 0)
-					this.paths.push(newPath);
+				if (this.paths.indexOf(newPath) < 0) {
+					if (where == 'after')
+						this.paths.push(newPath);
+					else
+						this.paths.splice(0, 0, newPath);	// insert in front
+				}
 			}
 		}
 	}

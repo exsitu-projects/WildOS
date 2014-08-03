@@ -1,0 +1,49 @@
+#!/bin/bash
+#
+# run the WildOS server
+# 	wildos [start] [-w|--wall config] [-p|--port number] [app ...]
+#	wildos stop
+
+DIR=`which $0`
+DIR=`dirname $DIR`
+case $DIR in
+	/*) ;;
+	*) DIR=`pwd`/$DIR ;;
+esac
+
+MACHINE=`uname`
+
+if [ $MACHINE == 'Linux' ]; then 
+	NW=nw
+else
+	# Mac OS X
+	NW=$DIR/nw
+fi
+
+if [ $# -eq 0 ]; then
+	set start
+fi
+
+# clean up
+case $1 in
+	stop)
+		# avoid killall node-webkit on local machine as it will kill the server too!
+		if [ $MACHINE == 'Linux' ]; then 
+			ps aux | fgrep /nw | fgrep -v server | fgrep -v -- --type= | awk '{print $2}' | xargs kill || true
+		else
+			# Mac OS X
+			kill `ps -e | grep renderer.js | awk '{print $1}'` || true
+		fi
+
+		if [ "$WALL" != 'local' ]; then
+			$DIR/walldo killall nw node-webkit
+		fi
+	;;
+	start)
+		shift
+		$NW $DIR/../server $*
+	;;
+	*)
+		$NW $DIR/../server $*
+	;;
+esac

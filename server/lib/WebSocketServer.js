@@ -7,7 +7,7 @@
 var socketio = require('socket.io');
 
 // Shared modules
-var log = require('Log').shared();
+var log = require('Log').logger('WebSocketServer');
 
 // Internal modules
 var WebServer = require('./WebServer');

@@ -1,58 +1,198 @@
-<h3>I am the SlideShow controller</h3>
+<!-- Web controller for the SlideShow app -->
+<h3 class="controller-title">SlideShow</h3>
+<div class="controller-body">
+<link rel="stylesheet" href="/SlideShow/css/blueimp-gallery.min.css">
 
-<p id="slide"></p>
-<input id="firstSlide" type="button" value="First"/>
-<input id="prevSlide" type="button" value="Prev"/>
-<input id="nextSlide" type="button" value="Next"/>
-<input id="lastSlide" type="button" value="Last"/>
+<style type="text/css">
+/* separate the thumbnails from each other */
+#links a {
+    margin-right: 2px;
+}
 
-<script>
-	var SlideShow = App.subclass().name('SlideShow')
-		.fields({
-			slideShow: null,
-			slides: [],
-			currentSlideIndex: -1,
-			currentSlide: null,
-		})
-		.constructor(function(config) {
-			this._super(config);
+/* yellow border shows selected slide */
+img.slide {
+    border: 2px solid #222;
+}
+img.current {
+    border-color: yellow;
+}
+</style>
 
-			this.wrapFields({
-				set currentSlide(path) { this._set(path); this.adjustSlide(); },
-			});
-		})
-		.methods({
-			adjustSlide: function() {
-				var html='';
-				var url = null;
-				if (this.slideShow) {
-					html+= 'Slide show: '+this.slideShow+'<br>';
-				}
-				if (this.currentSlide)
-					url = "/SlideShow/slides/"+this.currentSlide+"/thumbs/thumb200.png";
-				if (url)
-					html += '<img src="'+url+'" onclick="slideShow.nextSlide()"/><br/>';
-				$("#slide").html(html+'slide '+(this.currentSlideIndex+1)+'/'+this.slides.length+' - '+this.currentSlide);
+<script type="text/javascript">
+// We leave these in the global namespace because we need them in the script at the end of this file
+
+var SlideShow = App.subclass().name('SlideShow')
+	.fields({
+		slideShow: null,
+		slideShowTitle: null,
+		slides: [],
+		currentSlideIndex: -1,
+		currentSlide: null,
+	})
+	.constructor(function(config) {
+		this._super(config);
+
+		this.slideChangedListeners = [];
+		this.slideShowChangedListeners = [];
+
+		var self = this;
+		this.wrapFields({
+			set currentSlide(path) {
+				this._set(path); 
+				self.slideChangedListeners.forEach(function(cb) {
+					cb(self);
+				});
 			},
+			set slides(list) {
+				this._set(list);
+				self.slideShowChangedListeners.forEach(function(cb) {
+					cb(self);
+				});
+			},
+		});
+	})
+	.methods({
+		// These are remote called on the server by shareState below
+		firstSlide: function() {},
+		prevSlide: function()  {},
+		nextSlide: function()  {},
+		lastSlide: function()  {},
+		gotoSlide: function(i) {},
 
-			// These are remote called on the server by shareState below
-			firstSlide: function() {},
-			prevSlide: function()  {},
-			nextSlide: function()  {},
-			lastSlide: function()  {},
+		// Handlers for changes to the shareState
+		onSlideChanged: function(cb) {
+			this.slideChangedListeners.push(cb);
+		},
 
-		})
-		.shareState('own', ['firstSlide', 'prevSlide', 'nextSlide', 'lastSlide'])
-	;
+		onSlideShowChanged: function(cb) {
+			this.slideShowChangedListeners.push(cb);
+		},
+	})
+	.shareState('own', ['firstSlide', 'prevSlide', 'nextSlide', 'lastSlide', 'gotoSlide'])
+;
 
-	log.spyMethods(SlideShow);
+var slideShowApp = SlideShow.create();
+</script>
 
-	var slideShow = SlideShow.create();
+<h2 id="title"></h2>
+<!-- The Gallery as lightbox dialog, should be a child element of the document body -->
+<div id="blueimp-gallery" class="blueimp-gallery blueimp-gallery-controls" data-continuous="false" data-toggleControlsOnReturn="false" data-toggleSlideshowOnSpace="false">
+    <div class="slides"></div>
+    <h3 class="title"></h3>
+    <a class="prev">‹</a>
+    <a class="next">›</a>
+    <a class="close">×</a>
+    <!--<a class="play-pause"></a>-->
+    <ol class="indicator"></ol>
+</div>
 
-	$("#slide").html("(Waiting for slide information)");
-	$('#firstSlide').click(function() { slideShow.firstSlide(); });
-	$('#prevSlide').click(function() { slideShow.prevSlide(); });
-	$('#nextSlide').click(function() { slideShow.nextSlide(); });
-	$('#lastSlide').click(function() { slideShow.lastSlide(); });
+<!-- placeholder for lighttable -->
+<div id="links">
+</div>
+
+<!--<script src="../../../content/jquery-2.1.1.min.js"></script>-->
+<script type="text/javascript">
+    // Setup a handler on the thumbnails so that the gallery is not started 
+    // unless when clicking on the selected slide.
+    $(document).on('click', '[data-gallery]', function(event) {
+        if (! $(event.target).hasClass('current')) {
+            var index = $(event.target).data('slide-index');
+            slideShowApp.gotoSlide(index);
+            event.stopImmediatePropagation();   // prevent further handlers, i.e. opening the gallery
+            return false;
+        }
+    });
+
+    // Handler for navigating to the next slide simply by clicking an image in the gallery
+    // Must be before the blueimp-gallery
+    $(document).on('click', '.slide-content', function(event) {
+        slideShowApp.nextSlide();
+        event.stopImmediatePropagation();   // prevent further handlers, i.e. switching controls on/off
+        return false;
+    });
+</script>
+<script src="/SlideShow/js/jquery.blueimp-gallery.min.js"></script>
+<script>
+// Wrap in a function to protect global name space
+(function() {
+
+	// Rather dirty trick to disable the turning off of controls when clicking the slide in the gallery
+    // (because the option toggleControlsOnReturn only affects what happens with the Return key)
+    blueimp.Gallery.prototype.toggleControls = function() {};
+
+   // Load the slide deck in the browser
+    function updateSlides(startGallery) {
+        var slides = [];
+
+        // Update the list of slides
+        $('#links').empty();
+        if (!slideShowApp.slides)
+            return null;
+
+        var index = 0;
+        var total = slideShowApp.slides.length;
+        slideShowApp.slides.forEach(function(slideName) {
+            var thumb = '/SlideShow/slides/'+slideName+'/thumbs/thumb200.png';
+            var img = '/SlideShow/slides/'+slideName+'/thumbs/thumb500.png';
+            slides.push(img);
+            var title = 'slide '+(index+1)+'/'+total+' - '+slideName;
+            $('#links').append('<a href="'+img+'" title="'+title+'" data-gallery>'+
+            	'<img src="'+thumb+'" class="slide" id="slide_'+index+'" data-slide-index="'+index+'"></a>');
+            index++;
+        });
+
+        // Highlight current slide
+        if (slideShowApp.currentSlideIndex >= 0)
+            $('#slide_'+slideShowApp.currentSlideIndex).addClass('current');
+
+        // Add title
+        $('#title').html(slideShowApp.slideShowTitle || slideShowApp.slideShow || '');
+
+        // start Gallery mode if needed
+        if (startGallery) {
+            if (slideShowApp.slides && slideShowApp.slides.length > 0)
+                $('#links').children().first().click();
+        }
+
+        return slides;
+    }
+
+    // Notify app when changing slide
+    $('#blueimp-gallery')
+        .on('slideend', function(event, index, slide) {
+            slideShowApp.gotoSlide(index);
+        });
+
+    // Update carrousel when current slide changes
+    slideShowApp.onSlideChanged(function(app) {
+        $('.slide').removeClass('current');
+        $('#slide_'+app.currentSlideIndex).addClass('current');
+
+        var gallery = $('#blueimp-gallery').data('gallery');
+        if (!gallery)
+            return;
+        gallery.slide(app.currentSlideIndex);
+    });
+
+    // Update lightbox and gallery when slideshow changes
+    slideShowApp.onSlideShowChanged(function(app) {
+        var gallery = $('#blueimp-gallery').data('gallery');
+        if (gallery) {
+            // Update only after gallery is closed
+            $('#blueimp-gallery').on('closed', function(event) {
+                updateSlides(false);
+                $('#blueimp-gallery').off('closed');
+            });
+            gallery.close();
+        } else {
+            updateSlides(false);
+        }
+    });
+
+    updateSlides(false);
+
+// Invoke the main function
+}) ();
 
 </script>
+</div>

@@ -2,13 +2,19 @@
 //
 // A platform represents the various equipments available, typically in a room.
 // It is described by a configuration file (a json file).
+//
+// Once the platform is initialized, the following properties are set:
+//	- apps: App class, to access loaded apps
+//	- program: program arguments
+//	- menu: menubar
+//	- window: platform control window
 
 // Node modules
 var fs = require('fs');
 
 // Shared modules
 var OO = require('OO');
-var log = require('Log').shared();
+var log = require('Log').logger('Platform');
 var Path = require('path');
 
 // Internal modules
@@ -20,6 +26,9 @@ var Platform = Device.subclass().name('Platform')
 		this._super(config, options, events);
 		if (options)
 			this.set(options);
+
+		if (config.serverPort)
+			this.serverPort = config.serverPort;
 	})
 	.methods({
 		// Create the platform menu
@@ -35,14 +44,19 @@ var Platform = Device.subclass().name('Platform')
 			}
 
 			var win = gui.Window.get();
-			if (!win.menu)
-				win.menu = new gui.Menu({ type: 'menubar' });
 			var menuBar = win.menu;
+			if (!menuBar) {
+				menuBar = new gui.Menu({ type: 'menubar' });
+				if (menuBar.createMacBuiltin)	// only available since node-webkit v0.10.1
+					menuBar.createMacBuiltin("WildOS server");
+				win.menu = menuBar;
+			}
 
 			var platformMenu = new gui.Menu();
 			var self = this;
 			var name = this.name || 'devices';
 
+			// Start/Stop/Restart/Shutdown platform
 			platformMenu.append(new gui.MenuItem({
 				label: 'Start '+ name,
 				click: function() { self.start(); },
@@ -59,10 +73,35 @@ var Platform = Device.subclass().name('Platform')
 				label: 'Shutdown '+ name,
 				click: function() { self.shutdown(); },
 			}));
+
+			// Preferences
+			var preferencePanel = null;
+			platformMenu.append(new gui.MenuItem({
+				type: 'separator',
+			}));
+			platformMenu.append(new gui.MenuItem({
+				label: 'Preferences ',
+				click: function() { 
+					if (preferencePanel)
+						preferencePanel.show();
+					else {
+						preferencePanel = gui.Window.open('../content/preferences.html', {
+							width: 400,
+							height: 800,
+							toolbar: platform.program.showToolbar,
+						});
+						preferencePanel.on('close', function() {
+							preferencePanel.close(true);
+							preferencePanel = null;
+						});
+					}
+				},
+			}));
+
 			menuBar.insert(new gui.MenuItem({
 				label: 'Platform',
 				submenu: platformMenu,
-			}), 2);
+			}), process.platform === 'darwin' ? 2 : 0);	// only Mac OS has predefined menus
 
 			this.menu = platformMenu;
 		},
@@ -93,6 +132,7 @@ var Platform = Device.subclass().name('Platform')
 				if (UI.url)	// interpret it relative to the config file folder
 					url = 'file://'+Path.resolve(this.dirname(), UI.url);
 				log.method(this, 'makeUI', '- url', url);
+				UI.frame.toolbar = this.program.showToolbar;
 				win = gui.Window.open(url, UI.frame);
 				this.window = win;
 			}
@@ -105,6 +145,18 @@ var Platform = Device.subclass().name('Platform')
 			if (!this.window)
 				return null;
 			return this.window.window;
+		},
+
+		// show main window, show platform window's dev tools
+		showTraceWindow: function() {
+			var gui = window.require('nw.gui');
+			var win = gui.Window.get();
+			win.show();
+		},
+
+		showDevTools: function() {
+			if (this.window)
+				this.window.showDevTools();
 		},
 
 		// Inject a script file (by creating and adding a <script> tag) into the platform UI.

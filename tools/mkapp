@@ -1,0 +1,307 @@
+#!/bin/bash
+#
+# Create a Mac OS app
+#
+# The app can link to node-webkit and WildOS, or be a full, self-contained copy.
+# The former is good for development: the app is small, and changes to the source code are immediately taken into account.
+# The latter is good for distribution: the app is self-contained.
+#
+
+# The name of the resulting app
+app="WildOS-server"
+
+# Where to create the app
+destdir="$HOME/Desktop"
+
+# Where is node-webkit (see below for Linux)
+nw="/Applications/node-webkit.app"
+
+# Where is WildOS server source
+wildos=`pwd`
+
+# Whether to link or copy
+link=0
+
+# Whether to replace app without asking
+REPLY=n
+
+# Which platform are we an
+os=`uname`
+case $os in
+	Darwin )
+		echo "Creating Mac OS app."
+	;;
+	Linux )
+		echo "Creating Linux app."
+		nw="/opt/node-webkit/nw"
+	;;
+	* )
+		echo "Unknown os: $os"
+		exit 1
+	;;
+esac
+
+# ---
+
+function usage {
+	echo "$0 -h | [-app App] [-dir Dir] [-nw NW] [-wildos WildOS] [-link] [-replace]"
+	echo "   -app App: name of target application (default: $app)"
+	echo "   -dir Dir: directory where to create app (default: ~/Desktop)"
+	echo "   -nw NW: location of node-webkit application (default $nw)"
+	echo "   -wildos WildOS: location of WildOS source (default: .)"
+	echo "   -link: create an app that links to node-webkit and WildOS"
+	echo "          Such an app is not self-contained."
+	echo "   -replace: replace app if it already exists"
+}
+
+while [ $# -gt 0 ];
+do {
+	case $1 in
+		-h | -help)
+			usage
+			exit 0
+		;;
+		-app)
+			shift
+			app=$1
+		;;
+		-dir)
+			shift
+			destdir=$1
+		;;
+		-nw)
+			shift
+			nw=$1
+		;;
+		-wildos)
+			shift
+			wildos=$1
+		;;
+		-link)
+			link=1
+		;;
+		-replace)
+			REPLY=y
+		;;
+		-*)
+			echo "unknown option: $1"
+			exit 1
+		;;
+		*)
+			echo "unknown argument:: $1"
+			exit 1
+		;;
+	esac
+	shift
+}
+done
+
+# ---
+
+# Remember where we are
+here=`pwd`
+
+# Use a temporary name so the Finder does not mess up the icon
+tmpapp=$destdir/${app}_app
+destapp=$destdir/${app}.app
+
+if [ $os == "Linux" ]
+then
+	destapp=$destdir/$app
+fi
+
+# Do nothing if nw or wildos missing
+if [ ! -r $nw ]
+then
+	echo "node-webkit not found: $nw"
+	exit 1
+fi
+
+if [ ! -r $wildos/server/WildOS.js ]
+then
+	echo "wildos not found: $wildos"
+	exit 1
+fi
+
+# Do nothing if app already exists
+if [ -r "$destapp" ]
+then
+	if [ $REPLY != "y" ]
+	then
+		read -p "$destdir/$app: file exists. Replace it? "
+	fi
+
+	if [[ $REPLY =~ ^[Yy]$ ]]
+	then
+		rm -rf "$destapp"
+	else
+		exit 1
+	fi
+fi
+
+# Remove temporary app if it exists (e.g. if build went wrong)
+if [ -r "$tmpapp" ]
+then
+	echo "replacing $tmpapp"
+	rm -rf "$tmpapp"
+fi
+
+
+# Create the basic app structure by copying/linking to node-webkit app
+mkdir "$tmpapp"
+
+# --- Linux build ---
+#
+if [ $os == "Linux" ]
+then
+	if [ $link -eq 1 ]
+	then
+		# link to WildOS files
+		ln -s "$wildos/server" "$tmpapp/server"
+
+		# create script
+		echo "#!/bin/sh" > "$tmpapp/$app"
+		echo 'cd `dirname $0`' >> "$tmpapp/$app"
+		echo "nw server" >> "$tmpapp/$app"
+		chmod a+x "$tmpapp/$app"
+
+		mv $tmpapp $destapp
+		exit 0
+
+		# link to WildOS files
+		for file in `find "$wildos/server" -maxdepth 1`
+		do
+			base=`basename "$file"`
+			ln -s $file "$tmpapp/$base"
+		done
+		ln -s "$wildos/configs" "$tmpapp/configs"
+
+		# link to node-webkit files
+		ln -s $nw "$tmpapp/$app"
+		nwdir=`dirname "$nw"`
+		ln -s "$nwdir/nw.pak" "$tmpapp"
+		ln -s "$nwdir/icudtl.dat" "$tmpapp"
+		ln -s "$nwdir/libffmpegsumo.so" "$tmpapp"
+
+		mv $tmpapp $destapp
+	else
+		# copy the WildOS files making up the app
+		cp -r "$wildos/server" "$tmpapp"
+		cp -r "$wildos/configs" "$tmpapp/server"
+
+		# create the wildos app package
+		cd "$tmpapp/server"
+		zip -r "$tmpapp/package.nw" *
+		cd "$tmpapp"
+		rm -rf server
+		
+		# create the executable app
+		cat "$nw" "$tmpapp/package.nw" > "$tmpapp/$app" && chmod +x "$tmpapp/$app"
+		rm "$tmpapp/package.nw"
+
+		# copy the nw files
+		nwdir=`dirname "$nw"`
+		cp "$nwdir/nw.pak" "$nwdir/icudtl.dat" "$nwdir/libffmpegsumo.so" "$tmpapp"
+
+		mv $tmpapp $destapp
+	fi
+
+	exit 0
+fi
+
+# --- MacOS build ---
+#
+if [ $link -eq 1 ]
+then
+	# Link what we can
+	mkdir "$tmpapp/Contents"
+
+	# avoid 'for file in *' because it does not work when filenames have spaces
+	# use find instead with IFS=\n
+	# see http://www.cyberciti.biz/tips/handling-filenames-with-spaces-in-bash.html
+	SAVEIFS=$IFS
+	IFS=`echo -en "\n\b"`
+
+	for file in `find "$nw/Contents" -d 1`
+	do
+		base=`basename "$file"`
+		case "$file" in
+			*/Info.plist )
+				cp "$file" "$tmpapp/Contents"
+				;;
+			*/PkgInfo )
+				cp "$file" "$tmpapp/Contents"
+				;;
+			*/MacOS )
+				cp -r "$file" "$tmpapp/Contents"
+				;;
+			*/Resources )
+				mkdir "$tmpapp/Contents/Resources"
+				;;
+			* )
+				ln -s "$file" "$tmpapp/Contents/$base"
+				;;
+		esac
+	done
+
+	for file in `find "$nw/Contents/Resources" -d 1`
+	do
+		base=`basename "$file"`
+		ln -s "$file" "$tmpapp/Contents/Resources/$base"
+	done
+
+	# restore IFS
+	IFS=$SAVEIFS
+
+	# Add link to WildOS code
+	ln -s "$wildos/server" "$tmpapp/Contents/Resources/app.nw"
+else
+	# Copy node-webkit and WildOS
+	cp -r "$nw/Contents" "$tmpapp"
+
+	mkdir "$tmpapp/Contents/Resources/app.nw"
+	cp -r "$wildos/server/" "$tmpapp/Contents/Resources/app.nw"
+	cp -r "$wildos/configs" "$tmpapp/Contents/Resources/app.nw"
+fi
+
+# Create credits file
+cat << EOF > "$tmpapp/Contents/Resources/Credits.html"
+<!DOCTYPE html>
+<html>
+<head>
+	<title>WildOS credits</title>
+	<style type="text/css">
+	.credits {
+		text-align: center;
+		font-family: Helvetica, sans-serif;
+		font-size: 9pt;
+	}
+	</style>
+</head>
+<body>
+<div class="credits">
+<p>&copy; Michel Beaudouin-Lafon - mbl@lri.fr<br/>2013-2014</p>
+<p>Git repository:<br/><a href="https://bitbucket.org/mblinsitu/wildos">https://bitbucket.org/mblinsitu/wildos</a></p>
+</div>
+</body>
+</html>
+EOF
+
+# Modify Info.plist file
+cd "$tmpapp/Contents"
+npm install plist
+node << EOF
+	var fs = require('fs');
+	var plist = require('plist');
+	var info = plist.parse(fs.readFileSync('Info.plist', 'utf8'));
+	var manifest = require('./Resources/app.nw/package.json');
+	info.CFBundleName = 'WildOS server';
+	info.CFBundleShortVersionString = manifest.version;
+	info.CFBundleVersion = (new Date()).toDateString();
+	fs.writeFileSync('Info.plist', plist.build(info));
+EOF
+rm -rf node_modules
+
+# Finally rename it as .app so Finder gives it the proper treatment
+cd "$here"
+mv "$tmpapp" "$destapp"

@@ -14,31 +14,22 @@
 var events = require('events');
 
 // Shared modules
-var OO = require('OO');
-var log = require('Log').shared();
+var ObjectStore = require('ObjectStore');
+var log = require('Log').logger('ObjectSharer');
 
 // The server-side `ObjectSharer` class.
-var ObjectSharer = OO.newClass().name('ObjectSharer')
-	.classFields({
-		nextId: 1,
-	})
+var ObjectSharer = ObjectStore.subclass().name('ObjectSharer')
 	.fields({
-		objects: {},		// Set of objects being monitored.
 		events: null,		// Where to send / listen to events
-		sharedClasses: {},	// The set of classes being shared
 	})
 	.constructor(function(eventEmitter) {
 		// Create an event source if we're not given one.
 		this.events = eventEmitter || new events.EventEmitter();
-		log.newObject(this);
+
+		this.recordNew = true;	// add oid when recording objects that don't have one.
+		this._super();
 	})
 	.methods({
-		// Give a name to the object to facilitate debugging.
-		name: function(name) {
-			this._name = name;	// `_name` property is also used by logging
-			return this;
-		},
-
 		// --- Master ---
 
 		// Make the objects of a class be the masters of the distributed class.
@@ -215,101 +206,6 @@ var ObjectSharer = OO.newClass().name('ObjectSharer')
 			});
 		},
 
-		// --- Manage the object store ---
-
-		// Add an object to the object store.
-		// If the object does not have an `oid`, it is added to it.
-		// The `oid` is used to communicate object identites with the client.
-		recordObject: function(obj) {
-			// For the object id, we use the _name property set by the logger, if available
-			if (! obj.oid)
-				obj.oid = obj._name || (obj.className()+'_'+(ObjectSharer.nextId++));
-			log.method(this, 'recordObject', obj.oid);
-			this.objects[obj.oid] = obj;
-			return obj.oid;
-		},
-
-		// Remove an object from the object store.
-		removeObject: function(obj) {
-			var oid = obj.oid;
-			log.method(this, 'removeObject', oid);
-			if (oid) {
-				delete this.objects[oid];
-
-			}
-			return oid;
-		},
-
-		// Find an object in the object store.
-		getObject: function(oid) {
-			return this.objects[oid];
-		},
-
-		// Turn an arbitrary value into a literal object or array that can be sent to the client.
-		encode: function(value) {
-			// Simple value: as is.
-			if (!value || typeof(value) != 'object')
-				return value;
-
-			// One of our objects: use the `oid`.
-			if (value.oid && this.objects[value.oid])
-				return {oid: value.oid};
-
-			// Array: recurse over its elements.
-			if (value instanceof Array) {
-				res = [];
-				for (var i = 0; i < value.length; i++)
-					res[i] = this.encode(value[i]);
-				return res;
-			}
-
-			// Other object: recurse over its properties.
-			res = {};
-			for (var field in value)
-				res[field] = this.encode(value[field]);
-			return res;
-		},
-
-		// Encode an object so it can be sent to the client.
-		encodeNew: function(obj) {
-			var object = {
-				oid: obj.oid,
-			};
-			var sharedClasses = this.sharedClasses[obj.className()];
-			if (! sharedClasses || ! sharedClasses.fields)
-				return object;
-			for (var i = 0; i < sharedClasses.fields.length; i++) {
-				var field = sharedClasses.fields[i];
-				object[field] = this.encode(obj[field]);
-			}
-			return object;
-		},
-
-		// Decode values received from a client into actual values
-		decode: function(value) {
-			// Simple value: as is.
-			if (!value || typeof(value) != 'object')
-				return value;
-
-			// An object with an `oid` property: one of our objects.
-			if (value.oid && this.objects[value.oid])
-				return this.objects[value.oid];
-
-			// An array: recurse over its elements.
-			if (value instanceof Array) {
-				res = [];
-				for (var i = 0; i < value.length; i++)
-					res[i] = this.decode(value[i]);
-				return res;
-			}
-
-			// Other object: recurse over its properties.
-			res = {};
-			for (var field in value)
-				res[field] = this.decode(value[field]);
-			return res;
-		},
-
 		// --- Send notifications ---
 
 		// An object was created.
@@ -363,118 +259,6 @@ var ObjectSharer = OO.newClass().name('ObjectSharer')
 				method: method,
 				args: this.encode(args),
 			});
-		},
-
-		// --- Local execution ---
-		// These are typically triggered when receiving events.
-
-		// Create an object.
-		// *** Note: the client-side version is quite different.
-		// *** Since this is not used in the server, the client version may be more up to date.
-		makeObject: function(obj) {
-			if (! obj.oid)
-				return null;
-			log.method(this, 'makeObject', obj);
-			if (this.objects[obj.oid]) {
-				// Object already exists.
-				log.method(this, 'makeObject', '- returning existing object', this.objects[obj.oid]);
-				return this.objects[obj.oid];
-			}
-			// Parse object id to extract class name
-			var match = obj.oid.match(/^(.*)_[0-9]+$/);
-			if (match && match[1]) {
-				var clinfo = this.sharedClasses[match[1]];
-				if (clinfo)
-					return clinfo.cls.create(obj);
-			}
-			return null;
-		},
-
-		// 'Kill' an object, i.e. remove it from the object list.
-		// *** Object should probably be notified
-		killObject: function(oid) {
-			var obj = this.getObject(oid);
-			if (!obj) log.method(this, 'killObject', oid, '- object not found');
-			if (!obj)
-				return;
-			this.removeObject(obj);
-			// Notify the object.
-			if (obj.die)
-				obj.die();
-		},
-
-		// Set the value of an object field.
-		setField: function(oid, field, value) {
-			var obj = this.getObject(oid);
-			if (!obj) log.method(this, 'setField', oid+'.'+field, '- object not found');
-			if (!obj)
-				return;
-			// Check that `field` belongs to the list of shared fields.
-			var cls = obj.classs();
-			if (this.sharedClasses[cls.className()].fields.indexOf(field) < 0) {
-				log.method(this, 'setField '+oid+'.'+field+': field not found');
-				return;
-			}
-			obj[field] = this.decode(value);
-		},
-
-		// Call an object method.
-		callMethod: function(oid, method, args) {
-			var obj = this.getObject(oid);
-			if (!obj) log.method(this, 'callMethod', oid+'.'+method, '- object not found');
-			if (!obj)
-				return false;
-			// Check that method belongs to the list of shared methods.
-			var cls = obj.classs();
-			if (this.sharedClasses[cls.className()].methods.indexOf(method) < 0) {
-				log.method(this, 'callMethod', oid+'.'+method, '- method not found');
-				return false;
-			}
-			var m = cls.getMethod(method);
-			if (!m) {
-				log.method(this, 'callMethod', oid+'.'+method, '- method not defined');
-				return false;
-			}
-			m.apply(obj, this.decode(args));
-			return true;
-		},
-
-		// Call an object method. 
-		// Unlike `callMethod`, the method does not have to be in the list of allowed methods.
-		callNotify: function(oid, method, when, args) {
-			var obj = this.getObject(oid);
-			if (!obj) log.method(this, 'callNotify', oid+'.'+method, '- object not found');
-			if (!obj)
-				return;
-			// Check if the method exists.
-			var cls = obj.classs();
-			var m = cls.getMethod(method+'_'+when);
-			if (m)
-				m.apply(obj, this.decode(args));
-		},
-
-		// Call `f` for all shared objects. By default `f` is called with each object, however:
-		//	- if `how` is `'oid'`, `f` is passed the object's `oid`
-		//	- if `how` is `'encode'`, `f` is passed `encodeNew(o)`
-		allObjects: function(how /*opt*/, f) {
-			if (typeof(how) != 'string') {
-				f = how;
-				how = 'obj';
-			}
-			var oid;
-			switch (how) {
-				case 'oid':
-					for (oid in this.objects)
-						f(oid);
-					break;
-				case 'encode':
-					for (oid in this.objects)
-						f(this.encodeNew(this.objects[oid]));
-					break;
-				default:
-					for (oid in this.objects)
-						f(this.objects[oid]);
-			}
 		},
 
 		// --- Send / handle events ---

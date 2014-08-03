@@ -2,6 +2,7 @@
 	"type": "Platform",
 	"name": "WILD left half",
 	"basedOn": "WILD",
+	"serverPort": 8082,
 	"wall": {
 		"name": "WILD",
 		"left": 0,

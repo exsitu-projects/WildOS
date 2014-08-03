@@ -5,7 +5,7 @@
 
 // Shared modules
 var OO = require('OO');
-var log = require('Log').shared();
+var log = require('Log').logger('SlideShow');
 
 // Renderer modules
 var App = require('../lib/App');
@@ -54,7 +54,7 @@ var SlideShow = App.subclass().name('SlideShow')
 			else if (! tile.window) log.warn.method(this, 'ajustSlide', 'No window!!');
 
 			if (tile && tile.ready && tile.window)
-				tile.window.window.location.href = 'app://localhost/slides/'+this.currentSlide+'/tiles_byhost/'+tileName+'.png';			
+				tile.window.window.location.href = 'app://localhost/content/slides/'+this.currentSlide+'/tiles_byhost/'+tileName+'.png';			
 		},
 	})
 	.shareState()

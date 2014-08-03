@@ -23,6 +23,7 @@ var inputDir = './';
 var outputDir = './';
 var assetsDir = 'assets/';
 var templateFile = 'template.html';
+var dryRun = false;
 
 // Default template
 var template = '{{content}}';
@@ -35,7 +36,7 @@ var fileInfo = [];
 
 // Print usage
 function usage() {
-	console.log("mmdoc [-h] | [-i|-input dir] [-o|-output dir] [-a|-assets dir] [-t|-template file] [files]");
+	console.log("mmdoc [-h] | [-n] [-i|-input dir] [-o|-output dir] [-a|-assets dir] [-t|-template file] [files]");
 	console.log("   -i and -o default to current directory, -a to 'assets' and -t to 'template.html'.");
 	console.log("   if files are omitted, all .md and .mmd files in input directory are processed.");
 	console.log("   assets dir is relative to output dir, template to intput dir unless it contains a slash.");
@@ -59,6 +60,9 @@ function processArgs(args) {
 			case '-help':
 				usage();
 				process.exit(0);
+				break;
+			case '-n':
+				dryRun = true;
 				break;
 			case '-i':
 			case '-input':
@@ -414,8 +418,10 @@ function main() {
 	if (! templateFile.match(/\//))
 		templateFile = inputDir+templateFile;
 
+	var templateModTime = null;
 	try {
 		template = fs.readFileSync(templateFile, {encoding: 'utf8'});
+		templateModTime = fs.statSync(templateFile).mtime.getTime();
 	} catch(err) {
 		console.log(err.toString());
 		process.exit(2);
@@ -444,6 +450,25 @@ function main() {
 		var cb = null;
 		var infile = fInfo.infile;
 		var outfile = fInfo.outfile;
+
+		// check times
+		try {
+			var infileModTime = fs.statSync(fInfo.infile).mtime.getTime();
+			var outfileModTime = fs.statSync(fInfo.outfile).mtime.getTime();
+
+			if (outfileModTime > templateModTime && outfileModTime > infileModTime) {
+				if (!dryRun)
+					console.log(fInfo.outfile, 'up to date. Not processing it.');
+				return;
+			}
+		} catch(err) {
+			// continue
+		}
+
+		if (dryRun) {
+			console.log(infile, '->', outfile);
+			return;
+		}
 
 		if (fInfo.name.match(/\.js$/)) {
 			// Preprocess javascript file:

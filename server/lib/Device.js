@@ -26,9 +26,15 @@
 //			`Device.addClass(Foo);`
 //
 
+// Node modules
+var childProcess = require('child_process');
+
 // Shared modules
 var OO = require('OO');
-var log = require('Log').shared();
+var log = require('Log').logger('Device');
+
+// Absolute path to `tools` directory (../../tools)
+var toolsDir = __dirname.split('/').slice(0, -2).join('/')+'/tools';
 
 // The `Device` class.
 var Device = OO.newClass().name('Device')
@@ -133,6 +139,8 @@ var Device = OO.newClass().name('Device')
 			if (device) {
 				this.devices.push(device);
 				device.parent = this;
+				if (! device.events)
+					device.events = this.events;
 				device.added();
 			}
 			return device;
@@ -192,21 +200,86 @@ var Device = OO.newClass().name('Device')
 				f(this.devices[i], i);
 		},
 
+		// Return true if this devices matches the options in `o`.
+		matches: function(o) {
+			for (var p in o)
+				if (o[p] !== this.config[p])
+					return false;
+			return true;
+		},
+
 		// Find the first child device matching the properties in `o`.
 		findDevice: function(o) {
 			for (var i = 0; i < this.devices.length; i++) {
 				var device = this.devices[i];
-				var found = true;
-				for (var p in o) {
-					if (o[p] !== device.config[p]) {
-						found = false;
-						break;
-					}
-				}
-				if (found)
+				if (device.matches(o))
 					return device;
 			}
 			return null;
+		},
+
+		// Find the first device up the chain (including this one) matching the properties in `o`.
+		findAncestor: function(o) {
+			var device = this;
+			while (device) {
+				if (device.matches(o))
+					return device;
+				device = device.parent;
+			}
+			return null;
+		},
+
+		// Run a subprocess, substituting variables:
+		// %VAR% is substituted with `context['VAR']`,
+		// $VAR is susbstituted with `process.env['VAR']`.
+		// If the variable is not defined, it is replaced by the empty string.
+		// `options` is a set of options passed to the node.js `child_process.spawn` command.
+		// It defaults to `{detached: true}` and an environment where the path to the `tools` directory 
+		// is added to `$PATH` unless it is already in the path.
+		spawn: function(cmd, context, options) {
+			if (!cmd)
+				return null;
+			if (!options) {
+				options = {
+					detached: true,
+				};
+			}
+			if (!options.env) {
+				var path = process.env.PATH.split(':');
+				if (path.indexOf(toolsDir) < 0)
+					process.env.PATH += ":"+toolsDir;
+				options.env = process.env;
+			}
+
+			// If we get an array, execute each command in the array (in parallel)
+			if (cmd instanceof Array) {
+				var results = [];
+				cmd.forEach(function(cmd) {
+					results.push(spawn(cmd, context, options));
+				});
+				return results;
+			}
+
+			// Simple (standard) case: one command string.
+			// Substitute %variables from `context` (% can be protected with a backslash)
+			cmd = cmd.replace(/([^\\]|^)%([^%]+)%/g, function(match, prevChar, varname) {
+				return prevChar + (context[varname] || '');
+			});
+
+			// Substitute $variables from env ($ can be protected with a backslash)
+			cmd = cmd.replace(/([^\\]|^)\$(\w+)/g, function(match, prevChar, varname) {
+				return prevChar + (process.env[varname] || '');
+			});
+
+			// Finally substitute \$ and \%
+			cmd = cmd.replace(/\\([%$])/g, '$1');
+
+			// Run command
+			var args = cmd.split(' ');
+			cmd = args[0];
+			args.splice(0, 1);
+			log.method(this, 'spawn', cmd, args, options);
+			return childProcess.spawn(cmd, args, options);
 		},
 
 		// Managing events.
@@ -220,8 +293,11 @@ var Device = OO.newClass().name('Device')
 
 		// Emit an event.
 		emit: function(event) {
-			if (this.events)
+			if (this.events) {
+				log.event(this, event);
 				this.events.emit(event, this);
+			} else
+				log.warn.event(this, 'no event source to emit event', event);
 			return this;
 		},
 
@@ -240,6 +316,8 @@ var Device = OO.newClass().name('Device')
 					cb(device);
 					log.eventExit(self, event);
 				});
+			else
+				log.warn.method(this, 'on', 'no event source to set handler for event', event);
 			return this;
 		},
 

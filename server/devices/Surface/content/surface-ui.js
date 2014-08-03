@@ -1,3 +1,13 @@
+// User interface for a Surface device
+//
+// Show the tiled display and the connected state of each tile.
+// Attach a context menu to each tile.
+// Applications can enrich the display using the `#wall` element.
+//
+
+// Wrap in a function to protect global space
+(function () {
+
 var wall = null;
 
 var wallZoom = 0.5;
@@ -19,6 +29,78 @@ function createWall(device) {
 			  .css('border-bottom-width', vbezel);
 }
 
+function tileMenu(tile) {
+	var gui = require('nw.gui');
+	var menu = new gui.Menu();
+
+	menu.append(new gui.MenuItem({label: 'Tile', enabled: false}));
+	menu.append(new gui.MenuItem({ type: 'separator'}));
+
+	menu.append(new gui.MenuItem({
+		label: 'Start renderer',
+		click: function() {
+			wall.startOne(tile);
+		},
+	}));
+
+	menu.append(new gui.MenuItem({
+		label: 'Stop renderer',
+		click: function() {
+			wall.stopOne(tile);
+		},
+	}));
+
+	menu.append(new gui.MenuItem({
+		label: 'Show remote log',
+		click: function() {
+			if (tile.logWindow) {
+				tile.logWindow.show();
+				tile.getLog();
+				tile.clearLog();
+			} else {
+				// create window
+				var win = tile.logWindow = gui.Window.open('log.html');
+				// get log once it has loaded
+				win.on('loaded', function() {
+					this.window.setTile(tile);
+					tile.getLog();
+					tile.clearLog();
+				});
+				// hide on close
+				win.on('close', function() {
+					this.hide();
+				});
+			}
+		},
+	}));
+
+	menu.append(new gui.MenuItem({
+		label: 'Clear remote log',
+		click: function() {
+			tile.clearLog();
+		},
+	}));
+	return menu;
+}
+
+function updateMenu(tile, id) {
+	var menu = tile.contextMenu;
+	if (! menu)
+		menu = tile.contextMenu = tileMenu(tile);
+
+	// update menu items according to whether the tile is connected or not
+	var connected = false;
+	if ($('#'+id).hasClass('connected'))
+		connected = true;
+	
+	menu.items[0].label = "Tile "+tile.instance;
+	menu.items[2].enabled = ! connected;
+	menu.items[3].enabled = connected;
+	menu.items[4].enabled = connected;
+	menu.items[5].enabled = connected;
+	
+}
+
 // Creates a div with `id` representing `tile`
 function createTile (tile, id) {
 	var left = Math.round(tile.originX * wallZoom + wallOriginX);
@@ -35,7 +117,12 @@ function createTile (tile, id) {
 			 .css('border-left-width', hbezel)
 			 .css('border-right-width', hbezel)
 			 .css('border-top-width', vbezel)
-			 .css('border-bottom-width', vbezel);
+			 .css('border-bottom-width', vbezel)
+			 .on('contextmenu', function(event) { 
+				updateMenu(tile, id);
+				tile.contextMenu.popup(event.originalEvent.x, event.originalEvent.y);
+			 	event.preventDefault(); 
+			 });
 }
 
 // Called when a tile becomes connected / disconnected
@@ -78,3 +165,6 @@ function initSurface() {
 }
 
 initSurface();
+
+// Invoke the main function
+}) ();

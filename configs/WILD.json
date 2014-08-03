@@ -23,9 +23,47 @@
 			[["a4", "L"], ["a4", "R"], ["b4", "L"], ["b4", "R"], ["c4", "L"], ["c4", "R"], ["d4", "L"], ["d4", "R"]]
 		],
 		"renderer": "perTile",
-		"restart": "walldo -l mbl WildOS/renderer/restart"
+		"domain": ".wild.lri.fr",
+		"env": {
+			"L": "DISPLAY=:0.0",
+			"R": "DISPLAY=:0.1"
+		},
+		"startDelay": 50,
+		"start": "ssh %HOST% PATH=\\$PATH:/usr/local/bin %ENV% nw ~/WildOS/renderer -p %PORT% -i %INSTANCE% %DEBUG% %LOG%",
+		"stop": "ssh %HOST% killall nw"
 	},
 	"controllers": {
-		"type": "WebControllers"
+		"type": "WebControllers",
+		"hostname": "frontal-1.wild.lri.fr"
+	},
+	"WIS": {
+		"type": "WildInputServer",
+		"devices": {
+			"brain": {
+				"path": "BeginerBrain" 
+				},
+			"headBlack": {
+				"path": "HeadBlack" 
+				},
+			"headGold": {
+				"path": "HeadGolden" 
+				},
+			"NexusPointer": {
+				"path": "Nexus4Pointer" 
+				},
+			"greenPointer": {
+				"path": "PointerGreen" 
+				},
+			"SamsungPointer": {
+				"path": "SamsungPointer" 
+				},
+			"pointer": {
+				"path": "struxxPointer",
+				"fields": {"screen": "", "xs": 0, "ys": 0, "x": 0, "y": 0}
+				},
+			"stick": {
+				"path": "stick2" 
+				}
+		}
 	}
 }

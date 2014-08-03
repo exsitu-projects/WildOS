@@ -6,7 +6,7 @@
 
 // Shared modules
 var OO = require('OO');
-var log = require('Log').shared();
+var log = require('Log').logger('Renderer');
 
 // Server modules
 var ObjectSharer = require('../../lib/ObjectSharer');

@@ -5,7 +5,7 @@ var events = require('events');
 var fs = require('fs');
 
 // Shared modules
-var log = require('Log').shared();
+var log = require('Log').logger('Server');
 
 // Internal modules
 var App = require('./App');
@@ -16,10 +16,12 @@ var Server = WebSocketServer.subclass().name('Server')
 	.fields({
 		platform: null,
 	})
-	.constructor(function(platform) {
-		this._super({ 
-			root: 'content/',
-		});
+	.constructor(function(platform, config) {
+		if (! config)
+			config = {};
+		config.root = 'content/';
+
+		this._super(config);
 		this.platform = platform;
 
 		var self = this;

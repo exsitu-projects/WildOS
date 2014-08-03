@@ -7,7 +7,7 @@ var io = require('socket.io-client');
 
 // Shared modules
 var OO = require('OO');
-var log = require('Log').shared();
+var log = require('Log').logger('SocketIOServer');
 
 // The `SocketIOServer` class.
 var SocketIOServer = OO.newClass().name('SocketIOServer')
@@ -22,7 +22,8 @@ var SocketIOServer = OO.newClass().name('SocketIOServer')
 		this.socket = null;
 
 		this.hostname = hostname;
-		this.port = port || 8088;
+		if (port)
+			this.port = port;
 		if (path && ! path.match(/^\//))
 			path = '/'+path;
 		this.path = path || '';

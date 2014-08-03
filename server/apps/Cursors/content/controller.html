@@ -1,3 +1,7 @@
+<!-- Web controller for the Cursors app -->
+<h3 class="controller-title">Cursors</h3>
+<div class="controller-body">
+
 <style type="text/css">
 		.cursorSwatch {
 			margin: 5px;
@@ -12,14 +16,14 @@
 		}
 </style>
 
-<h3>I am the Cursors controller</h3>
-
 <input id="newCursor" type="button" value="New Cursor"/>
 <span id="cursors"></span>
 <input id="removeCursor" type="button" value="Remove selected"/>
 <div id="cursorTouchpad"></div>
 
 <script>
+// Wrap in a function to protect global name space
+(function() {
 	var Cursor = OO.newClass().name('Cursor')
 		.fields({
 			id: null,
@@ -273,4 +277,8 @@
 		dragTarget: cursors,
 		draggedBy: function(target, dx, dy) { if (target) target.moveSelectedBy(dx, dy); },
 	}).start();
+
+// Invoke the main function
+}) ();
 </script>
+</div>
