@@ -16,12 +16,30 @@ h2:before, h3:before, h4:before {
 .navbar-right { float: right; }
 
 /* figure captions */
-figcaption { font-style: italic; }
-figure { text-align: center;}
+figcaption { 
+  font-style: italic; 
+}
+figure {
+  text-align: center;
+  margin-top: 5px;
+  margin-bottom: 10px;
+}
+figure img {
+  max-height: 400px;  /* limit height */
+}
+figure img.full {
+  max-height: 100%;   /* show full size when clicked */
+}
+figure img:hover {
+  max-height: 405px;  /* show that it can grow */
+}
+figure img.full:hover {
+  max-height: 100%;   /* override previous rule when full size */
+}
 
 /* styles for TOC menu */
 li.toc1 { display: none;}
-li.toc2 { padding-left: 0px; border-top: 1px solid rgba(0, 0, 0, 0.2);}
+li.toc2 { padding-left: 5px; border-top: 1px solid rgba(0, 0, 0, 0.2); font-weight: bold;}
 li.toc2 a { font-weight: bold;}
 li.toc3 { padding-left: 15px; }
 li.toc4 { padding-left: 30px; }

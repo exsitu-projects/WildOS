@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Configuring WildOS</title>
+
+    <link href="assets/css/bootstrap.min.css" rel="stylesheet">
+    <!-- HTML5 Shim and Respond.js IE8 support of HTML5 elements and media queries -->
+    <!-- WARNING: Respond.js doesn't work if you view the page via file:// -->
+    <!--[if lt IE 9]>
+      <script src="https://oss.maxcdn.com/libs/html5shiv/3.7.0/html5shiv.js"></script>
+      <script src="https://oss.maxcdn.com/libs/respond.js/1.4.2/respond.min.js"></script>
+    <![endif]-->
+    <link href="assets/css/highlight-docco.css" rel="stylesheet">
+    <link href="assets/css/custom.css" rel="stylesheet">
+  </head>
+  <body>
+    <nav class="navbar navbar-inverse navbar-fixed-top" role="navigation">
+      <div class="container-fluid">
+        <div class="navbar-header">
+          <a class="navbar-brand" href="#">Configuring WildOS</a>
+        </div>
+        <ul id="tocmenu" class="nav navbar-nav navbar-right">
+          <li class="dropdown">
+            <a href="#" class="dropdown-toggle" data-toggle="dropdown">This page <b class="caret"></b></a>
+            <ul class="dropdown-menu">
+              <li class="toc3"><a href="#configuringwalldo">Configuring <code>walldo</code></a></li>
+<li class="toc3"><a href="#creatingaplatformconfigurationfile">Creating a platform configuration file</a></li>
+
+            </ul>
+          </li>
+        </ul>
+        
+        <ul id="filemenu" class="nav navbar-nav navbar-right">
+          <li class="dropdown">
+            <a href="#" class="dropdown-toggle" data-toggle="dropdown">Pages <b class="caret"></b></a>
+            <ul class="dropdown-menu">
+              <li><a href="../ReadMe.html">Home</a></li>
+<li class="toc2">Use WildOS</li>
+<li><a href="installing.html">Installing WildOS</a></li>
+<li class="disabled"><a href="configuring.html">Configuring WildOS</a></li>
+<li><a href="running.html">Running WildOS</a></li>
+<li><a href="applications.html">The WildOS applications</a></li>
+<li class="toc2">Develop</li>
+<li><a href="index.html">Overview</a></li>
+<li><a href="sharing.html">Sharing Objects in WildOS</a></li>
+<li><a href="createdev.html">Creating Devices for WildOS</a></li>
+<li><a href="createapp.html">Creating an Application for WildOS</a></li>
+<li><a href="logging.html">Logging in WildOS</a></li>
+
+            </ul>
+          </li>
+        </ul>
+        
+      </div><!-- /.container -->
+    </nav>
+
+    <div class="container-fluid">
+      <h1 id="configuringwildos">Configuring WildOS</h1>
+
+<p>To adapt WildOS to your platform, you need to configure two things:</p>
+
+<ul>
+<li>The <code>walldo</code> script, which lets you run commands on all the clients at once. This is useful to install and manage WildOS clients;</li>
+<li>The platform configuration file, which describes the devices available to WildOS.</li>
+</ul>
+
+<h3 id="configuringwalldo">Configuring <code>walldo</code></h3>
+
+<p>This step is optional, but strongly recommended unless you have an alternative way of easily running commands on all the machines in your display cluster.</p>
+
+<p>The script <code>walldo</code> (in directory <code>tools</code>) is a utility that runs commands on a set of client machines. Type <code>tools/walldo -h</code> to see a description.</p>
+
+<p>Before using <code>walldo</code>, you need to configure it for your local setup. The recommended way to do this is to create a hidden directory <code>~/.walldo</code> and to create a configuration file in this directory. The configuration should contain at least the following lines:</p>
+
+<pre><code>allHosts=(the list of client hostnames, separated by spaces and between parentheses)
+anyHost=a glob expression that matches all the host names
+DOMAIN=the domain name to add to each hostname
+SU=the user name to sudo to when using the sudo command
+</code></pre>
+
+<p>For our WILD wall, which has 16 machines called <code>a1 ... d4</code>, the configuration looks like this:</p>
+
+<pre><code>allHosts=(a1 a2 a3 a4 b1 b2 b3 b4 c1 c2 c3 c4 d1 d2 d3 d4)
+anyHost=[a-d][1-4]
+DOMAIN=.wild.lri.fr
+SU=wild
+</code></pre>
+
+<p>Once the configuration file is created, the <code>WALL</code> environment variable must be set to its name for <code>walldo</code> to use it. If your config file is <code>~/.walldo/MyWall</code>, then you should set:</p>
+
+<pre><code>% WALL=MyWall export WALL
+</code></pre>
+
+<p>An alternative to creating the configuration file is to edit the <code>walldo</code> script directly, but this is not recommended as the changes will be lost when you install a future version. If you insist on doing this, the changes are to be done at the beginning of the file (follow the comments).</p>
+
+<p>A simple change you may want to do to the script even if you have created the configuration file is to change the default value when <code>$WALL</code> is not defined, at the very beginning of the script (the default value is <code>WILD</code>).</p>
+
+<h3 id="creatingaplatformconfigurationfile">Creating a platform configuration file</h3>
+
+<p>The <code>WildOS/configs</code> directory contains JSON files describing the set of devices making up a platform running WildOS.
+The <code>$WALL</code> environment variable is used to fetch the corresponding configuration file under the name <code>WildOS/configs/$WALL.json</code>.</p>
+
+<p>The best way to create a configuration file is to copy an existing one and edit it.
+This section walks through the <code>WILD.json</code> file to describe its content. Another useful file to look at is <code>local.json</code>.</p>
+
+<p>The configuration file is a hierarchy of objects, each describing a part of the platform.
+Each object has a mandatory property: <code>type</code>. The root object must be of type <code>platform</code>.</p>
+
+<p>The <code>WILD.json</code> configuration file defines a platform called <code>WILD room</code>:</p>
+
+<ul>
+<li>The <code>serverPort</code> property defines the network port number the server will be listening to (defaults to 8080);</li>
+<li>The <code>UI</code> property defines the position and size of the window created by the server to control the platform (<code>frame</code> property) and the zoom factor to apply to the miniature display of the wall in the control window;</li>
+<li>The <code>wall</code> property defines the tiled display (see below);</li>
+<li>The <code>controllers</code> property enables the use of web-based devices (tablets and smartphones, typically).</li>
+</ul>
+
+<p>The <code>wall</code> property defines the geometry of the tiled display:</p>
+
+<ul>
+<li>The <code>tileSize</code> property defines the number of pixels of each tile (all tiles are assumed to be of the same size);</li>
+<li>The <code>bezelSize</code> property defines the number of pixels &#8220;hidden&#8221; behind the bezels. If you specify 0, the bezels will be ignored;</li>
+<li>The <code>numTiles</code> property defines the number of rows and columns of the tiled display (we assume a rectangular layout);</li>
+<li>The <code>tiles</code> property defines which machine runs which tile (see below);</li>
+<li>The <code>renderer</code> property can be set to <code>perTile</code> or <code>perHost</code>. The former means that one rendering client is launched for each tile, while the latter means that one rendering client is launched for each host (if the host runs multiple tiles, the client will create one window per tile). Currently, we use mostly <code>perTile</code> (in fact, <code>perHost</code> has not been tested recently);</li>
+<li>The <code>domain</code> property is optional, it is the domain name to add to the host names listed in the <code>tiles</code> array;</li>
+<li>The <code>env</code> property is optional. It lists per-instance values that can be used in the <code>start</code>, <code>stop</code> and <code>restart</code> properties below. If defined, it must be an object whose properties are the instance names and the values are a string (see example below);</li>
+<li>The <code>start</code> and <code>stop</code> properties are the shell commands to start / kill all the clients. Before execution, the following string substitutions take place: %HOST% is replaced by the client host name, %PORT% is replaced by the port number of the server, %INSTANCE% is replaced by the instance name to run on the client, and %ENV% is replaced by the content of the <code>env</code> property for the instance. Also, process environment variables, e.g. <code>$PATH</code>, are replaced by their value. The % and $ signs can be protected by a backslash (which is specified as two backslashes in a JSON file);</li>
+<li>The optional <code>restart</code> property is a shell command to kill then start all the clients. If absent, it is replaced by calling <code>stop</code> then <code>start</code>;</li>
+<li>The optional <code>startDelay</code> property specifies a delay in milliseconds to separate the launch of each client. This can be useful when there are many clients and they do not reliable connect to the server.</li>
+</ul>
+
+<p>The <code>tiles</code> property of the wall is a two-dimensional array (an array of lines, each line being an array of tiles). Each element of this two-dimensional array represents a tile and is itself an array with two or three elements:</p>
+
+<ul>
+<li>the name of the host running that tile,</li>
+<li>the name of the instance within that host, e.g. <code>L</code> or <code>R</code> if a host runs two clients to manage side-by-side tiles.</li>
+<li>the name of the window, e.g. <code>0</code> or <code>1</code>, if a client opens multiple windows.</li>
+</ul>
+
+<p>Consider a setup where each host of the wall display manages two screens. In the example below, the wall display has 8 screens (2 rows of four), managed by 4 hosts. Each host runs two horizontally adjacent screens. The hosts are called <code>a1</code>, <code>a2</code> for the top row and <code>b1</code> and <code>b2</code> for the bottom row.</p>
+
+<p>You may want to run two clients, per host each managing one screen. In fact, this may be required if the host is running Linux and the two screens are different displays in the sense of XFree. Alternatively, if the XFree configuration has a single display spanning the two screens, you may want to run a single client with two windows. (You could also run a single client and a single window per client spanning the two screens, but then you would not be able to specify the size of the bezel between the screens).</p>
+
+<p>The first setup corresponds to this configuration:</p>
+
+<pre><code>    &quot;numTiles&quot;: {&quot;columns&quot;: 2, &quot;rows&quot;: 2},
+    &quot;tiles&quot;: [
+        [[&quot;a1&quot;, &quot;Left&quot;], [&quot;a1&quot;, &quot;Right&quot;], [&quot;b1&quot;, &quot;Left&quot;], [&quot;b1&quot;, &quot;Right&quot;]],
+        [[&quot;a2&quot;, &quot;Left&quot;], [&quot;a2&quot;, &quot;Right&quot;], [&quot;b2&quot;, &quot;Left&quot;], [&quot;b2&quot;, &quot;Right&quot;]],
+    ],
+    &quot;env&quot;: {
+        &quot;Left&quot;: &quot;DISPLAY=:0.0&quot;,
+        &quot;Right&quot;: &quot;DISPLAY=:0.1&quot;
+    },
+
+</code></pre>
+
+<p>Note the use of the <code>env</code> property to specify environment variables to pass to each client, here the XFree <code>DISPLAY</code> name.</p>
+
+<p>The second setup corresponds to this configuration:</p>
+
+<pre><code>    &quot;numTiles&quot;: {&quot;columns&quot;: 2, &quot;rows&quot;: 2},
+    &quot;tiles&quot;: [
+        [[&quot;a1&quot;, &quot;Main&quot;, 0], [&quot;a1&quot;, &quot;Main&quot;, 1], [&quot;b1&quot;, &quot;Main&quot;, 0], [&quot;b1&quot;, &quot;Main&quot;, 1],
+         [&quot;a2&quot;, &quot;Main&quot;, 0], [&quot;a2&quot;, &quot;Main&quot;, 1], [&quot;b2&quot;, &quot;Main&quot;, 0], [&quot;b2&quot;, &quot;Main&quot;, 1]]
+    ],
+    &quot;env&quot;: {
+        &quot;Main&quot;: &quot;DISPLAY=:0.0&quot;,
+    },
+</code></pre>
+
+<p>It is even possible to have multiple clients per host, and multiple windows per client. Some tiled displays have multiple physical screens chained together and connected with a single DVI cable to the computer so that they are seen as a single display by the host. In order to account for the bezels of these screens, you would need to use multiple windows. If a host is running two or more such chained displays, you may need several instances. An example can be found in the <code>WILDER.json</code> config file.</p>
+
+<p>Note that the <code>local.json</code> configuration file includes a property <code>layout</code> in the description of its tile display.
+This property is used to map the names of the tiles to the position of their corresponding window on the screen.
+When this property is not present, which is the normal case, each tile is run full-screen.</p>
+
+    </div>
+    <script type="text/javascript" src="assets/js/jquery-1.11.0.min.js"></script>
+    <script type="text/javascript" src="assets/js/bootstrap.min.js"></script>
+    <script type="text/javascript" src="assets/js/highlight.custom.js"></script>
+    <script type="text/javascript">hljs.initHighlightingOnLoad();</script>
+    <script type="text/javascript">
+      $(document).ready(function() {
+        // Hide filemenu if only one entry (the page itself) & toc menu if empty
+        if ($('#filemenu ul.dropdown-menu > li').length == 1)
+          $('#filemenu').hide();
+        if ($('#tocmenu ul.dropdown-menu > li').length == 0)
+          $('#tocmenu').hide();
+
+        // Enlarge images on click
+        $('figure img').click(function() {
+          $(this).toggleClass('full');
+        })
+      });
+    </script>
+  </body>
+</html>

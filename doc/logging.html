@@ -23,7 +23,7 @@
         </div>
         <ul id="tocmenu" class="nav navbar-nav navbar-right">
           <li class="dropdown">
-            <a href="#" class="dropdown-toggle" data-toggle="dropdown">Content <b class="caret"></b></a>
+            <a href="#" class="dropdown-toggle" data-toggle="dropdown">This page <b class="caret"></b></a>
             <ul class="dropdown-menu">
               <li class="toc2"><a href="#viewinglogs">Viewing logs</a></li>
 <li class="toc3"><a href="#configuringloggers">Configuring loggers</a></li>
@@ -38,20 +38,28 @@
             </ul>
           </li>
         </ul>
-        <!--
+        
         <ul id="filemenu" class="nav navbar-nav navbar-right">
           <li class="dropdown">
-            <a href="#" class="dropdown-toggle" data-toggle="dropdown">Files <b class="caret"></b></a>
+            <a href="#" class="dropdown-toggle" data-toggle="dropdown">Pages <b class="caret"></b></a>
             <ul class="dropdown-menu">
-              <li><a href="doc/createapp.html">Creating an Application for WildOS</a></li>
-<li><a href="doc/createdev.html">Creating Devices for WildOS</a></li>
-<li><a href="doc/index.html">Overview</a></li>
-<li><a href="doc/sharing.html">Sharing Objects in WildOS</a></li>
+              <li><a href="../ReadMe.html">Home</a></li>
+<li class="toc2">Use WildOS</li>
+<li><a href="installing.html">Installing WildOS</a></li>
+<li><a href="configuring.html">Configuring WildOS</a></li>
+<li><a href="running.html">Running WildOS</a></li>
+<li><a href="applications.html">The WildOS applications</a></li>
+<li class="toc2">Develop</li>
+<li><a href="index.html">Overview</a></li>
+<li><a href="sharing.html">Sharing Objects in WildOS</a></li>
+<li><a href="createdev.html">Creating Devices for WildOS</a></li>
+<li><a href="createapp.html">Creating an Application for WildOS</a></li>
+<li class="disabled"><a href="logging.html">Logging in WildOS</a></li>
 
             </ul>
           </li>
         </ul>
-        -->
+        
       </div><!-- /.container -->
     </nav>
 
@@ -218,5 +226,19 @@ In addition, fatal errors cause the program to quit immediately.</p>
     <script type="text/javascript" src="assets/js/bootstrap.min.js"></script>
     <script type="text/javascript" src="assets/js/highlight.custom.js"></script>
     <script type="text/javascript">hljs.initHighlightingOnLoad();</script>
+    <script type="text/javascript">
+      $(document).ready(function() {
+        // Hide filemenu if only one entry (the page itself) & toc menu if empty
+        if ($('#filemenu ul.dropdown-menu > li').length == 1)
+          $('#filemenu').hide();
+        if ($('#tocmenu ul.dropdown-menu > li').length == 0)
+          $('#tocmenu').hide();
+
+        // Enlarge images on click
+        $('figure img').click(function() {
+          $(this).toggleClass('full');
+        })
+      });
+    </script>
   </body>
 </html>

@@ -23,33 +23,41 @@
         </div>
         <ul id="tocmenu" class="nav navbar-nav navbar-right">
           <li class="dropdown">
-            <a href="#" class="dropdown-toggle" data-toggle="dropdown">Content <b class="caret"></b></a>
+            <a href="#" class="dropdown-toggle" data-toggle="dropdown">This page <b class="caret"></b></a>
             <ul class="dropdown-menu">
-              <li class="toc2"><a href="#aboutnode-webkit">About node-webkit</a></li>
-<li class="toc2"><a href="#architecture">Architecture</a></li>
-<li class="toc2"><a href="#objectmodel">Object Model</a></li>
-<li class="toc2"><a href="#sharedobjectsmodel">Shared Objects Model</a></li>
-<li class="toc2"><a href="#platformanddevices">Platform and Devices</a></li>
-<li class="toc2"><a href="#applications">Applications</a></li>
-<li class="toc2"><a href="#directorystructure">Directory Structure</a></li>
+              <li class="toc3"><a href="#aboutnode-webkit">About node-webkit</a></li>
+<li class="toc3"><a href="#architecture">Architecture</a></li>
+<li class="toc3"><a href="#objectmodel">Object Model</a></li>
+<li class="toc3"><a href="#sharedobjectsmodel">Shared Objects Model</a></li>
+<li class="toc3"><a href="#platformanddevices">Platform and Devices</a></li>
+<li class="toc3"><a href="#applications">Applications</a></li>
+<li class="toc3"><a href="#directorystructure">Directory Structure</a></li>
 
             </ul>
           </li>
         </ul>
-        <!--
+        
         <ul id="filemenu" class="nav navbar-nav navbar-right">
           <li class="dropdown">
-            <a href="#" class="dropdown-toggle" data-toggle="dropdown">Files <b class="caret"></b></a>
+            <a href="#" class="dropdown-toggle" data-toggle="dropdown">Pages <b class="caret"></b></a>
             <ul class="dropdown-menu">
-              <li><a href="doc/createapp.html">Creating an Application for WildOS</a></li>
-<li><a href="doc/createdev.html">Creating Devices for WildOS</a></li>
-<li><a href="doc/logging.html">Logging in WildOS</a></li>
-<li><a href="doc/sharing.html">Sharing Objects in WildOS</a></li>
+              <li><a href="../ReadMe.html">Home</a></li>
+<li class="toc2">Use WildOS</li>
+<li><a href="installing.html">Installing WildOS</a></li>
+<li><a href="configuring.html">Configuring WildOS</a></li>
+<li><a href="running.html">Running WildOS</a></li>
+<li><a href="applications.html">The WildOS applications</a></li>
+<li class="toc2">Develop</li>
+<li class="disabled"><a href="index.html">Overview</a></li>
+<li><a href="sharing.html">Sharing Objects in WildOS</a></li>
+<li><a href="createdev.html">Creating Devices for WildOS</a></li>
+<li><a href="createapp.html">Creating an Application for WildOS</a></li>
+<li><a href="logging.html">Logging in WildOS</a></li>
 
             </ul>
           </li>
         </ul>
-        -->
+        
       </div><!-- /.container -->
     </nav>
 
@@ -66,13 +74,13 @@
 
 <p>This documentation describes the architecture of WildOS and how to create applications and devices.</p>
 
-<h2 id="aboutnode-webkit">About node-webkit</h2>
+<h3 id="aboutnode-webkit">About node-webkit</h3>
 
 <p>WildOS is programmed entirely in Javascript using <a href="https://github.com/rogerwang/node-webkit">node-webkit</a>. Node-webkit is an open-source project developed at Intel to support the development of desktop applications using web technologies. Concretely, it is a merge of <a href="http://nodejs.org">node.js</a>, which is popular to write back-end software, including web servers, and <a href="http://www.chromium.org/">Chromium</a>, the core part of the Chrome web browser. </p>
 
 <p>On the one hand, the node.js part of node-webkit gives access to an efficient reactive engine and a large collection of modules, including for accessing the file system and other operating system resources that web browsers do not have access to. On the other hand, Chromium provides an efficient and cutting-edge rendering engine of web content without all the security overhead of a complete web browser. Finally, by &#8220;welding&#8221; together node.js and Chromium in a single process, we avoid the typical overhead of web applications where the server and client are on different machines or in different processes and communicate over HTTP network connections. In fact, even though node-webkit runs node.js code and Chromium code in separate virtual machines, each has direct access to the other. In practice, objects and functions created on one side can be used on the other with no overhead (see however the <a href="https://github.com/rogerwang/node-webkit/wiki/Transfer-objects-between-window-and-node">node-webkit documentation</a> for a few pitfalls). One immediate benefit is that one can use <code>require</code> to import any node.js module in Javascript code running inside a Chromium web page (many web developers would love to do that in their web applications!).</p>
 
-<h2 id="architecture">Architecture</h2>
+<h3 id="architecture">Architecture</h3>
 
 <p>WildOS is made of one central server and zero or more clients typically running on other computers. Clients communicate with the server through websockets, which are full-dupleix sockets running in the Web environment. Other protocols could be added to WildOS if needed, such as OSC running on UDP.</p>
 
@@ -84,7 +92,7 @@
 
 <p>Finally, since WildOS is a distributed system, we try to make it resilient: if the server crashes, or if a client crash, the rest of the system should &#8220;behave&#8221; and continue to work the best it can, or at least start working again when the crashed part is back. In practice, if a client crash, the server continues without it and will be happy to take it onboard when it&#8217;s back. If the server crashes, clients wait for it to come back by trying to connect to it at regular intervals. Following the same philosophy, WildOS devices and applications can be started, stopped and restarted at any time, again without causing major difficulty.</p>
 
-<h2 id="objectmodel">Object Model</h2>
+<h3 id="objectmodel">Object Model</h3>
 
 <p>Javascript is not an object-oriented programming language. Unlike languages such as Java, C++ or Objective-C, Javascript does <em>not</em> support classes. Rather than the class-instance paradigm of traditional object-oriented languages, Javascript is based on the notion of <strong>prototype</strong>. Each object has a collection of <strong>properties</strong>, each property can hold a primitive value (such as an integer), a reference to an object, or a function (which is, in fact, a particular type of object). Each object also has a <strong>prototype</strong>: a special link to another object so that when referencing property <code>p</code> of object <code>o</code>, as in <code>o.p</code>, if the property does not exist in <code>o</code>, it is looked up in its prototype, and so on up the prototype chain (which eventually stops at the <code>Object</code> prototype). So unlike object-oriented languages where classes hold methods and objects hold state and a link to their class to look up their methods, a prototype-based language such as Javascript only has objects, each of which can have state as well as methods (i.e., functions)<a href="#fn:1" id="fnref:1" title="see footnote" class="footnote">[1]</a>.</p>
 
@@ -99,7 +107,7 @@
 <p>See the <a href="https://github.com/mblinsitu/Classy">Classy Documentation</a> for more details on the framework.<br/>
 See the <a href="logging.html">Logging in WildOS</a> page for details about logging.</p>
 
-<h2 id="sharedobjectsmodel">Shared Objects Model</h2>
+<h3 id="sharedobjectsmodel">Shared Objects Model</h3>
 
 <p>The <code>ObjectSharer</code> class is designed to monitor a collection of objects of a set of classes, to notify this activity by sending events (typically to one or more remote clients), and to listen to such events (typically on a client) to synchronize local copies of the objects. <code>ObjectSharer</code> adds a mixin to the monitored class to achieve this behavior, so any class can be monitored without it doing anything special. An <code>ObjectSharer</code> can manage all the objects of a given class or just a subset ofthem. It can monitor and synchronize all of the objects&#8217; fields or a subset of them, and all of its method calls or just a subset of them. This gives great flexibility to adjust the amount of sharing.</p>
 
@@ -107,7 +115,7 @@ See the <a href="logging.html">Logging in WildOS</a> page for details about logg
 
 <p>See <a href="createdev.html">Creating Devices for WildOS</a> for more details.</p>
 
-<h2 id="platformanddevices">Platform and Devices</h2>
+<h3 id="platformanddevices">Platform and Devices</h3>
 
 <p>WildOS loads a description of the platform it is running on from a JSON configuration file. This file describes the set of devices that constitute the platform. Each such device can contain more devices. For example, a <code>Surface</code> device represents a tiled display, and contains one device per tile. Devices can be added and removed dynamically, and can become active or inactive. For example, a tile of the wall display can be inactive when the client running it is down.</p>
 
@@ -119,7 +127,7 @@ See the <a href="logging.html">Logging in WildOS</a> page for details about logg
 
 <p>See <a href="sharing.html">Sharing Objects with WildOS</a> for more details.</p>
 
-<h2 id="applications">Applications</h2>
+<h3 id="applications">Applications</h3>
 
 <p>Applications are loaded dynamically when the server starts up (if specified on the command line) or later when loaded by the user through the platform controller. Each application is the single instance of its class (a.k.a. a singleton class). Most applications have their core running in the server and their input and display run in clients associated to the platform&#8217;s devices. </p>
 
@@ -129,7 +137,7 @@ See the <a href="logging.html">Logging in WildOS</a> page for details about logg
 
 <p>See <a href="createapp.html">Creating an Application for WildOS</a> for more details.</p>
 
-<h2 id="directorystructure">Directory Structure</h2>
+<h3 id="directorystructure">Directory Structure</h3>
 
 <p>The WildOS distribution is organized as follows:</p>
 
@@ -209,5 +217,19 @@ See the <a href="logging.html">Logging in WildOS</a> page for details about logg
     <script type="text/javascript" src="assets/js/bootstrap.min.js"></script>
     <script type="text/javascript" src="assets/js/highlight.custom.js"></script>
     <script type="text/javascript">hljs.initHighlightingOnLoad();</script>
+    <script type="text/javascript">
+      $(document).ready(function() {
+        // Hide filemenu if only one entry (the page itself) & toc menu if empty
+        if ($('#filemenu ul.dropdown-menu > li').length == 1)
+          $('#filemenu').hide();
+        if ($('#tocmenu ul.dropdown-menu > li').length == 0)
+          $('#tocmenu').hide();
+
+        // Enlarge images on click
+        $('figure img').click(function() {
+          $(this).toggleClass('full');
+        })
+      });
+    </script>
   </body>
 </html>

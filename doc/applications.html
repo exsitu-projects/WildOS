@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>The WildOS applications</title>
+
+    <link href="assets/css/bootstrap.min.css" rel="stylesheet">
+    <!-- HTML5 Shim and Respond.js IE8 support of HTML5 elements and media queries -->
+    <!-- WARNING: Respond.js doesn't work if you view the page via file:// -->
+    <!--[if lt IE 9]>
+      <script src="https://oss.maxcdn.com/libs/html5shiv/3.7.0/html5shiv.js"></script>
+      <script src="https://oss.maxcdn.com/libs/respond.js/1.4.2/respond.min.js"></script>
+    <![endif]-->
+    <link href="assets/css/highlight-docco.css" rel="stylesheet">
+    <link href="assets/css/custom.css" rel="stylesheet">
+  </head>
+  <body>
+    <nav class="navbar navbar-inverse navbar-fixed-top" role="navigation">
+      <div class="container-fluid">
+        <div class="navbar-header">
+          <a class="navbar-brand" href="#">The WildOS applications</a>
+        </div>
+        <ul id="tocmenu" class="nav navbar-nav navbar-right">
+          <li class="dropdown">
+            <a href="#" class="dropdown-toggle" data-toggle="dropdown">This page <b class="caret"></b></a>
+            <ul class="dropdown-menu">
+              <li class="toc3"><a href="#thebrowserapplication">The Browser application</a></li>
+<li class="toc3"><a href="#theslideshowapplication">The SlideShow application</a></li>
+<li class="toc3"><a href="#thecursorsapplication">The Cursors application</a></li>
+
+            </ul>
+          </li>
+        </ul>
+        
+        <ul id="filemenu" class="nav navbar-nav navbar-right">
+          <li class="dropdown">
+            <a href="#" class="dropdown-toggle" data-toggle="dropdown">Pages <b class="caret"></b></a>
+            <ul class="dropdown-menu">
+              <li><a href="../ReadMe.html">Home</a></li>
+<li class="toc2">Use WildOS</li>
+<li><a href="installing.html">Installing WildOS</a></li>
+<li><a href="configuring.html">Configuring WildOS</a></li>
+<li><a href="running.html">Running WildOS</a></li>
+<li class="disabled"><a href="applications.html">The WildOS applications</a></li>
+<li class="toc2">Develop</li>
+<li><a href="index.html">Overview</a></li>
+<li><a href="sharing.html">Sharing Objects in WildOS</a></li>
+<li><a href="createdev.html">Creating Devices for WildOS</a></li>
+<li><a href="createapp.html">Creating an Application for WildOS</a></li>
+<li><a href="logging.html">Logging in WildOS</a></li>
+
+            </ul>
+          </li>
+        </ul>
+        
+      </div><!-- /.container -->
+    </nav>
+
+    <div class="container-fluid">
+      <h1 id="thewildosapplications">The WildOS applications</h1>
+
+<h3 id="thebrowserapplication">The Browser application</h3>
+
+<p>The Browser application lets you display any web page on the tiled display.</p>
+
+<p>You specify the web page to be displayed either in the platform window or in the web controller.
+In the platform window, you can pan the page by dragging the miniature image of the page, and you can zoom it in/out by using the scrollwheel of your mouse when the cursor is on the miniature image. This makes it easy to scale the web page to the size of your wall display.</p>
+
+<figure>
+<img src="img/browser.png" alt="Screendump of the browser app" />
+<figcaption>Screendump of the browser app</figcaption>
+</figure>
+
+<figure>
+<img src="img/browser-controller.png" alt="Screendump of the browser web controller" />
+<figcaption>Screendump of the browser web controller</figcaption>
+</figure>
+
+<h3 id="theslideshowapplication">The SlideShow application</h3>
+
+<p>The SlideShow application is designed to show a series of precomputed large images on the wall display. </p>
+
+<p>The images and the files describing the slideshows must be in the <code>slides</code> directory, and the <code>tilecutter</code> Mac OS X console application must be used to cut the images into tiles that can be used by the SlideShow application. Separate documentation (to be written!) will explain how to do this. </p>
+
+<p>The SlideShow application opens a control window load slides, view them and navigate them.
+You can load slides with the <code>Open slideshow</code> and <code>Open folder</code> buttons.
+You can also drag a slideshow file or a folder containing images onto the control window.
+The <code>Show in Finder</code> menu opens the folder holding the slides to make it easy to browse the available slideshows.</p>
+
+<p>Once slides are loaded, they are displayed in the SlideShow window, and the current slide is displayed in the platform control window. To navigate the slides, you can:</p>
+
+<ul>
+<li>Click a slide in the light table view. The current slide has a yellow outline;</li>
+<li>Clicking the current slide or the <code>Gallery</code> button goes into gallery mode, which shows one slide at a time. In this mode, you can click or swipe the slides, or click the arrows to go to the next/previous slide. Clicking outside the slide gets back to the light table;</li>
+<li>Left and right arrows navigate to the next/previous slide; spacebar navigates to the next slide; return opens/closes gallery mode.</li>
+</ul>
+
+<p>The web controller has a similar interface.</p>
+
+<figure>
+<img src="img/slideshow.png" alt="SlideShow application on server" />
+<figcaption>SlideShow application on server</figcaption>
+</figure>
+
+<figure>
+<img src="img/slideshow-help.png" alt="SlideShow control panel in light table mode" />
+<figcaption>SlideShow control panel in light table mode</figcaption>
+</figure>
+
+<figure>
+<img src="img/slideshow-gallery.png" alt="SlideShow control panel in gallery mode" />
+<figcaption>SlideShow control panel in gallery mode</figcaption>
+</figure>
+
+<figure>
+<img src="img/slideshow-controller.png" alt="SlideShow application web controller in light table mode" />
+<figcaption>SlideShow application web controller in light table mode</figcaption>
+</figure>
+
+<figure>
+<img src="img/slideshow-controller-gallery.png" alt="SlideShow application web controller in gallery mode" />
+<figcaption>SlideShow application web controller in gallery mode</figcaption>
+</figure>
+
+<h3 id="thecursorsapplication">The Cursors application</h3>
+
+<p>The Cursors application lets users create and move several cursors on the wall display. At present, it does not do anything else, e.g. you cannot &#8220;click&#8221; with those cursors.</p>
+
+<p>The controller interface on both the server and on the web clients lets you create new cursors, select them by clicking their swatch, and delete the selected cursor. On the server, you can move a cursor either by dragging it directly in the miniature image of the wall, or by using the swatch as a joystick. On the web client, when you select a cursor swatch, the large area below turns the same color and you can drag the mouse (or finger on a touch screen) in it to move the cursor with a joystick-like interaction.</p>
+
+<figure>
+<img src="img/cursors.png" alt="Cursors application on server" />
+<figcaption>Cursors application on server</figcaption>
+</figure>
+
+<figure>
+<img src="img/cursors-controller.png" alt="Cursors application web controller" />
+<figcaption>Cursors application web controller</figcaption>
+</figure>
+
+    </div>
+    <script type="text/javascript" src="assets/js/jquery-1.11.0.min.js"></script>
+    <script type="text/javascript" src="assets/js/bootstrap.min.js"></script>
+    <script type="text/javascript" src="assets/js/highlight.custom.js"></script>
+    <script type="text/javascript">hljs.initHighlightingOnLoad();</script>
+    <script type="text/javascript">
+      $(document).ready(function() {
+        // Hide filemenu if only one entry (the page itself) & toc menu if empty
+        if ($('#filemenu ul.dropdown-menu > li').length == 1)
+          $('#filemenu').hide();
+        if ($('#tocmenu ul.dropdown-menu > li').length == 0)
+          $('#tocmenu').hide();
+
+        // Enlarge images on click
+        $('figure img').click(function() {
+          $(this).toggleClass('full');
+        })
+      });
+    </script>
+  </body>
+</html>

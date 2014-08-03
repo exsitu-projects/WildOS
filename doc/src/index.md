@@ -5,15 +5,13 @@ WildOS - [%Title]
 
 This documentation describes the architecture of WildOS and how to create applications and devices.
 
-About node-webkit
---------
+### About node-webkit ###
 
 WildOS is programmed entirely in Javascript using [node-webkit](https://github.com/rogerwang/node-webkit). Node-webkit is an open-source project developed at Intel to support the development of desktop applications using web technologies. Concretely, it is a merge of [node.js](http://nodejs.org), which is popular to write back-end software, including web servers, and [Chromium](http://www.chromium.org/), the core part of the Chrome web browser. 
 
 On the one hand, the node.js part of node-webkit gives access to an efficient reactive engine and a large collection of modules, including for accessing the file system and other operating system resources that web browsers do not have access to. On the other hand, Chromium provides an efficient and cutting-edge rendering engine of web content without all the security overhead of a complete web browser. Finally, by "welding" together node.js and Chromium in a single process, we avoid the typical overhead of web applications where the server and client are on different machines or in different processes and communicate over HTTP network connections. In fact, even though node-webkit runs node.js code and Chromium code in separate virtual machines, each has direct access to the other. In practice, objects and functions created on one side can be used on the other with no overhead (see however the [node-webkit documentation](https://github.com/rogerwang/node-webkit/wiki/Transfer-objects-between-window-and-node) for a few pitfalls). One immediate benefit is that one can use `require` to import any node.js module in Javascript code running inside a Chromium web page (many web developers would love to do that in their web applications!).
 
-Architecture
---------
+### Architecture ###
 
 WildOS is made of one central server and zero or more clients typically running on other computers. Clients communicate with the server through websockets, which are full-dupleix sockets running in the Web environment. Other protocols could be added to WildOS if needed, such as OSC running on UDP.
 
@@ -25,8 +23,7 @@ One abstraction that is heavily used in WildOS, and was inspired by our previous
 
 Finally, since WildOS is a distributed system, we try to make it resilient: if the server crashes, or if a client crash, the rest of the system should "behave" and continue to work the best it can, or at least start working again when the crashed part is back. In practice, if a client crash, the server continues without it and will be happy to take it onboard when it's back. If the server crashes, clients wait for it to come back by trying to connect to it at regular intervals. Following the same philosophy, WildOS devices and applications can be started, stopped and restarted at any time, again without causing major difficulty.
 
-Object Model
---------
+### Object Model ###
 
 Javascript is not an object-oriented programming language. Unlike languages such as Java, C++ or Objective-C, Javascript does *not* support classes. Rather than the class-instance paradigm of traditional object-oriented languages, Javascript is based on the notion of **prototype**. Each object has a collection of **properties**, each property can hold a primitive value (such as an integer), a reference to an object, or a function (which is, in fact, a particular type of object). Each object also has a **prototype**: a special link to another object so that when referencing property `p` of object `o`, as in `o.p`, if the property does not exist in `o`, it is looked up in its prototype, and so on up the prototype chain (which eventually stops at the `Object` prototype). So unlike object-oriented languages where classes hold methods and objects hold state and a link to their class to look up their methods, a prototype-based language such as Javascript only has objects, each of which can have state as well as methods (i.e., functions)[^Self].
 
@@ -43,8 +40,7 @@ WildOS uses Classy and its advanced features extensively. One use is for logging
 See the [Classy Documentation](https://github.com/mblinsitu/Classy) for more details on the framework.  
 See the [Logging in WildOS](logging.html) page for details about logging.
 
-Shared Objects Model
----------
+### Shared Objects Model ###
 
 The `ObjectSharer` class is designed to monitor a collection of objects of a set of classes, to notify this activity by sending events (typically to one or more remote clients), and to listen to such events (typically on a client) to synchronize local copies of the objects. `ObjectSharer` adds a mixin to the monitored class to achieve this behavior, so any class can be monitored without it doing anything special. An `ObjectSharer` can manage all the objects of a given class or just a subset ofthem. It can monitor and synchronize all of the objects' fields or a subset of them, and all of its method calls or just a subset of them. This gives great flexibility to adjust the amount of sharing.
 
@@ -52,8 +48,7 @@ In order to communicate the changes between server and clients, WildOS uses netw
 
 See [Creating Devices for WildOS](createdev.html) for more details.
 
-Platform and Devices
---------
+### Platform and Devices ###
 
 WildOS loads a description of the platform it is running on from a JSON configuration file. This file describes the set of devices that constitute the platform. Each such device can contain more devices. For example, a `Surface` device represents a tiled display, and contains one device per tile. Devices can be added and removed dynamically, and can become active or inactive. For example, a tile of the wall display can be inactive when the client running it is down.
 
@@ -65,8 +60,7 @@ Devices can run application code when an applications is started (see below). Th
 
 See [Sharing Objects with WildOS](sharing.html) for more details.
 
-Applications
---------
+### Applications ###
 
 Applications are loaded dynamically when the server starts up (if specified on the command line) or later when loaded by the user through the platform controller. Each application is the single instance of its class (a.k.a. a singleton class). Most applications have their core running in the server and their input and display run in clients associated to the platform's devices. 
 
@@ -76,8 +70,7 @@ Since an application can be loaded and unloaded at any time, it must clean up af
 
 See [Creating an Application for WildOS](createapp.html) for more details.
 
-Directory Structure
---------
+### Directory Structure ###
 
 The WildOS distribution is organized as follows:
 
