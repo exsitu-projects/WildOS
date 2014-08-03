@@ -33,19 +33,13 @@ case $os in
 	;;
 	Linux )
 		echo "Creating Linux app."
-		nw="/opt/packages/node-webkit/nw"
+		nw="/opt/node-webkit/nw"
 	;;
 	* )
 		echo "Unknown os: $os"
 		exit 1
 	;;
 esac
-
-# to test Linux build on the Mac
-# os="Linux"
-# nw=$nw/Contents/MacOS/node-webkit
-# app="WildOS-linux"
-#
 
 # ---
 
@@ -157,36 +151,59 @@ fi
 mkdir "$tmpapp"
 
 # --- Linux build ---
-# *** untested ***
 #
 if [ $os == "Linux" ]
 then
 	if [ $link -eq 1 ]
 	then
-		for file in `find "$wildos/server" -d 1`
+		# link to WildOS files
+		ln -s "$wildos/server" "$tmpapp/server"
+
+		# create script
+		echo "#!/bin/sh" > "$tmpapp/$app"
+		echo 'cd `dirname $0`' >> "$tmpapp/$app"
+		echo "nw server" >> "$tmpapp/$app"
+		chmod a+x "$tmpapp/$app"
+
+		mv $tmpapp $destapp
+		exit 0
+
+		# link to WildOS files
+		for file in `find "$wildos/server" -maxdepth 1`
 		do
 			base=`basename "$file"`
 			ln -s $file "$tmpapp/$base"
 		done
 		ln -s "$wildos/configs" "$tmpapp/configs"
-		ln -s $nw "$tmpapp/nw"
+
+		# link to node-webkit files
+		ln -s $nw "$tmpapp/$app"
+		nwdir=`dirname "$nw"`
+		ln -s "$nwdir/nw.pak" "$tmpapp"
+		ln -s "$nwdir/icudtl.dat" "$tmpapp"
+		ln -s "$nwdir/libffmpegsumo.so" "$tmpapp"
 
 		mv $tmpapp $destapp
 	else
-		# copy the wildos files making up the app
+		# copy the WildOS files making up the app
 		cp -r "$wildos/server" "$tmpapp"
 		cp -r "$wildos/configs" "$tmpapp/server"
 
 		# create the wildos app package
 		cd "$tmpapp/server"
-		zip -r "$tmpapp/app.nw" *
+		zip -r "$tmpapp/package.nw" *
 		cd "$tmpapp"
 		rm -rf server
-
+		
 		# create the executable app
-		cd "$destdir"
-		cat "$nw" "$tmpapp/app.nw" > "$destapp" && chmod +x "$destapp"
-		rm -rf "$tmpapp"
+		cat "$nw" "$tmpapp/package.nw" > "$tmpapp/$app" && chmod +x "$tmpapp/$app"
+		rm "$tmpapp/package.nw"
+
+		# copy the nw files
+		nwdir=`dirname "$nw"`
+		cp "$nwdir/nw.pak" "$nwdir/icudtl.dat" "$nwdir/libffmpegsumo.so" "$tmpapp"
+
+		mv $tmpapp $destapp
 	fi
 
 	exit 0
