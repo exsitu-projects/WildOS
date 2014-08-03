@@ -23,55 +23,39 @@
         </div>
         <ul id="tocmenu" class="nav navbar-nav navbar-right">
           <li class="dropdown">
-            <a href="#" class="dropdown-toggle" data-toggle="dropdown">Content <b class="caret"></b></a>
+            <a href="#" class="dropdown-toggle" data-toggle="dropdown">This page <b class="caret"></b></a>
             <ul class="dropdown-menu">
-              <li class="toc2"><a href="#generalpresentation">General presentation</a></li>
-<li class="toc2"><a href="#beforeinstallingwildos">Before installing WildOS</a></li>
-<li class="toc3"><a href="#installingnode.jsandnpm">Installing node.js and npm</a></li>
-<li class="toc3"><a href="#installingnode-webkit">Installing node-webkit</a></li>
-<li class="toc2"><a href="#installingthewildosserver">Installing the WildOS server</a></li>
-<li class="toc3"><a href="#testingtheserver">Testing the server</a></li>
-<li class="toc3"><a href="#testingtheserverwithlocalclients">Testing the server with local clients</a></li>
-<li class="toc2"><a href="#configuringtheinstallation">Configuring the installation</a></li>
-<li class="toc3"><a href="#configuringwalldo">Configuring <code>walldo</code></a></li>
-<li class="toc3"><a href="#creatingaplatformconfigurationfile">Creating a platform configuration file</a></li>
-<li class="toc2"><a href="#installingtherenderingclients">Installing the rendering clients</a></li>
-<li class="toc3"><a href="#installingtherenderingclientsbyhand">Installing the rendering clients by hand</a></li>
-<li class="toc3"><a href="#testingtherenderingclients">Testing the rendering clients</a></li>
-<li class="toc2"><a href="#installingupdates">Installing updates</a></li>
-<li class="toc3"><a href="#updatinganexistinginstall">Updating an existing install</a></li>
-<li class="toc3"><a href="#extras">Extras</a></li>
-<li class="toc2"><a href="#runningwildos">Running WildOS</a></li>
-<li class="toc3"><a href="#runningtheserverandrenderingclients">Running the server and rendering clients</a></li>
-<li class="toc3"><a href="#runningthewebclients">Running the web clients</a></li>
-<li class="toc3"><a href="#shuttingdown">Shutting down</a></li>
-<li class="toc2"><a href="#theapplications">The applications</a></li>
-<li class="toc3"><a href="#thebrowserapplication">The Browser application</a></li>
-<li class="toc3"><a href="#theslideshowapplication">The SlideShow application</a></li>
-<li class="toc3"><a href="#thecursorsapplication">The Cursors application</a></li>
-<li class="toc2"><a href="#developpingforwildos">Developping for WildOS</a></li>
-<li class="toc2"><a href="#credits">Credits</a></li>
+              <li class="toc3"><a href="#installingandrunningwildos">Installing and running WildOS</a></li>
+<li class="toc3"><a href="#developpingforwildos">Developping for WildOS</a></li>
+<li class="toc3"><a href="#credits">Credits</a></li>
 
             </ul>
           </li>
         </ul>
-        <!--
+        
         <ul id="filemenu" class="nav navbar-nav navbar-right">
           <li class="dropdown">
-            <a href="#" class="dropdown-toggle" data-toggle="dropdown">Files <b class="caret"></b></a>
+            <a href="#" class="dropdown-toggle" data-toggle="dropdown">Pages <b class="caret"></b></a>
             <ul class="dropdown-menu">
-              
+              <li class="disabled"><a href="ReadMe.html">Overview</a></li>
+
             </ul>
           </li>
         </ul>
-        -->
+        
       </div><!-- /.container -->
     </nav>
 
     <div class="container-fluid">
-      <h1 id="wildos-readme">WildOS - Read Me</h1>
+      <!DOCTYPE html>
+<html>
+<head>
+	<meta charset="utf-8"/>
+	<title>Overview</title>
+</head>
+<body>
 
-<h2 id="generalpresentation">General presentation</h2>
+<h1 id="wildos-readme">WildOS - Read Me</h1>
 
 <p>WildOS is middleware to support applications running in an interactive room featuring various interaction resources, such as our <a href="http://www.lri.fr/~mbl/WILD">WILD room</a>: a tiled wall display, a motion tracking system, tablets and smartphones, etc.</p>
 
@@ -83,393 +67,18 @@
 
 <p>WildOS is still in a very preliminary stage, so expect bugs, crashes and weird behaviors!</p>
 
-<h2 id="beforeinstallingwildos">Before installing WildOS</h2>
+<h3 id="installingandrunningwildos">Installing and running WildOS</h3>
 
-<p>First you need to have <a href="http://nodejs.org">node.js</a> and <a href="https://github.com/rogerwang/node-webkit">node-webkit</a> installed both on the machine where you will be running the WildOS server and on the machines where you will be running clients, such as the display cluster. (You do not need to install anything on those machines where the WildOS clients will run in a regular browser, such as tablets and smartphones). </p>
-
-<h3 id="installingnode.jsandnpm">Installing node.js and npm</h3>
-
-<p>If <code>node.js</code> is already installed on your machine, make sure that it is a recent version (at least 0.10.28) by typing</p>
-
-<pre><code>% node --version
-</code></pre>
-
-<p>If node.js is not installed or the version is too old, follow the instructions on the <a href="http://nodejs.org">node.js</a> web site.</p>
-
-<p><code>npm</code>, the node package manager, is installed together with node.js and is used by the WildOS installer.</p>
-
-<h3 id="installingnode-webkit">Installing node-webkit</h3>
-
-<p>To install <code>node-webkit</code>, go to the <a href="https://github.com/rogerwang/node-webkit">node-webkit</a> web site and download the version for your OS. Do <strong>not</strong> install node-webkit with the npm package &#8216;nodewebkit&#8217; as this does not work well. </p>
-
-<p>WildOS requires version 0.9.2 or later of node-webkit.</p>
-
-<p>On Linux, node-webkit is an executable called <code>nw</code> and should be accessible in the <code>PATH</code>.
-The simplest way to install is to copy <code>nw</code> to <code>/usr/local/bin</code> or to create a symbolic link.
-To install in <code>/opt</code> and support mulitple versions, follow the instructions in <a href="http://www.exponential.io/blog/install-node-webkit-on-ubuntu-linux">this web page</a>.</p>
-
-<p>On Mac OS X, node-webkit is an application and should be copied to the standard <code>Applications</code> folder.
-If it is installed elsewhere, edit the <code>tools/nw</code> script so that <code>NWAPP</code> points to it.
-This <code>nw</code> script is designed to be used on the command line in the same way as on Linux.</p>
-
-<h2 id="installingthewildosserver">Installing the WildOS server</h2>
-
-<p>After you have checked out WildOS from the <a href="https://bitbucket.org/mblinsitu/wildos">git repository</a>, the <a href="https://www.lri.fr/svn/in-situ/code/WILD/WildOS">SVN repository</a> or extracted it from the archive, you need to finalize the installation as follows:</p>
-
-<pre><code>% cd WildOS/server
-% npm install  
-</code></pre>
-
-<p>This will create a <code>node_modules</code> directory in the <code>WildOS/server</code> directory and install the node modules needed by WildOS there. (Make sure you are in the <code>server</code> directory).</p>
-
-<p>It is a good idea to add the <code>WildOS/tools/</code> directory to your PATH so that commands such as <code>wildos</code>, <code>walldo</code> and (on Mac OS X) <code>nw</code>, are directly accessible from the command line.
-The rest of this documentation assumes this has been done:</p>
-
-<pre><code>% cd WildOS/tools
-% PATH=`pwd`:$PATH
-</code></pre>
-
-<h3 id="testingtheserver">Testing the server</h3>
-
-<p>To test the server run the following command:</p>
-
-<pre><code>% wildos -n -w local Browser
-</code></pre>
-
-<p>The server will create two windows: one with lots of traces, the other depicting the wall display with the buttons <code>Restart</code> and <code>Shutdown</code> at the top, similar to the image below.
-Enter a URL in the text box: It should load </p>
-
-<figure>
-<img src="doc/img/browser-noclients.png" alt="Screendump of the browser application when no rendering clients are running" />
-<figcaption>Screendump of the browser application when no rendering clients are running</figcaption>
-</figure>
-
-<p>If the server does not work correctly, look at error messages in the terminal and in the window with all the traces: errors are displayed in orange or red.
-If you are on Mac OS X, try also the following command (from the <code>WildOS</code> directory):</p>
-
-<pre><code>% nw -X server [same options as wildos]
-</code></pre>
-
-<p>The <code>-X</code> argument runs node-webkit as a Unix command instead of a Mac OS application so that error messages are displayed on standard output instead of being hidden.</p>
-
-<h3 id="testingtheserverwithlocalclients">Testing the server with local clients</h3>
-
-<p>To test the server with rendering clients running on the same machine, first finish installing the clients:</p>
-
-<pre><code>% cd WildOS/renderer
-% npm install
-</code></pre>
-
-<p>then run the following command (i.e. the same as before without the <code>-n</code> argument):</p>
-
-<pre><code>% wildos -w local Browser
-</code></pre>
-
-<p>This will run the server as before, plus four rendering clients. Each rendering client has a window with a light green background displaying numerous traces, and a content window in the top-left corner of the screen.</p>
-
-<p>The content windows should display the URL specified in the server window, tiled in a consistent way so that the page appears to cross the windows. Moreover, the tiles in the server window should become transparent, to show that the server has establised connections with the clients, as in the picture below.</p>
-
-<figure>
-<img src="doc/img/browser.png" alt="Screendump of the browser application when the rendering clients are running" />
-<figcaption>Screendump of the browser application when the rendering clients are running</figcaption>
-</figure>
-
-<p>If things don&#8217;t work try again to look at error messages in the terminal and in the windows with the traces.</p>
-
-<p>You can also run the server without the clients, as in the previous section, and then run one client by hand:</p>
-
-<pre><code>% cd WildOS/renderer
-% nw . -l -i TL
-</code></pre>
-
-<p>(The last argument corresponds to the name of the tile and can be <code>TL</code>, <code>TR</code>, <code>BL</code> or <code>BR</code>).</p>
-
-<p>On Mac OS X, add the <code>-X</code> option as before to see the potential errors in the terminal:</p>
-
-<pre><code>% nw -X . -l -i TL
-</code></pre>
-
-<p>A possible issue is that the port number used by the server (8080 in this case) is already in use.
-In this case, you can either:</p>
+<p>To install and run WildOS, read the following documentation pages:</p>
 
 <ul>
-<li>edit the <code>serverPort</code> property in <code>WildOS/config/local.json</code></li>
-<li>or (preferably), specify a different port on the command line by adding the argument <code>-p &lt;number&gt;</code> to the above commands, e.g.:</li>
+<li><a href="doc/installing.html">Installing WildOS</a></li>
+<li><a href="doc/configuring.html">Configuring WildOS</a></li>
+<li><a href="doc/running.html">Running WildOS</a></li>
+<li><a href="doc/applications.html">WildOS Applications</a></li>
 </ul>
 
-<pre><code>    linux% wildos -w local -p 8901
-    macos% nw -X . -l -p 9801 -i TL
-</code></pre>
-
-<h2 id="configuringtheinstallation">Configuring the installation</h2>
-
-<p>Before installing and running the clients on the rendering cluster, it is important to properly configure the installation.</p>
-
-<h3 id="configuringwalldo">Configuring <code>walldo</code></h3>
-
-<p>This step is optional, but strongly recommended unless you have an alternative way of easily running commands on all the machines in your display cluster.</p>
-
-<p>The script <code>walldo</code> (in directory <code>tools</code>) is a utility that runs commands on a set of client machines. Type <code>tools/walldo -h</code> to see a description.</p>
-
-<p>Before using <code>walldo</code>, you need to configure it for your local setup. The recommended way to do this is to create a hidden directory <code>~/.walldo</code> and to create a configuration file in this directory. The configuration should contain at least the following lines:</p>
-
-<pre><code>allHosts=(the list of client hostnames, separated by spaces and between parentheses)
-anyHost=a glob expression that matches all the host names
-DOMAIN=the domain name to add to each hostname
-SU=the user name to sudo to when using the sudo command
-</code></pre>
-
-<p>For our WILD wall, which has 16 machines called <code>a1 ... d4</code>, the configuration looks like this:</p>
-
-<pre><code>allHosts=(a1 a2 a3 a4 b1 b2 b3 b4 c1 c2 c3 c4 d1 d2 d3 d4)
-anyHost=[a-d][1-4]
-DOMAIN=.wild.lri.fr
-SU=wild
-</code></pre>
-
-<p>Once the configuration file is created, the <code>WALL</code> environment variable must be set to its name for <code>walldo</code> to use it. If your config file is <code>~/.walldo/MyWall</code>, then you should set:</p>
-
-<pre><code>% WALL=MyWall export WALL
-</code></pre>
-
-<p>An alternative to creating the configuration file is to edit the <code>walldo</code> script directly, but this is not recommended as the changes will be lost when you install a future version. If you insist on doing this, the changes are to be done at the beginning of the file (follow the comments).</p>
-
-<p>A simple change you may want to do to the script even if you have created the configuration file is to change the default value when <code>$WALL</code> is not defined, at the very beginning of the script (the default value is <code>WILD</code>).</p>
-
-<h3 id="creatingaplatformconfigurationfile">Creating a platform configuration file</h3>
-
-<p>The <code>WildOS/configs</code> directory contains JSON files describing the set of devices making up a platform running WildOS.
-The <code>$WALL</code> environment variable is used to fetch the corresponding configuration file under the name <code>WildOS/configs/$WALL.json</code>.</p>
-
-<p>The best way to create a configuration file is to copy an existing one and edit it.
-This section walks through the <code>WILD.json</code> file to describe its content. Another useful file to look at is <code>local.json</code>.</p>
-
-<p>The configuration file is a hierarchy of objects, each describing a part of the platform.
-Each object has a mandatory property: <code>type</code>. The root object must be of type <code>platform</code>.</p>
-
-<p>The <code>WILD.json</code> configuration file defines a platform called <code>WILD room</code>:</p>
-
-<ul>
-<li>The <code>serverPort</code> property defines the network port number the server will be listening to (defaults to 8080);</li>
-<li>The <code>UI</code> property defines the position and size of the window created by the server to control the platform (<code>frame</code> property) and the zoom factor to apply to the miniature display of the wall in the control window;</li>
-<li>The <code>wall</code> property defines the tiled display (see below);</li>
-<li>The <code>controllers</code> property enables the use of web-based devices (tablets and smartphones, typically).</li>
-</ul>
-
-<p>The <code>wall</code> property defines the geometry of the tiled display:</p>
-
-<ul>
-<li>The <code>tileSize</code> property defines the number of pixels of each tile (all tiles are assumed to be of the same size);</li>
-<li>The <code>bezelSize</code> property defines the number of pixels &#8220;hidden&#8221; behind the bezels. If you specify 0, the bezels will be ignored;</li>
-<li>The <code>numTiles</code> property defines the number of rows and columns of the tiled display (we assume a rectangular layout);</li>
-<li>The <code>tiles</code> property defines which machine runs which tile (see below);</li>
-<li>The <code>renderer</code> property can be set to <code>perTile</code> or <code>perHost</code>. The former means that one rendering client is launched for each tile, while the latter means that one rendering client is launched for each host (if the host runs multiple tiles, the client will create one window per tile). Currently, we use mostly <code>perTile</code> (in fact, <code>perHost</code> has not been tested recently);</li>
-<li>The <code>domain</code> property is optional, it is the domain name to add to the host names listed in the <code>tiles</code> array;</li>
-<li>The <code>env</code> property is optional. It lists per-instance values that can be used in the <code>start</code>, <code>stop</code> and <code>restart</code> properties below. If defined, it must be an object whose properties are the instance names and the values are a string;</li>
-<li>The <code>start</code> and <code>stop</code> properties are the shell commands to start / kill all the clients. Before execution, the following string substitutions take place: %HOST% is replaced by the client host name, %PORT% is replaced by the port number of the server, %INSTANCE% is replaced by the instance name to run on the client, and %ENV% is replaced by the content of the <code>env</code> property for the instance. Also process environment variables, e.g. <code>$PATH</code>, are replaced by their value. The % and $ signs can be protected by a backslash (which is specified as two backslashes in a JSON file);</li>
-<li>The optional <code>restart</code> property is a shell command to kill then start all the clients. If absent, it is replaced by calling <code>stop</code> then <code>start</code>.</li>
-</ul>
-
-<p>The <code>tiles</code> property of the wall is a two-dimensional array (an array of lines, each line being an array of tiles). Each element of this two-dimensional array represents a tile and is itself an array with two elements:</p>
-
-<ul>
-<li>the name of the host running that tile,</li>
-<li>the name of the tile within that host, e.g. <code>L</code> or <code>R</code> if a host runs two side-by-side tiles.</li>
-</ul>
-
-<p>Note that the <code>local.json</code> configuration file includes a property <code>layout</code> in the description of its tile display.
-This property is used to map the names of the tiles to the position of their corresponding window on the screen.
-When this property is not present, which is the normal case, each tile is run full-screen.</p>
-
-<h2 id="installingtherenderingclients">Installing the rendering clients</h2>
-
-<p>At present, WildOS features a rendering client for tiled displays and a web client for tablets and smartphones. Only the former (the rendering client) needs to be installed on the machine(s) running your tiled display.</p>
-
-<p>Assuming that the configuration of your display cluster is properly described in the <code>configs</code> directory (see previous section), all you need to do to install the clients for the platform <code>MyWall</code> is:</p>
-
-<pre><code>% WALL=MyWall export WALL  
-% make install  
-</code></pre>
-
-<p>If you need to log in as a different user on the remote machines, make sure to either set the <code>LOGNAME</code> environment variable to that user or to edit the Makefile and change the <code>walldo</code> command on the second line (see the example at the top of the script itself). </p>
-
-<h3 id="installingtherenderingclientsbyhand">Installing the rendering clients by hand</h3>
-
-<p>Alternatively, you can install the clients by hand by following these steps:</p>
-
-<ul>
-<li>Create the <code>WildOS</code> directory on the destination machines (preferably under the home directory of the target user);</li>
-<li>Recursively copy the <code>renderer</code>, <code>shared</code> and, optionally, <code>slides</code> directories to the destination machines under <code>WildOS</code>;</li>
-<li>Install the node.js packages by running <code>npm install</code> in the <code>WildOS/renderer</code> directory in each destination machine.</li>
-</ul>
-
-<h3 id="testingtherenderingclients">Testing the rendering clients</h3>
-
-<p>To test the remote clients, proceed as before.
-First, try to run the server in the simplest way:</p>
-
-<pre><code>% wildos Browser
-</code></pre>
-
-<p>This should display the server windows on the server machine, and a full-screen window on each tile run by a client machine. Entering a URL in the server window should display it both in the server window and on the clients. You can pan and zoom the web page in the server window with the mouse: drag to move the page within the tiled display, use the mousewheel to zoom it in and out.</p>
-
-<p>In case of problems, troubleshoot as follows.</p>
-
-<p>Run the server without launching the clients:</p>
-
-<pre><code>% wildos -n Browser
-</code></pre>
-
-<p>then start the clients by clicking the <code>Restart</code> button in the server window, or log in a client machine and run a rendering client by hand as follows:</p>
-
-<pre><code>(client) % nw . -s &lt;server&gt;:&lt;portnumber&gt; -i &lt;instancename&gt;
-</code></pre>
-
-<p>where <code>server</code> is the name of the server machine, <code>portnumber</code> the port number the server is running on and <code>instancename</code> the name of the renderer instance as specified in the configuration file, such as &#8216;Left&#8217; or &#8216;Right&#8217; for a configuration where each machine runs two tiles.</p>
-
-<h2 id="installingupdates">Installing updates</h2>
-
-<h3 id="updatinganexistinginstall">Updating an existing install</h3>
-
-<p>If you update WildOS, e.g. with <code>svn update</code> or from the git repository, you need to update the clients with <code>make update</code>.</p>
-
-<h3 id="extras">Extras</h3>
-
-<p>If you want to re-generate the documentation (which you shouldn&#8217;t need to do unless you have edited it), you will also need to install <a href="http://fletcherpenney.net/multimarkdown/">MultiMarkdown</a>, a tool to compile Markdown files into HTML.</p>
-
-<p>Then simply run</p>
-
-<pre><code>% make docs
-</code></pre>
-
-<p>to generate <code>ReadMe.html</code> as well as the content of the <code>doc</code> directory.</p>
-
-<h2 id="runningwildos">Running WildOS</h2>
-
-<p>Once everything is installed properly, you should be able to run WildOS.</p>
-
-<p>WildOS consists of multiple processes: a server and a set of clients. The order in which they are run (and stopped and restarted) should not matter. For example, you can stop the server, restart it, and the clients will automatically reconnect to it. However, if things go really wrong, it&#8217;s better to kill everything, start the server, and then the clients.</p>
-
-<h3 id="runningtheserverandrenderingclients">Running the server and rendering clients</h3>
-
-<p>Make sure that you have set the <code>WALL</code> environment variable to the appropriate value, and that the <code>WildOS/tools</code> directory is in the <code>PATH</code>:</p>
-
-<pre><code>% WALL=MyWall export WALL
-% PATH=`pwd`/tools:$PATH
-</code></pre>
-
-<p>The simplest way to run the WildOS server and rendering clients is to run the following command on the server machine:</p>
-
-<pre><code>% wildos
-</code></pre>
-
-<p>This will run the server, kill any rendering clients and restart them.
-When quitting the server (with the Quit menu item or keyboard equivalent), the rendering clients will be killed.</p>
-
-<p>The server will create two windows: one with lots of traces, the other depicting the wall display with the buttons <code>Restart</code> and <code>Shutdown</code> at the top. As the clients come up, the tiles in the server window become transparent (i.e. they turn form pink to blue), denoting that the server has established the connection. When a clients disappears, the corresponding tile turns pink again.</p>
-
-<p>The <code>Restart</code> button kills any running clients and then restarts them.
-The <code>Shutdown</code> button sends a message to the clients to quit them gracefully. If this does not work, you can use the <code>Stop</code> command in the <code>Platform</code> menu to kill them.</p>
-
-<p>The <code>Applications</code> menu lists the available applications. Select an application to load it, or to unloaded it if it is already loaded (a checkmark shows which applications are loaded). Select the <code>Browser</code> application. A text entry field should appear in the main window and if you enter a URL, it should show up in the miniature wall as well as in the client windows. You can also run <code>wildos</code> so that the <code>Browser</code> application (and/or other ones) start automatically.</p>
-
-<p>The general format of the <code>wildos</code> command is as follows:
- % wildos [start][-n|--no-clients] [-w|&#8211;wall config][-p|--port number] [-d|&#8211;debug [0|1|2]][-l|--log file] [app &#8230;]
- % wildos stop</p>
-
-<p>The first form runs the server and takes the following arguments:</p>
-
-<ul>
-<li><code>-n|--no-clients</code> prevents the clients from being automatically started/stopped with the server;</li>
-<li><code>-w|--wall &lt;config&gt;</code> specifies a different config file, overriding the <code>$WALL</code> setting;</li>
-<li><code>-p|--port &lt;number&gt;</code> specifies a different port number than the one specified in the config file for the server to listen to;</li>
-<li><code>-d|--debug [0|1|2]</code> specifies debugging level: 0 (no logging), 1 (logging window hidden), 2 (logging window open);</li>
-<li><code>-l|--log file</code> specifies the log configuration file (defaults to <code>logdefault.js</code>);</li>
-<li><code>app ...</code> is an optional list of apps. The available apps, such as <code>Browser</code> are described later in this document.</li>
-</ul>
-
-<p>The second form stops the rendering clients (but not the server).</p>
-
-<p>For example :</p>
-
-<pre><code>% wildos -w local -p 8088 Browser
-</code></pre>
-
-<p>uses the <code>local</code> config file to run server and clients on the local machine, uses port 8088 and loads the <code>Browser</code> app.</p>
-
-<h3 id="runningthewebclients">Running the web clients</h3>
-
-<p>The server application displays in the top-right corner a QRcode of the URL for web clients to connect to the server. Simply flash this code or enter the URL in your browser (smartphone, tablet or any computer with a recent Web browser). The URL is:</p>
-
-<pre><code>http://&lt;server&gt;:&lt;portnumber&gt;/controller.html  
-</code></pre>
-
-<p>This should open an empty page (except for the title &#8220;WILD controller&#8221;) then, assuming the Browser application is still running, it should display a text entry field to change the URL displayed in the browser of the tiled display:</p>
-
-<figure>
-<img src="doc/img/browser-controller.png" alt="Screendump of the browser web controller" />
-<figcaption>Screendump of the browser web controller</figcaption>
-</figure>
-
-<h3 id="shuttingdown">Shutting down</h3>
-
-<p>To quit the server, select the <code>Quit</code> command in its menu or use the usual quit keyboard shortcut (command-Q on Mac OS X). Unless the server was run with the <code>-n</code> flag, this will also kill the clients.</p>
-
-<p>You can also click the <code>Shutdown</code> button or select the <code>Shutdown</code> command in the <code>Platform</code> menu to stop the rendering clients. Note that this will only work if they are still responding. If they are not, try the <code>Stop</code> command in the <code>Platform</code> menu, or kill them &#8220;by hand&#8221; with the following command:</p>
-
-<pre><code>% wildos stop
-</code></pre>
-
-<p>(If you are running local clients, you can kill them in the usual way, e.g. by selecting their <code>Quit</code> command).</p>
-
-<h2 id="theapplications">The applications</h2>
-
-<h3 id="thebrowserapplication">The Browser application</h3>
-
-<p>The Browser application has been introduced above. It has one more feature that we haven&#8217;t described: you can pan the page by dragging the miniature image of the page in the controller window on the server, and you can zoom it in/out by using the scrollwheel of your mouse when the cursor is on the miniature image. This makes it easy to scale the web page to the size of your wall display.</p>
-
-<h3 id="theslideshowapplication">The SlideShow application</h3>
-
-<p>The SlideShow application is designed to show a series of precomputed large images on the wall display. The images and the files describing the slideshows must be in the <code>slides</code> directory, and the <code>tilecutter</code> Mac OS X console application must be used to cut the images into tiles that can be used by the SlideShow application.</p>
-
-<p>Separate documentation (to be written!) will explain how to do this. At present, if you have access to the WILD room, the best thing to do is to use the version of WildOS installed on <code>frontal-1</code>: once logged in, open a terminal window and issue the following commands:</p>
-
-<pre><code>% cd Desktop/mbl/WildOS/renderer  
-% LOGNAME=mbl export LOGNAME  
-% tools/nw SlideShow
-</code></pre>
-
-<p>On the server, you can load a new slideshow by clicking the <code>Load SlideShow</code> button and selecting a file, or by dragging a slideshow file onto the miniature wall. You can also view an arbitrary collection of the large images in the <code>Desktop/Slides</code> folder by dragging the image files and/or folders onto the miniature wall.</p>
-
-<p>On both the server interface and the web controller, you can use the <code>First</code>, <code>Prev</code>, <code>Next</code> and <code>Last</code> buttons to navigate the slideshow. On the web controller, you can also go to the next slide by tapping the thumbnail of the slide.</p>
-
-<figure>
-<img src="doc/img/slideshow.png" alt="SlideShow application on server" />
-<figcaption>SlideShow application on server</figcaption>
-</figure>
-
-<figure>
-<img src="doc/img/slideshow-controller.png" alt="SlideShow application web controller" />
-<figcaption>SlideShow application web controller</figcaption>
-</figure>
-
-<h3 id="thecursorsapplication">The Cursors application</h3>
-
-<p>The Cursors application lets users create and move several cursors on the wall display. At present, it does not do anything else, e.g. you cannot &#8220;click&#8221; with those cursors.</p>
-
-<p>The controller interface on both the server and on the web clients lets you create new cursors, select them by clicking their swatch, and delete the selected cursor. On the server, you can move a cursor either by dragging it directly in the miniature image of the wall, or by using the swatch as a joystick. On the web client, when you select a cursor swatch, the large area below turns the same color and you can drag the mouse (or finger on a touch screen) in it to move the cursor with a joystick-like interaction.</p>
-
-<figure>
-<img src="doc/img/cursors.png" alt="Cursors application on server" />
-<figcaption>Cursors application on server</figcaption>
-</figure>
-
-<figure>
-<img src="doc/img/cursors-controller.png" alt="Cursors application web controller" />
-<figcaption>Cursors application web controller</figcaption>
-</figure>
-
-<h2 id="developpingforwildos">Developping for WildOS</h2>
+<h3 id="developpingforwildos">Developping for WildOS</h3>
 
 <p>WildOS is in active development. We need users to give us feedback, contribute code, and create their own applications.</p>
 
@@ -478,14 +87,31 @@ The source code is also fairly commented.</p>
 
 <p>So read the documentation, read the code and hack away!</p>
 
-<h2 id="credits">Credits</h2>
+<h3 id="credits">Credits</h3>
 
 <p>WildOS is developed by <a href="http://www.lri.fr/~mbl">Michel Beaudouin-Lafon</a> and inspired by lots of previous work, most notably the <a href="https://www.lri.fr/perso/~mbl/WILD/publications/index.html#substance-chi11">Substance</a> framework.</p>
+
+</body>
+</html>
 
     </div>
     <script type="text/javascript" src="doc/assets/js/jquery-1.11.0.min.js"></script>
     <script type="text/javascript" src="doc/assets/js/bootstrap.min.js"></script>
     <script type="text/javascript" src="doc/assets/js/highlight.custom.js"></script>
     <script type="text/javascript">hljs.initHighlightingOnLoad();</script>
+    <script type="text/javascript">
+      $(document).ready(function() {
+        // Hide filemenu if only one entry (the page itself) & toc menu if empty
+        if ($('#filemenu ul.dropdown-menu > li').length == 1)
+          $('#filemenu').hide();
+        if ($('#tocmenu ul.dropdown-menu > li').length == 0)
+          $('#tocmenu').hide();
+
+        // Enlarge images on click
+        $('figure img').click(function() {
+          $(this).toggleClass('full');
+        })
+      });
+    </script>
   </body>
 </html>

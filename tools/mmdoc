@@ -12,10 +12,12 @@
 //		- assets - directory with HTML assets
 //		- title - the content of the first level-1 header, or empty if there isn't one
 //		- toc - a table of content, as an HTML sequence of <li> elements with class "toc1" ... "toc6" according to the level
+//		- filemenu - a menu of filenames to link to 
 //		- content - HTML output of the multimarkdown file
 
 // Node modules
 var fs = require('fs');
+var Path = require('path');
 var spawn = require('child_process').spawn;
 
 // Global configuration
@@ -122,30 +124,39 @@ function ls(dir) {
 	return files;
 }
 
-// Extract the title of a file
-function getTitle(file) {
+// Extract the metadata at the top of a markdown file.
+// Metadata is lines of the form "field: value", separated from the file itself by a blank line.
+// If there is no such metadata, use the first line of the file as its title.
+function getMetadata(file) {
 	// For non-Markdown files, return null
 	if (! file.match(/\.m?md$/))
 		return null;
 
-	// For Markdown file, get the `title` metadata, or else the first line
+	// For Markdown files, read the file
 	var lines = fs.readFileSync(file, {encoding: 'utf8'});
 	if (!lines)
 		return null;
 	lines = lines.split('\n');
 
-	var title = lines[0];
+	var metadata = {
+		title: lines[0],
+	};
 	for (var i = 0; i < lines.length; i++) {
 		var line = lines[i];
-		// Look for `Title:`, non-case-sensitive
-		var m = line.match(/[tT][iI][tT][lL][eE]:\s*(.*)\s*$/);
-		if (m)
-			return m[1];
+
 		// Blank line is end of metadata
 		if (line.match(/^\s*$/))
 			break;
+
+		// Look for lines of the form "field: value"
+		var m = line.match(/^([^:]*):\s*(.*)\s*$/);
+		if (! m)
+			continue;
+		var field = m[1];
+		var value = m[2];
+		metadata[field.toLowerCase()] = value;
 	}
-	return title;
+	return metadata;
 }
 
 // Parse the content of the generated HTML (`content`) to extract the table of contents (into `variables`)
@@ -235,11 +246,29 @@ function processFile(infile, outfile, cb) {
 
 		// Create files menu
 		var filesMenu = '';
+		try {
+			// Load 'filemenu.html' in the file's directory
+			filesMenu = fs.readFileSync(Path.join(Path.dirname(infile), 'filemenu.html'), {encoding: 'utf8'});
+		} catch(e) {
+			// otherwise generate a list of file names
+			fileInfo.forEach(function(fInfo){
+				filesMenu += Path.basename(fInfo.infile) + '\n';
+			});
+		}
+
+		var location = outfile.split('/');
 		fileInfo.forEach(function(fInfo){
-			if (fInfo.infile != infile) 
-				filesMenu += '<li><a href="'+fInfo.outfile+'">'+fInfo.title+'</a></li>\n';			
+			// Disable entry for current page
+			var current = '';
+			if (fInfo.infile == infile) 
+				current = ' class="disabled"';
+
+			// Compute relative URL
+			var href = Path.relative(Path.dirname(outfile), fInfo.outfile);
+
+			filesMenu = filesMenu.replace(Path.basename(fInfo.infile), '<li'+current+'><a href="'+href+'">'+fInfo.title+'</a></li>');
 		});
-		variables.files = filesMenu;
+		variables.filemenu = filesMenu;
 
 		// Extract toc, process template and postprocess resulting HTML
 		variables = preProcess(content, variables);
@@ -416,12 +445,12 @@ function main() {
 
 	// The template is looked up in input dir unless it contains a slash
 	if (! templateFile.match(/\//))
-		templateFile = inputDir+templateFile;
+		templateFile = Path.join(inputDir, templateFile);
 
-	var templateModTime = null;
+	var globalModTime = null;
 	try {
 		template = fs.readFileSync(templateFile, {encoding: 'utf8'});
-		templateModTime = fs.statSync(templateFile).mtime.getTime();
+		globalModTime = fs.statSync(templateFile).mtime.getTime();
 	} catch(err) {
 		console.log(err.toString());
 		process.exit(2);
@@ -431,17 +460,27 @@ function main() {
 	if (files.length === 0)
 		files = ls(inputDir);
 
+	// Look at time of filemenu.html file
+	try {
+		var modTime = fs.statSync(Path.join(inputDir, "filemenu.html")).mtime.getTime();
+		if (modTime > globalModTime)
+			globalModTime = modTime;
+	} catch(err) {
+	}
+
 	// Create the list of files with their titles
 	files.forEach(function(file) {
-		var infile = inputDir+file;
-		var outfile = outputDir+file+'.html';
+		var infile = Path.join(inputDir, file);
+		var outfile = Path.join(outputDir, file+'.html');
 		if (file.match(/\.m?md$/))
-			outfile = outputDir+file.replace(/\.m?md$/, '.html');
+			outfile = Path.join(outputDir, file.replace(/\.m?md$/, '.html'));
+		var metadata = getMetadata(infile);
 		fileInfo.push({
 			name: file,
 			infile: infile,
 			outfile: outfile,
-			title: getTitle(infile) || file,
+			title: metadata.title || file,
+			metadata: metadata,
 		});
 	});
 
@@ -456,7 +495,7 @@ function main() {
 			var infileModTime = fs.statSync(fInfo.infile).mtime.getTime();
 			var outfileModTime = fs.statSync(fInfo.outfile).mtime.getTime();
 
-			if (outfileModTime > templateModTime && outfileModTime > infileModTime) {
+			if (outfileModTime > globalModTime && outfileModTime > infileModTime) {
 				if (!dryRun)
 					console.log(fInfo.outfile, 'up to date. Not processing it.');
 				return;
@@ -473,7 +512,7 @@ function main() {
 		if (fInfo.name.match(/\.js$/)) {
 			// Preprocess javascript file:
 			// First turn it into a markdown file
-			var tmpfile = outputDir+fInfo.name+'.md';
+			var tmpfile = Path.join(outputDir, fInfo.name+'.md');
 			if (!processJS(fInfo.name, infile, tmpfile)) {
 				console.log('*** Could not process', infile);
 				return;

@@ -166,24 +166,6 @@ then
 		chmod a+x "$tmpapp/$app"
 
 		mv $tmpapp $destapp
-		exit 0
-
-		# link to WildOS files
-		for file in `find "$wildos/server" -maxdepth 1`
-		do
-			base=`basename "$file"`
-			ln -s $file "$tmpapp/$base"
-		done
-		ln -s "$wildos/configs" "$tmpapp/configs"
-
-		# link to node-webkit files
-		ln -s $nw "$tmpapp/$app"
-		nwdir=`dirname "$nw"`
-		ln -s "$nwdir/nw.pak" "$tmpapp"
-		ln -s "$nwdir/icudtl.dat" "$tmpapp"
-		ln -s "$nwdir/libffmpegsumo.so" "$tmpapp"
-
-		mv $tmpapp $destapp
 	else
 		# copy the WildOS files making up the app
 		cp -r "$wildos/server" "$tmpapp"
