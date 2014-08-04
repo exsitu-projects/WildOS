@@ -104,6 +104,31 @@ var SlideShow = App.subclass().name('SlideShow')
 			return 'http://localhost:'+this.platform.server.port+urlRoot+'/'+slide;
 		},
 
+		// Return a list of slideshows in the slideRoot directory.
+		// Each element is a pair with the file name and the slideshow title.
+		getSlideShowList: function() {
+			var slideShows = [];
+			var dir = this.slidePath();
+			fs.readdirSync(dir).forEach(function(fileName) {
+				if (Path.extname(fileName) != '.json')
+					return;
+				try {
+					var slideShow = fs.readFileSync(Path.join(dir, fileName), 'utf8');
+					slideShow = JSON.parse(slideShow);
+					if (! slideShow.slides)
+						return;	// not a slideshow file
+					slideShows.push({
+						file: fileName,
+						title: slideShow.title || fileName,
+						length: slideShow.slides.length,
+					});
+				} catch(e) {
+					// nothing
+				}
+			});
+			return slideShows;
+		},
+
 		// Load a slideshow stored as an array of slide names exported by a js file.
 		loadSlideShow: function(name) {
 			this.slideShow = name;
@@ -328,7 +353,7 @@ var SlideShow = App.subclass().name('SlideShow')
 		onSlideShowChanged: function(cb) { return this.on('slideShowChanged', cb); },
 
 	})
-	.shareState('own', ['nextSlide', 'prevSlide', 'firstSlide', 'lastSlide', 'gotoSlide'])
+	.shareState('own', ['getSlideShowList', 'loadSlideShow', 'nextSlide', 'prevSlide', 'firstSlide', 'lastSlide', 'gotoSlide'])
 ;
 
 log.spyMethods(SlideShow);

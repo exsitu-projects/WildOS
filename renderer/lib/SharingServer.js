@@ -107,6 +107,18 @@ var SharingServer = SocketIOServer.subclass().name('SharingServer')
 				});
 				log.eventExit(self, 'callNotify');
 			});
+
+			this.on('callResult', function(result) {
+				log.eventEnter(self, 'callResult', result.id, '=', result.result);
+				self.sharers.some(function(sharer) {
+					if (sharer.callResult(result.id, result.result)) {
+						log.event(self, 'callResult', 'found');
+						return true;
+					}
+					return false;
+				});
+				log.eventExit(self, 'callResult');
+			})
 		},
 
 		// Add a sharer to the set of sharers managed by this client.

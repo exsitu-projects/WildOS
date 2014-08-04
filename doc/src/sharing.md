@@ -65,6 +65,9 @@ and which local method calls should be notified to the clients and when.
 For a slave, you can specify which methods can be called remotely by the master.
 The notification of method calls on the master will execute the corresponding method on the slave if it is defined.
 
+When a slave calls a method of the master, it can specify a callback function to be called when the result is received. The callback is called with the result as parameter, and `this` bound to the object that issued the call.
+Note that at the moment a master cannot collect the results of the methods it calls on the slaves.
+
 Here is a simple master that shares its fields `x` and `y` (specified by the special string `'own'`, which shares all the fields declared locally in the class) and allows the method `moveBy` to be called remotely.
 When its `playSound` method is called, the slaves are notified of the call after it is executed locally.
 

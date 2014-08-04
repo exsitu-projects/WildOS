@@ -1,6 +1,9 @@
 <!-- Web controller for the SlideShow app -->
+<button id="loadSlideShow" data-state="Open">Open</button>
+
 <h3 class="controller-title">SlideShow</h3>
 <div class="controller-body">
+<ul id="slideShowList"></ul>
 <link rel="stylesheet" href="/SlideShow/css/blueimp-gallery.min.css">
 
 <style type="text/css">
@@ -9,12 +12,36 @@
     margin-right: 2px;
 }
 
+h3 {
+    margin-top: 10px;
+    margin-bottom: 10px;
+}
+
 /* yellow border shows selected slide */
 img.slide {
     border: 2px solid #222;
 }
 img.current {
     border-color: yellow;
+}
+
+/* list of slideshows */
+#loadSlideShow {
+    float: right;
+    vertical-align: 
+}
+#slideShowList {
+    display: none;
+    list-style-type: none;
+    padding: 0;
+    margin-top: -6px; margin-bottom: 10px;
+    margin-left: -8px; margin-right: -8px;
+}
+#slideShowList li {
+    background-color: #999;
+    border-bottom: 1px solid black;
+    padding: 5px;
+    margin: 0;
 }
 </style>
 
@@ -58,6 +85,8 @@ var SlideShow = App.subclass().name('SlideShow')
 		nextSlide: function()  {},
 		lastSlide: function()  {},
 		gotoSlide: function(i) {},
+        getSlideShowList: function() {},
+        loadSlideShow: function(n) {},
 
 		// Handlers for changes to the shareState
 		onSlideChanged: function(cb) {
@@ -68,13 +97,14 @@ var SlideShow = App.subclass().name('SlideShow')
 			this.slideShowChangedListeners.push(cb);
 		},
 	})
-	.shareState('own', ['firstSlide', 'prevSlide', 'nextSlide', 'lastSlide', 'gotoSlide'])
+	.shareState('own', ['getSlideShowList', 'loadSlideShow', 'firstSlide', 'prevSlide', 'nextSlide', 'lastSlide', 'gotoSlide'])
 ;
 
 var slideShowApp = SlideShow.create();
 </script>
 
-<h2 id="title"></h2>
+<h3 id="title"></h3>
+
 <!-- The Gallery as lightbox dialog, should be a child element of the document body -->
 <div id="blueimp-gallery" class="blueimp-gallery blueimp-gallery-controls" data-continuous="false" data-toggleControlsOnReturn="false" data-toggleSlideshowOnSpace="false">
     <div class="slides"></div>
@@ -109,6 +139,38 @@ var slideShowApp = SlideShow.create();
         slideShowApp.nextSlide();
         event.stopImmediatePropagation();   // prevent further handlers, i.e. switching controls on/off
         return false;
+    });
+
+    // list slide shows and select one to load
+    $('#loadSlideShow').click(function() {
+        var button = $('#loadSlideShow');
+        var list = $('#slideShowList');
+        switch(button.data('state')) {
+            case 'Open':
+                list.html('');
+                button.data('state', 'Loading').data('state', 'Loading');
+                slideShowApp.getSlideShowList(function(slideShowList) {
+                    if (button.data('state') != 'Loading')  // button was closed while loading
+                        return;
+                    button.html('Close').data('state', 'Close');
+                    list.show(300);
+                    slideShowList.forEach(function(slideShow) {
+                        list.append('<li data-file="'+slideShow.file+'">'+slideShow.title+' ('+slideShow.length+' slides)</li>');
+                    })
+                });
+                break;
+            case 'Loading':
+            case 'Close':
+                list.hide(300);
+                button.html('Open').data('state', 'Open');
+                break;
+        }
+
+    });
+    $('#slideShowList').on('click', 'li', function() {
+        slideShowApp.loadSlideShow($(this).data('file'));
+        $('#slideShowList').hide(300);
+        $('#loadSlideShow').html('Open').data('state', 'Open');
     });
 </script>
 <script src="/SlideShow/js/jquery.blueimp-gallery.min.js"></script>

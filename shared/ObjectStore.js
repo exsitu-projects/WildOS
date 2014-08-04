@@ -79,7 +79,7 @@ var ObjectStore = OO.newClass().name('ObjectStore')
 		},
 
 		// Turn an arbitrary value into a literal object or array that can be sent to the client.
-		encode: function(value) {
+		encode: function(value) {			
 			// Simple value: as is.
 			if (!value || typeof(value) != 'object')
 				return value;
@@ -89,10 +89,11 @@ var ObjectStore = OO.newClass().name('ObjectStore')
 				return {oid: value.oid};
 
 			// Array: recurse over its elements.
+			var res;
 			if (value instanceof Array) {
 				res = [];
 				for (var i = 0; i < value.length; i++)
-					res[i] = this.encode(value[i]);
+					res.push(this.encode(value[i]));
 				return res;
 			}
 
@@ -231,8 +232,10 @@ var ObjectStore = OO.newClass().name('ObjectStore')
 				log.method(this, 'callMethod', oid+'.'+method, '- method not defined');
 				return false;
 			}
-			m.apply(obj, this.decode(args));
-			return true;
+			// Return an object to distinguish from returning 'false' above.
+			return {
+				result: m.apply(obj, this.decode(args)),
+			}
 		},
 
 		// Call an object method. 

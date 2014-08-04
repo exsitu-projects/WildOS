@@ -24,12 +24,21 @@ var SharingClient = SocketIOClient.subclass().name('SharingClient')
 		var self = this;	// needed for the closure
 
 		// Event handler when the client is calling an object method.
+		// If the message contains a resultId, we send the result back to the caller.
 		this.on('callMethod', function(data) {
 			log.eventEnter(self, 'callMethod', data.oid+'.'+data.method, '(', data.args, ');');
 			// Forward the call to the sharers until one of them handles it.
 			for (var i = 0; i < self.sharers.length; i++) {
 				var sharer = self.sharers[i].sharer;
-				if (sharer.callMethod(data.oid, data.method, data.args)) {
+
+				var result = sharer.callMethod(data.oid, data.method, data.args);
+				if (result !== false) {
+					if (data.returnId) {
+						// we need to return the result
+						result.id = data.returnId;
+						log.event(self, 'callMethod', 'sending result id', data.returnId, 'value', result);
+						self.socket.emit('callResult', sharer.encode(result));
+					}
 					log.event(self, 'callMethod', 'found');
 					break;
 				}

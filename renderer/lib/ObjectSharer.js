@@ -12,8 +12,12 @@ var log = require('Log').logger('ObjectSharer');
 
 // The client-side `ObjectSharer` class.
 var ObjectSharer = ObjectStore.subclass().name('ObjectSharer')
+	.classFields({
+		pendingId: 0,		// Counter to generate continuation ids		
+	})
 	.fields({
 		server: null,		// Where to send / listen to events
+		pendingResults: {},	// Continuations for remote function calls awaiting their response
 	})
 	.constructor(function() {
 		this.recordNew = false;	// don't record objects that don't have on oid.
@@ -50,29 +54,58 @@ var ObjectSharer = ObjectStore.subclass().name('ObjectSharer')
 			return this;
 		},
 
-		// Helper method to wrap a method with a function that 
-		wrapRemoteCall: function(cls, method) {
+		// Helper method to wrap a method with a function that sends the call to the server.
+		// If the last argument is a function, it is a callback to be called with the result when it is received.
+		wrapRemoteCall: function(cls, method /*, arguments [, cb] */) {
 			var sharer = this;
+
 			cls.wrap(method, function() {
-				sharer.remoteCall(this, method, [].slice.apply(arguments));
-				// Don't call body - or should we???
-				//var ret = this._inner.apply(this, arguments);
-				//return ret;
+				var args = [].slice.apply(arguments);
+				var cb = args[args.length-1];
+				if (typeof cb == 'function') {
+					args.splice(-1, 1);	// remove last argument
+					sharer.remoteCall(this, method, args, cb);
+				} else
+					sharer.remoteCall(this, method, args);
+
+				// Call local body (most often, it's empty)
+				return this._inner.apply(this, arguments);
 			});
 		},
 
 		// --- Send messages to server ---
 
 		// Issue a method call to an object.
-		remoteCall: function(obj, method, args) {
+		// If `cb` is a function, it is called when the result is received.
+		remoteCall: function(obj, method, args, cb) {
 			log.method(this, 'remoteCall', obj.oid+'.'+method, '(',this.encode(args),')');
 			if (! this.server || ! obj.oid)
 				return;
-			this.server.emit('callMethod', {
+
+			var message = {
 				oid: obj.oid,
 				method: method,
 				args: this.encode(args),
-			});
+			};
+			if (cb && typeof cb == 'function') {
+				// Store the promise, which will be resolved by callResult below
+				var id = message.returnId = method + ObjectSharer.pendingId++;
+				this.pendingResults[id] = {
+					object: obj,
+					cb: cb,
+				};
+			}
+			this.server.emit('callMethod', message);
+		},
+
+		// Process a result sent by the server
+		callResult: function(id, result) {
+			var promise = this.pendingResults[id];
+			if (! promise)
+				return false;
+			promise.cb.call(promise.obj, result);
+			delete this.pendingResults[id];
+			return true;
 		},
 
 		// Request an object from the server.

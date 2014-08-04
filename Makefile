@@ -18,7 +18,7 @@ start:
 stop:
 	tools/wildos stop
 
-server:
+server: shared/OO.js shared/Log.js shared/ObjectStore.js renderer/lib/ObjectSharer.js renderer/lib/SharingServer.js renderer/lib/SocketIOServer.js
 	cd renderer/lib; browserify -r OO -r Log -r ./ObjectSharer -r ./SharingServer -r ./SocketIOServer -r socket.io-client > ../../server/content/wildos.js
 
 install:
