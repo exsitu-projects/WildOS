@@ -18,10 +18,10 @@ var Surface = require('../../devices/Surface');
 var Browser = App.subclass().name('Browser')
 	.fields({
 		// background page + its offset and zoom factor
-		url: null,	// URL of the page to load
-		offsetX: 0,				// Offset of the page from the topleft of the surface
+		url: null,		// URL of the page to load
+		offsetX: 0,		// Offset of the page from the topleft of the surface
 		offsetY: 0,				
-		zoom: 1,				// Zoom factor
+		zoom: 1,		// Zoom factor
 	})
 	.constructor(function(config) {
 		// *** It looks like we must define a constructor for the ObjectSharer constructor mixin to work
@@ -47,21 +47,26 @@ var Browser = App.subclass().name('Browser')
 				this.platform.window.window.browserApp.stop();
 		},
 
-		// Called by the UI to change the background URL.
-		setBackgroundURL: function(url) {
+		// These methods are meant to be called by clients to change the state of the app
+
+		// Set the URL
+		setURL: function(url) {
+			// Prepend local content dir if no http prefix
+			if (! url.match(/http:\/\//))
+				url = 'app://localhost/content/' + url;
 			this.url = url;
 		},
 
-		// Called by the UI to move the page within the surface
-		panBackgroundBy: function(dX, dY) {
-			log.method(this, 'panBackgroundBy', dX, dY);
+		// Pan/zoom the page in the display surface
+		panBy: function(dX, dY) {
+			log.method(this, 'panBy', dX, dY);
 			this.offsetX += dX;
 			this.offsetY += dY;
 		},
 
 		// Called by the UI to zoom the page.
-		zoomBackgroundBy: function(dZ, x, y) {
-			log.method(this, 'zoomBackgroundBy', dZ, x, y);
+		zoomBy: function(dZ, x, y) {
+			log.method(this, 'zoomBy', dZ, x, y);
 			this.offsetX = x + (this.offsetX - x) * dZ;
 			this.offsetY = y + (this.offsetY - y) * dZ;
 			this.zoom *= dZ;

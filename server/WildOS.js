@@ -110,21 +110,8 @@ function loadPlatform(name, cb) {
 	var eventEmitter = new events.EventEmitter();
 	eventEmitter.setMaxListeners(100);	// default limit is 10!
 
-	// *** We need a way to specify options from the command line
+	// *** We need a way to specify options from the command line or a json file or something...
 	var options = {
-		wall: {
-			// for Browser app
-				backgroundURL: 
-//				null,			// default page
-//				'tile.html',	// page loaded from the local webserver in the client
-//				'http://Michels-MacBook-Pro.local:9000/wildschedule.html',
-				'http://www.lri.fr/~mbl',
-//				'http://localhost:8080/fullschedule.html',
-//				'http://www.lri.fr/~mbl/WILD/index.html',
-
-			// for SlideShow app
-				slideImage: 'test',
-		},
 	};
 
 	// Create the platform object.

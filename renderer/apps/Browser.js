@@ -52,6 +52,9 @@ var Browser = App.subclass().name('Browser')
 		
 		// Called when the content of the window is loaded and ready.
 		loaded: function(tile) {
+			if (!tile.window)
+				return;
+			
 			// Adjust the style of the body.
 			var style = tile.window.window.document.body.style;
 			style.position = "absolute";
@@ -105,7 +108,7 @@ var Browser = App.subclass().name('Browser')
 				log.method(this, 'adjustPosition', '- tile not ready');
 				return;
 			}
-			log.method(this, 'adjustTile'+this.offsetX+' '+this.offsetY+' - '+tile.originX+' '+tile.originY+' - '+this.zoom);
+			log.method(this, 'adjustPosition', ''+this.offsetX+' '+this.offsetY+' - '+tile.originX+' '+tile.originY+' - '+this.zoom);
 
 			var style = tile.window.window.document.body.style;
 			style.left = Math.round((this.offsetX-tile.originX)/this.zoom)+"px";

@@ -3,6 +3,9 @@
 // Slides can be tiled images or HTML pages.
 //
 
+// Node modules
+var Path = require('path');
+
 // Shared modules
 var OO = require('OO');
 var log = require('Log').logger('SlideShow');
@@ -10,9 +13,15 @@ var log = require('Log').logger('SlideShow');
 // Renderer modules
 var App = require('../lib/App');
 
+// Root of the executable
+var appRoot = Path.join(__dirname, "../..");	// *** probably wrong when the app is packaged
+
 // The `SlideShow` class.
 var SlideShow = App.subclass().name('SlideShow')
 	.fields({
+		slideRoot: null,
+		clientRoot: null,
+
 		slideShow: null,
 		slides: [],
 		currentSlideIndex: -1,
@@ -40,6 +49,20 @@ var SlideShow = App.subclass().name('SlideShow')
 			this.adjustSlide(tile, this.tileName(tile));
 		},
 
+		// Return the absolute path to `file`:
+		//	<clientRoot>/<file> if file is relative and clientRoot is absolute
+		//	<appRoot>/<clientRoot>/<file> if file and clientRoot are relative
+		//	<clientRoot> defaults to <slideRoot>
+		slidePath: function(file) {
+			var path = this.clientRoot || this.slideRoot || '';
+			if (! file)
+				file = '';
+
+			if (! path.match(/^\//))	// relative to WildOS executable
+				return Path.join(appRoot, path, file);
+			return Path.join(path, file);
+		},
+
 		// Adjust the view
 		adjustSlides: function() {
 			var self = this;
@@ -53,8 +76,8 @@ var SlideShow = App.subclass().name('SlideShow')
 			else if (! tile.ready) log.warn.method(this, 'adjustSlide', 'Tile not ready!!');
 			else if (! tile.window) log.warn.method(this, 'ajustSlide', 'No window!!');
 
-			if (tile && tile.ready && tile.window)
-				tile.window.window.location.href = 'app://localhost/content/slides/'+this.currentSlide+'/tiles_byhost/'+tileName+'.png';			
+			if (tile && tile.ready && tile.window && this.currentSlide)
+				tile.window.window.location.href = 'file://'+Path.join(this.slidePath(this.currentSlide), 'tiles_byhost', tileName+'.png');			
 		},
 	})
 	.shareState()

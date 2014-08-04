@@ -8,7 +8,7 @@
 // Wrap in a function to protect global space
 var slideShowApp = (function () {
 
-var slidesRoot = 'apps/SlideShow/content/slides/';	// where to find slide thumbs
+var Path = require('path');
 
 var app = platform.apps.getApp('SlideShow');
 
@@ -16,7 +16,7 @@ function selectSlideShow() {
 	var chooser = $("#openSlideShow");
 
 	if (app.slideShow) {
-		chooser.attr('nwworkingdir', app.slideShow.split('/').slice(0, -1).join('/'));
+		chooser.attr('nwworkingdir', Path.dirname(app.slideShow));
 	}
 
 	chooser.change(function(evt) {
@@ -35,7 +35,7 @@ function updateState(slideShow) {
 	$('#slide').val(slideShow.currentSlide);
 
 	if (slideShow.currentSlide)
-		$('#slideShowImage').show().attr('src', slidesRoot+slideShow.currentSlide+'/thumbs/thumb1000.png');
+		$('#slideShowImage').show().attr('src', app.urlLocation(slideShow.currentSlide)+'/thumbs/thumb1000.png');
 	else
 		$('#slideShowImage').hide();
 
@@ -56,7 +56,7 @@ function dnd(files) {
 		paths.push(files[i].path);
 	}
 
-	app.loadFiles(paths);
+	showErrors(app.loadFiles(paths));
 }
 
 // Called at the end of the script.
@@ -106,7 +106,11 @@ function startSlideShow() {
 	if (localStorage.slideShow) {
 		var state = JSON.parse(localStorage.slideShow);
 		if (state.name) {
-			app.loadSlideShow(state.name);
+			// When multiple slides are loaded, name is a coma-separated list of the names
+			// *** THIS WILL BREAK IF WE HAVE COMA-SPACE IN FILENAMES ***
+			// *** state.name should be an array in that case ***
+			// *** BUT arrays are not shared properly for now ***
+			app.loadFiles(state.name.split(', '));
 			if (app.slides && state.current)
 				app.gotoSlide(state.current);
 		}

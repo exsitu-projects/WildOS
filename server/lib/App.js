@@ -25,6 +25,7 @@ var SearchPath = require('searchpath');
 var log = require('Log').logger('App');
 
 // Local modules
+var Config = require('./config');
 var ObjectSharer = require('./ObjectSharer');
 var SharingClient = require('./SharingClient');
 
@@ -90,11 +91,9 @@ var App = OO.newClass().name('App')
 
 		// Check/uncheck app in apps menu
 		checkAppMenuItem: function(appName, checked) {
-			log.message('*** checkAppMenu', appName, checked);
 			if (! this.menu)
 				return;	// no GUI
 
-			log.message('*** looking up item');
 			var items = this.menu.items;
 			for (var i = 0; i < items.length; i++) {
 				var item = items[i];
@@ -178,7 +177,7 @@ var App = OO.newClass().name('App')
 		},
 
 		// Load a new app into the system
-		loadApp: function(appName, config) {
+		loadApp: function(appName) {
 			log.enter(this, 'loadApp', appName);
 			var app = this.getApp(appName);
 
@@ -191,8 +190,14 @@ var App = OO.newClass().name('App')
 			// Load the module representing the app.
 			var m = this.loadModule(appName);
 			if (m) {
-				if (! config)
-					config = {};
+				// Get config from configpath/apps/<app>.json
+				var config = null;
+				try {
+					Config.load('apps/'+appName);
+				} catch (e) {
+					// ignore if missing
+				}
+				log.method(this, 'loadApp', 'config =', config);
 
 				// Create an instance of the module
 				// and store its location so that the app can load other resources if needed
@@ -401,8 +406,10 @@ return;
 		App.register(this);
 
 		// Copy configuration into object
-		if (config)
-			this.set(config);
+		if (config) {
+			this.set(config);		// copy config properties that are fields of the app
+			this.config = config;	// store config itself in case there are other properties of interest
+		}
 
 		// Used when sharing state
 		this.sharer = this.classs().sharer;			// object sharer to share our state

@@ -21,18 +21,15 @@ var wall = {
 	zoom: 1.0
 };
 
-// Set the background URL.
-function setURL(url) {
+// Set the url
+function adjustURL() {
+	var url = app.url;
 	$('#browserUrl').val(url);
-	
-	// Prepend local content dir if no http prefix
-	if (! url.match(/http:\/\//))
-		url = 'app://localhost/content/' + url;
 	$('#browserPage').attr('src', url);
 }
 
 // Adjust the frame showing the page.
-function adjustLocal() {
+function adjustPanZoom() {
 	var zoom = wall.zoom*app.zoom; // accounts for wallZoom in wild.html
 	var percentZoom = Math.round(zoom*100,2)+'%';
 	$('#browserPage')
@@ -51,9 +48,8 @@ function startBrowser() {
 
 	// Add a text field to load a different URL
 	$('#browserApp').append('<input id="browserUrl" type="text" size="80"/><input id="setBrowserUrl" type="button" value="Set URL"/>');
-	$('#browserUrl').val(app.backgroundURL);
 	$('#browserUrl').keypress(function(e) { if (e.which == 13) $('#setBrowserUrl').click(); });
-	$('#setBrowserUrl').click(function() { app.setBackgroundURL($('#browserUrl').val()); });
+	$('#setBrowserUrl').click(function() { app.setURL($('#browserUrl').val()); });
 
 	// Get the wall position / zoom factor
 	var config = platform.config.UI;
@@ -68,18 +64,14 @@ function startBrowser() {
 		wall.height = surface.height;
 	}
 
-	// Add an iframe for the URL.
-	var url = app.backgroundURL;
-	if (url) {
-		if (! url.match(/http:\/\//))
-			url = 'app://localhost/content/' + url;		
-	}
-
+	// Add an iframe to show the page.
 	var size = 'width: ' +wall.width+'px; '
 			 + 'height: '+wall.height+'px; ';
 
-	$('#wall').append('<iframe id="browserPage" style="z-index: 1; position: absolute; overflow: hidden; '+size+'" scrolling="no" src="'+url+'"/>');
-	$('#browserPage').load(adjustLocal);
+	$('#wall').append('<iframe id="browserPage" style="z-index: 1; position: absolute; overflow: hidden; '+size+'" scrolling="no"/>');
+	$('#browserPage').load(adjustPanZoom);
+
+	adjustURL();
 
 	// Pan and zoom background when dragging / scrollwheeling in any of the tiles
 	panZoomBrowser = new PanZoom({
@@ -87,18 +79,19 @@ function startBrowser() {
 		panTarget: null,
 		zoomTarget: null,
 		pannedBy: function(pz, dX, dY) {
-			app.panBackgroundBy(dX / wall.zoom, dY / wall.zoom);
-			adjustLocal();
+			app.panBy(dX / wall.zoom, dY / wall.zoom);
 		},
 		zoomedBy: function(pz, dZ, X, Y) {
-			app.zoomBackgroundBy(dZ, (X - wall.originX) / wall.zoom, (Y - wall.originY) / wall.zoom);
-			adjustLocal();
+			app.zoomBy(dZ, (X - wall.originX) / wall.zoom, (Y - wall.originY) / wall.zoom);
 		},
 	}).start();
 
-	// Update URL when changed in the application
+	// Update UI when application state changes
 	app.wrapFields({
-		set url(url) { this._set(url); setURL(url); }
+		set url(url) { this._set(url); adjustURL(); },
+		set offsetX(val) { this._set(val); adjustPanZoom(); },
+		set offsetY(val) { this._set(val); adjustPanZoom(); },
+		set zoom(val)    { this._set(val); adjustPanZoom(); },
 	});
 }
 

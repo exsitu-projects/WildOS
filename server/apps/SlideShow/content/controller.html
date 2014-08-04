@@ -132,8 +132,8 @@ var slideShowApp = SlideShow.create();
         var index = 0;
         var total = slideShowApp.slides.length;
         slideShowApp.slides.forEach(function(slideName) {
-            var thumb = '/SlideShow/slides/'+slideName+'/thumbs/thumb200.png';
-            var img = '/SlideShow/slides/'+slideName+'/thumbs/thumb500.png';
+            var thumb = '/apps/SlideShow/'+slideName+'/thumbs/thumb200.png';
+            var img = '/apps/SlideShow/'+slideName+'/thumbs/thumb500.png';
             slides.push(img);
             var title = 'slide '+(index+1)+'/'+total+' - '+slideName;
             $('#links').append('<a href="'+img+'" title="'+title+'" data-gallery>'+

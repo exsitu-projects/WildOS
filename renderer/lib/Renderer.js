@@ -140,7 +140,7 @@ var Renderer = SharingServer.subclass().name('Renderer')
 
 			// Set up a listener for the `'quit'` message, which tells us to ... quit!
 			this.on('quit', function() {
-				log.event(self, 'quit', appName);
+				log.event(self, 'quit');
 				process.mainModule.exports.quit();
 			});
 		},

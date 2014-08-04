@@ -13,12 +13,10 @@ what:
 	@echo "make docs: generate the HTML documentation"
 
 start:
-	cd server; nw `pwd`
-	$(walldo) WildOS/renderer/restart
+	tools/wildos
 
 stop:
-	killall nw node-webkit
-	$(walldo) killall nw node-webkit
+	tools/wildos stop
 
 server:
 	cd renderer/lib; browserify -r OO -r Log -r ./ObjectSharer -r ./SharingServer -r ./SocketIOServer -r socket.io-client > ../../server/content/wildos.js
@@ -46,9 +44,9 @@ docs: ReadMe.html
 
 # SlideShow app
 tilecutter=tools/tilecutter
-slides=../SlideShows
+slides=../demo-slides
 tiles=slides
-desttiles=WildOS
+tilesRemote=slides
 
 makeslides:
 	$(tilecutter) -r -d $(tiles) $(slides)

@@ -99,6 +99,7 @@ function loadConfig(configFile) {
 	
 	var config = null;
 	try {
+		delete require.cache[require.resolve(path)];	// unload in case already loaded
 		config = require(path);
 	} catch(e) {
 		throw "Could not load config file "+configFile+': '+e;

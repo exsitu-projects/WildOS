@@ -3,7 +3,8 @@
 <div class="controller-body">
 
 <p id="browser"></p>
-<input id="browserURL" size="60" type="text"/><input id="browserSetURL" type="button" value="Set URL"/>
+<input id="browserURL" size="60" type="text"/>
+<input id="browserSetURL" type="button" value="Set URL"/>
 
 <script>
 // Wrap in a function to protect global name space
@@ -15,22 +16,24 @@
 		.constructor(function(config) {
 			this._super(config);
 
-			this.adjust();
+			this.adjustURL();
 
 			this.wrapFields({
-				set url(url) { this._set(url); this.adjust(); },
+				set url(url) { this._set(url); this.adjustURL(); },
 			});
 		})
 		.methods({
-			adjust: function() {
+			adjustURL: function() {
 				$('#browser').html(this.url);
 			},
 
-			// This is remote called on the server, as specified by `shareState` below
-			setBackgroundURL: function(url) {},
+			// These are remote called on the server, as specified by `shareState` below
+			setURL: function(url) {},
+			// panBy: function(dX, dY) {},
+			// zoomBy: function(dZ, x, y) {},
 
 		})
-		.shareState('own', ['setBackgroundURL'])
+		.shareState('own', ['setURL', /* *** 'panBy', 'zoomBy' */])
 	;
 
 	log.spyMethods(Browser);
@@ -38,7 +41,7 @@
 	var browser = Browser.create();
 
 	$('#browserURL').keypress(function(ev) { if (ev.which == 13) $('#browserSetURL').click(); });
-	$('#browserSetURL').click(function() { browser.setBackgroundURL($('#browserURL').val()); });
+	$('#browserSetURL').click(function() { browser.setURL($('#browserURL').val()); });
 
 // Invoke the main function
 }) ();
