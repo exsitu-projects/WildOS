@@ -17,14 +17,9 @@
 		"bezelSize": {"width": 0, "height": 0},
 		"numTiles": {"columns": 3, "rows": 1},
 		"tiles": [
-			[["localhost", "TL"], ["localhost", "TC"], ["localhost", "TR"]]
+			[["lg3", "TL"], ["lg2", "TC"], ["lg1", "TR"]]
 		],
-		"renderer": "perTile",
-		"layout": {
-			"TL": { "left": 100, "top": 20},
-			"TC": { "left": 500, "top": 20},
-			"TR": { "left": 900, "top": 20}
-		}
+		"renderer": "perTile"
 	},
 	"controllers": {
 		"type": "WebControllers"

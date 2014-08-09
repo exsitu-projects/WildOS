@@ -30,7 +30,7 @@ var OO = require('./OO');
 // otherwise to the console.
 function log(status /*, varargs*/) {
 	// process.title is set to 'browser' by browserify, to 'node' by node and node-webkit
-	if (process.title != 'browser' && global.log)
+	if (process.title != 'browser' && global.log && !global.logToConsole)
 		global.log.apply(this, arguments);
 	else {
 		var args = Array.prototype.slice.call(arguments, 1);
@@ -49,7 +49,7 @@ function log(status /*, varargs*/) {
 // Calls global.logIndent if defined.
 // Useful for example to create nested boxes in the output.
 function logIndent(indentLevel) {
-	if (process.title != 'browser' && global.logIndent)
+	if (process.title != 'browser' && global.logIndent && !global.logToConsole)
 		global.logIndent(indentLevel);
 }
 
