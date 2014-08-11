@@ -5,15 +5,15 @@
 		"frame": {
 			"left": 100,
 			"top": 500,
-			"width": 1200,
-			"height": 300
+			"width": 700,
+			"height": 525
 		},
 		"wallZoom": 0.5
 	},
 	"wall": {		
 		"type": "Surface",
 		"name": "Theater Layout",
-		"tileSize": {"width": 400, "height": 400},
+		"tileSize": {"width": 1400, "height": 1050},
 		"bezelSize": {"width": 0, "height": 0},
 		"numTiles": {"columns": 3, "rows": 1},
 		"tiles": [

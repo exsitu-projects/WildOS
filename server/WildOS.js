@@ -54,8 +54,9 @@ function processLogDebugOptions(program) {
 	// - 0: no trace, no titlebars (i.e. no access to debugger), trace windows hidden
 	// - 1: trace all, show titlebars, hide trace windows
 	// - 2: trace all, show titlebars, show trace windows
+	global.logToConsole = (program.debug >= 3);
+	program.showWindows = (program.debug >= 2) && !global.logToConsole;
 	program.showToolbar = (program.debug >= 1);
-	program.showWindows = (program.debug >= 2);
 
 	// Load load config file if debugging is enabled
 	if (program.debug) {
