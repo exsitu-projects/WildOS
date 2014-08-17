@@ -193,11 +193,12 @@ var App = OO.newClass().name('App')
 				// Get config from configpath/apps/<app>.json
 				var config = null;
 				try {
-					Config.load('apps/'+appName);
+					config = Config.load('apps/'+appName);
+					log.method(this, 'loadApp', 'config =', config);
 				} catch (e) {
 					// ignore if missing
+					log.method(this, 'loadApp', 'config file not found');
 				}
-				log.method(this, 'loadApp', 'config =', config);
 
 				// Create an instance of the module
 				// and store its location so that the app can load other resources if needed
@@ -413,16 +414,29 @@ return;
 
 		// Used when sharing state
 		this.sharer = this.classs().sharer;			// object sharer to share our state
+		this.clients = [];							// clients we're connected to
 
 		log.newObject(this);
 	})
 	.methods({
 		// Called when a new client is connected
 		clientConnected: function(socket, server) {
-			if (this.sharer)
-				server.registerClient(socket, SharingClient.create(socket).addSharer(this.sharer));
+			if (this.sharer) {
+				client = SharingClient.create(socket).addSharer(this.sharer);
+				this.clients.push(client);
+				server.registerClient(socket, client);
+			}
 		},
 		clientDisconnected: function(socket, server) {
+			for (var i = 0; i < this.clients.length; i++) {
+				var client = this.clients[i];
+				if (client.socket == socket) {
+					log.method(this, 'clientDisconnected', 'removing client');
+					this.clients.splice(i, 1);
+					return;
+				}
+			}
+			log.method(this, 'clientDisconnected', 'did not find client to remove');
 		},
 
 		// Called just after the app module is created
@@ -434,8 +448,16 @@ return;
 		// Called just after the app is unloaded
 		// Subclasses can extend.
 		stop: function() {
-			if (this.sharer)
+			if (this.sharer) {
+				// Tell the sharing clients we're not there anymore
+				for (var i = 0; i < this.clients.length; i++) {
+					var client = this.clients[i];
+					client.disconnected();
+				}
+				this.clients = [];
+
 				this.die();
+			}
 		},
 
 		// Notification of the app lifecycle

@@ -105,6 +105,9 @@ function loadConfig(configFile) {
 		throw "Could not load config file "+configFile+': '+e;
 	}
 
+	if (!config)
+		config = {};
+
 	// added to the config object so that we can find relative files
 	config.__dirname = dirname;
 	config.__filename = filename;

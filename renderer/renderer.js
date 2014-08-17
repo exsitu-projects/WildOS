@@ -97,12 +97,14 @@ exports.init = function () {
 		program.instance = 'default';
 
 	// Create and start the client.
-	App.server = Renderer.create(program).connect();
+	var renderer = App.server = Renderer.create(program).connect();
 
 	// Hack to make the logging window available
 	App.logWindow = win;
 
 	// Set log window title
-	win.window.setTitle(App.server.host+'_'+program.instance);
+	win.window.setTitle(renderer.host+'_'+program.instance);
+
+	return renderer;
 };
 

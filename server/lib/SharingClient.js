@@ -63,6 +63,11 @@ var SharingClient = SocketIOClient.subclass().name('SharingClient')
 		});
 	})
 	.methods({
+		close: function() {
+			this.removeAllSharers();
+			this._super();
+		},
+
 		// Callback when the client has disconnected
 		disconnected: function() {
 			log.method(this, 'disconnected');

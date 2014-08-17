@@ -20,7 +20,9 @@ var Browser = App.subclass().name('Browser')
 		// background page + its offset and zoom factor
 		url: null,		// URL of the page to load
 		offsetX: 0,		// Offset of the page from the topleft of the surface
-		offsetY: 0,				
+		offsetY: 0,		
+		width: 800,		// Size of page
+		height: 600,
 		zoom: 1,		// Zoom factor
 	})
 	.constructor(function(config) {
@@ -71,6 +73,19 @@ var Browser = App.subclass().name('Browser')
 			this.offsetY = y + (this.offsetY - y) * dZ;
 			this.zoom *= dZ;
 		},
+
+		// Called by the UI to resize the page
+		resizeBy: function(dW, dH) {
+			log.method(this, 'resizeBy', dW, dH);
+			var width = this.width + dW;
+			if (width < 10)
+				width = 10;
+			var height = this.height + dH;
+			if (height < 10)
+				height = 10;
+			this.width = width;
+			this.height = height;
+		}
 	})
 	.shareState('own', 'own')
 ;

@@ -118,7 +118,7 @@ var SharingServer = SocketIOServer.subclass().name('SharingServer')
 					return false;
 				});
 				log.eventExit(self, 'callResult');
-			})
+			});
 		},
 
 		// Add a sharer to the set of sharers managed by this client.

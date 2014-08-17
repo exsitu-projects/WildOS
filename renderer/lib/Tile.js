@@ -13,9 +13,29 @@ var log = require('Log').logger('Tile');
 
 // Internal modules
 var App = require('./App');
+var Layer = require('./Layer');
 
 // The client-side `Tile` class.
 var Tile = OO.newClass().name('Tile')
+	.classFields({
+		tiles: [],		// The list of tiles
+	})
+	.classMethods({
+		// Call `f` for all tiles
+		mapTiles: function(f) {
+			Tile.tiles.forEach(function(tile) {
+				f(tile);
+			});
+		},
+
+		// Call `f` for all tiles that are active
+		mapReadyTiles: function(f) {
+			Tile.tiles.forEach(function(tile) {
+				if (tile.ready && tile.window)
+					f(tile);
+			});
+		},
+	})
 	.fields({
 		// Coordinate of the frame, relative to the display surface.
 		left: 0,
@@ -27,12 +47,15 @@ var Tile = OO.newClass().name('Tile')
 		originY: 0,
 		// Rank of tile when the host manages multiple tiles
 		rank: null,
+		// Tile name (used only for display)
+		tileName: null,
 	})
 	.constructor(function (state){
 		log.enter(this, 'constructor');
 		this.set(state);
 
-		// Notify the applications that we exist.
+		// Notify layers and apps that we exist.
+		Layer.initTile(this, state);
 		App.initTile(this, state);
 
 		// Create the window representing the tile.
@@ -42,7 +65,8 @@ var Tile = OO.newClass().name('Tile')
 		var self = this;
 		App.onAppStarted(function(app) {
 			app.initTile(self, state);
-			app.tileReady(self);
+			if (self.ready) 
+				app.tileReady(self);
 		});
 
 		log.exit(this, 'constructor');
@@ -68,20 +92,27 @@ var Tile = OO.newClass().name('Tile')
 				tile.toolbar = true;
 			}
 
-			// *** Should apps be allowed to change the URL? Probably...
+			// Open the tile page
 			var gui = process.mainModule.exports.gui;
 			var win = gui.Window.open('tile.html', tile);
 
 			this.window = win;
 			this.ready = false;
 
+			// Record in our list
+			Tile.tiles.push(this);
+
 			// Wait for the page to be loaded signaling that we are ready.
 			var self = this;
 			win.once('loaded', function() {
 				self.ready = true;
 				log.event(self, 'loaded', self.oid);
+				var id = win.window.document.getElementById('renderer');
+				if (id)
+					id.innerHTML = self.tileName;
 
-				// Tell the apps that the tile is ready.
+				// Tell the layers and apps that the tile is ready.
+				Layer.tileReady(self);
 				App.tileReady(self);
 			});
 		},
@@ -89,15 +120,24 @@ var Tile = OO.newClass().name('Tile')
 		// Reset the content of the tile to the default page
 		reset: function() {
 			if (this.window)
-				this.window.window.location.href = 'app://localhost/content/tile.html';
+				this.window.window.location.href = 'tile.html';
 		},
 
 		// Called when the connection is shut down, to remove the window.
 		die: function() {
+			// Notify apps and layers
 			App.tileGone(this);
+			Layer.tileGone(this);
+
+			// Clean up
 			this.window.close();
 			this.window = null;
 			this.ready = false;
+
+			// Remove from our list
+			var index = Tile.tiles.indexOf(this);
+			if (index >= 0)
+				Tile.tiles.splice(index, 1);
 		},
 
 		// Remote calls from/to server to manage the log remotely

@@ -69,11 +69,11 @@ function expandEnv(path) {
 //
 SearchPath.prototype.append = function(/* args... */) {
 	this.concat('after', arguments);
-}
+};
 
 SearchPath.prototype.prepend = function(/* args... */) {
 	this.concat('before', arguments);
-}
+};
 
 // Helper function for append/prepend. 
 // `where` is 'before' or 'after'; `path` must be an array.
@@ -171,14 +171,20 @@ function lookup(path, file, suffixes) {
 	if (suffixes && suffixes.length > 0) {
 		for (var i = 0; i < suffixes.length; i++) {
 			var suffix = suffixes[i];
-			console.log('lookup', path+suffix);
-			if (fs.existsSync(path+suffix))
+			
+			if (fs.existsSync(path+suffix)) {
+				console.log('lookup', path+suffix, 'found');
 				return path+suffix;
+			} else
+				console.log('lookup', path+suffix, 'failed');
 		}
 	} else {
 		console.log('lookup', path);
-		if (fs.existsSync(path))
+		if (fs.existsSync(path)) {
+			console.log('lookup', path, 'found');
 			return path;
+			} else
+				console.log('lookup', path, 'failed');
 	}
 	return null;
 }

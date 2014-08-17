@@ -1,7 +1,20 @@
 <html>
 <head>
+	<style type="text/css">
+		body {
+			overflow: hidden;	/* avoid scrollbars */
+		}
+		#hello {
+			color: #ddd;		/* hello message in light grey */
+		}
+		/* visualize layers for testing */
+		.layer {
+			border: 1px solid black;
+			background-color: #edc;
+		}
+	</style>
 </head>
 <body>
-	<h1>Hello</h1>
+	<h2 id="hello">WildOS renderer <span id="renderer"></span></h2>
 </body>
 </html>

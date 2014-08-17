@@ -235,7 +235,7 @@ var ObjectStore = OO.newClass().name('ObjectStore')
 			// Return an object to distinguish from returning 'false' above.
 			return {
 				result: m.apply(obj, this.decode(args)),
-			}
+			};
 		},
 
 		// Call an object method. 

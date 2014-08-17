@@ -359,9 +359,10 @@ return;
 		// Called just after the app is unloaded.
 		// Subclasses can extend.
 		stop: function() {
+/*
 			// Reset to default web page
 			this.mapTiles(function(tile) { tile.reset(); });
-
+*/
 			// Stop sharing.
 			if (this.sharer)
 				this.sharer.removeObject(this);

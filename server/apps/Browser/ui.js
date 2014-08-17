@@ -8,7 +8,7 @@
 // Wrap in a function to protect global space
 var browserApp = (function () {
 
-var panZoomBrowser = null;
+var panZoomResizeBrowser = null;
 
 var app = platform.apps.getApp('Browser');
 
@@ -39,15 +39,22 @@ function adjustPanZoom() {
 		.contents().find('body').css('zoom', percentZoom);
 }
 
+function adjustSize() {
+	$('#browserPage')
+		.width(app.width) // * wall.zoom)
+		.height(app.height); // * wall.zoom);
+}
+
 // Called at the end of the script.
 // Creates a UI to enter the URL and to 
-// Creates a `PanZoom` object active over elements of class `tile`.
+// Creates a `PanZoomResize` object active over elements of class `tile`.
 function startBrowser() {
 	// Create a div that will hold the app's UI, so we can easily remove it
 	$('#top').append('<div id="browserApp">Browser: </div>');
 
 	// Add a text field to load a different URL
 	$('#browserApp').append('<input id="browserUrl" type="text" size="80"/><input id="setBrowserUrl" type="button" value="Set URL"/>');
+	$('#browserApp').append('<br/><span style="color:grey">Drag web page to move, shift-drag to resize, scrollwheel to zoom.</span>');
 	$('#browserUrl').keypress(function(e) { if (e.which == 13) $('#setBrowserUrl').click(); });
 	$('#setBrowserUrl').click(function() { app.setURL($('#browserUrl').val()); });
 
@@ -58,6 +65,7 @@ function startBrowser() {
 	var wallOffset = $('#wall').offset();
 	wall.originX = wallOffset.left;
 	wall.originY = wallOffset.top;
+
 	var surface = platform.findDevice({type: 'Surface'});
 	if (surface) {
 		wall.width = surface.width;
@@ -68,22 +76,34 @@ function startBrowser() {
 	var size = 'width: ' +wall.width+'px; '
 			 + 'height: '+wall.height+'px; ';
 
-	$('#wall').append('<iframe id="browserPage" style="z-index: 1; position: absolute; overflow: hidden; '+size+'" scrolling="no"/>');
-	$('#browserPage').load(adjustPanZoom);
+	size = 'left: '  + app.offsetX + 'px; '
+		 + 'top: '   + app.offsetY + 'px; '
+		 + 'width: ' + app.width   + 'px; '
+		 + 'height: '+ app.height  + 'px; ';
+
+	$('#wall').append('<iframe id="browserPage" style="background-color: #edc; z-index: 1; position: absolute; overflow: hidden; '+size+'" scrolling="no"/>');
+	$('#browserPage').load(function() {
+		adjustPanZoom();
+		adjustSize();
+	});
 
 	adjustURL();
 
 	// Pan and zoom background when dragging / scrollwheeling in any of the tiles
-	panZoomBrowser = new PanZoom({
+	panZoomResizeBrowser = new PanZoomResize({
 		target: '.tile',
 		panTarget: null,
 		zoomTarget: null,
+		resizeTarget: null,
 		pannedBy: function(pz, dX, dY) {
 			app.panBy(dX / wall.zoom, dY / wall.zoom);
 		},
 		zoomedBy: function(pz, dZ, X, Y) {
 			app.zoomBy(dZ, (X - wall.originX) / wall.zoom, (Y - wall.originY) / wall.zoom);
 		},
+		resizedBy: function(pz, dW ,dH) {
+			app.resizeBy(dW / wall.zoom, dH / wall.zoom);
+		}
 	}).start();
 
 	// Update UI when application state changes
@@ -92,12 +112,14 @@ function startBrowser() {
 		set offsetX(val) { this._set(val); adjustPanZoom(); },
 		set offsetY(val) { this._set(val); adjustPanZoom(); },
 		set zoom(val)    { this._set(val); adjustPanZoom(); },
+		set width(val)   { this._set(val); adjustSize(); },
+		set height(val)  { this._set(val); adjustSize(); },
 	});
 }
 
 function stopBrowser() {
 	// Remove panzoom on wall
-	panZoomBrowser.stop();
+	panZoomResizeBrowser.stop();
 
 	// Remove the elements that we added
 	$('#browserApp').remove();
@@ -108,8 +130,8 @@ function stopBrowser() {
 
 // A `panZoom` object controls panning and zooming by 
 // dragging on an element and using the scrollwheel.
-function PanZoom(options) {
-	this.dragging = 0;
+function PanZoomResize(options) {
+	this.state = 'off';
 	this.screenX = this.screenY = 0;
 	this.offsetX = this.offsetY = 0;
 	this.zoom = options.zoom || 1;
@@ -117,29 +139,48 @@ function PanZoom(options) {
 	this.target = options.target || 'html';
 	this.panTarget = options.panTarget;
 	this.zoomTarget = options.zoomTarget;
+	this.resizeTarget = options.resizeTarget;
+
 	this.startedPanning = options.startedPanning || function() {};
 	this.stoppedPanning = options.stoppedPanning || function() {};
 	this.pannedBy = options.pannedBy || function() {};
+
 	this.zoomedBy = options.zoomedBy || function() {};
+
+	this.startedResizing = options.startedResizing || function() {};
+	this.stoppedResizing = options.stoppedResizing || function() {};
+	this.resizedBy = options.resizedBy || function() {};
 }
 
 // The `start` method sets the handlers to implement the panzoom interaction.
-PanZoom.prototype.start = function() {
+PanZoomResize.prototype.start = function() {
 	var self = this;
 	$(self.target)
 		.mousedown(function(event) {
-			self.dragging = 1;
+			// Only process left button interactions
+			if (event.button !== 0)	
+				return;
+			// Normal drag = move; any modifier key (other than control, which on the Mac emulates the right click) = resize
+			if (event.shiftKey || event.metaKey || event.altKey)
+				self.state = 'resize-start';
+			else
+				self.state = 'pan-start';
 			self.screenX = event.screenX;
 			self.screenY = event.screenY;
-		})
+		});
+
+	// Set mousemove and mouseup listeners on the body so we can drag beyond the wall.
+	$('body')
 		.mousemove(function(event) {
-			if (self.dragging == 1) {
-				self.dragging = 2;
+			var deltaX, deltaY;
+
+			if (self.state == 'pan-start') {
+				self.state = 'pan';
 				self.startedPanning(self);
 			}
-			if (self.dragging) {
-				var deltaX = event.screenX - self.screenX;
-				var deltaY = event.screenY - self.screenY;
+			if (self.state == 'pan') {
+				deltaX = event.screenX - self.screenX;
+				deltaY = event.screenY - self.screenY;
 				
 				var offset;
 				var panTarget = self.panTarget;
@@ -157,11 +198,39 @@ PanZoom.prototype.start = function() {
 				}
 				self.pannedBy(self, deltaX, deltaY);
 			}
+
+			if (self.state == 'resize-start') {
+				self.state = 'resize';
+				self.startedResizing(self);
+			}
+			if (self.state == 'resize') {
+				deltaX = event.screenX - self.screenX;
+				deltaY = event.screenY - self.screenY;
+
+				var resizeTarget = self.resizeTarget;
+				if (resizeTarget == 'this')
+					resizeTarget = this;
+				self.screenX = event.screenX;
+				self.screenY = event.screenY;
+				if (resizeTarget) {
+					var width = $(resizeTarget).width() + deltaX;
+					var height = $(resizeTarget).height() + deltaY;
+					$(resizeTarget).width(width).height(height);
+				}
+				self.resizedBy(self, deltaX, deltaY);
+			}
 		})
 		.mouseup(function(event) {
-			self.dragging = false;
-			self.stoppedPanning(self);
-		})
+			if (self.state == 'pan') {
+				self.stoppedPanning(self);
+				self.state = 'off';
+			} else if (self.state == 'resize') {
+				self.stoppedResizing(self);
+				self.state = 'off';
+			}
+		});
+
+	$(self.target)
 		.mousewheel(function(event, delta, deltaX, deltaY) {
 			var deltaZ = 1;
 			if (deltaY > 0)
@@ -199,7 +268,7 @@ PanZoom.prototype.start = function() {
 };
 
 // The `stop` method removes the listeners.
-PanZoom.prototype.stop = function() {
+PanZoomResize.prototype.stop = function() {
 	$(this.target).off('mousedown mousemove mouseup mousewheel');
 };
 

@@ -174,7 +174,7 @@ var Surface = Device.subclass().name('Surface')
 					// Full name of the tile in the server
 					var tileName = name;
 					var fullName = instance;
-					if (rank !== null) {
+					if (typeof rank == 'number' || typeof rank == 'string') {
 						tileName += '_'+rank;
 						fullName += '_'+rank;
 					}
