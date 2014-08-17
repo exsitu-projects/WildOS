@@ -233,15 +233,24 @@ var Surface = Device.subclass().name('Surface')
 
 			// We create the set of contexts in which to run the command
 			// by going through the set of tiles.
+			var self = this;
 			this.mapDevices(function(tile) {
 				var clientName = tile.instance;
+
+				var debug = '';
+				if (program.debug) {
+					debug = '--debug '+program.debug;
+					debug += ' --remote-debugging-port=';
+					// *** Problem when multiple clients run on the same computer
+					debug += self.config.debugPort || 9222;
+				}
 
 				ctxByClient[clientName] = {
 					HOST: tile.host + domain,
 					INSTANCE: tile.instanceName,
 					PORT: platform.serverPort,
 					ENV: env[tile.instanceName],
-					DEBUG: program.debug ? ("--debug "+program.debug) : "",
+					DEBUG: debug,
 					LOG: program.log ? ("--log "+program.log) : "",
 				};
 			});

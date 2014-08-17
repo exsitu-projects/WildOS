@@ -30,19 +30,40 @@ var OO = require('./OO');
 // otherwise to the console.
 function log(status /*, varargs*/) {
 	// process.title is set to 'browser' by browserify, to 'node' by node and node-webkit
-  if (process.title != 'browser' && global.log && !global.logToConsole) {
-    global.log.apply(this, arguments);
-  } else {
+	if (process.title != 'browser' && global.log && !Log.logToConsole) {
+		global.log.apply(this, arguments);
+	} else {
+		// log with console
+		var logfun = console.log;
+		switch (status.level) {
+			case 'Info':  logfun = console.info; break;
+			case 'Warning':  logfun = console.warn; break;
+			case 'Error': 
+			case 'Fatal': logfun = console.error; break;
+		}
+
 		var args = Array.prototype.slice.call(arguments, 1);
+
+		// If indent level has increased, logIndent has set consoleNewGroup to true,
+		// signaling that we need to create a new group. This is a bit of a hack...
+		// *** Note 1: in node-webkit, output goes to devtools + console, but console does not implement group so we loose the enter messages
+		// *** Note 2: we should remove the indent when using groups, as they are redundant in devtools ... but not in console output
+		if (consoleNewGroup) {
+			if (status.display == 'closed')
+				logfun = console.groupCollapsed;
+			else
+				logfun = console.group;
+			consoleNewGroup = false;
+		}
+
 		if (status.indent === 0 && status.level == 'Info')
-			console.log.apply(console, args);
+			logfun.apply(console, args);
 		else {
 			var blank = '                                                                                ';
 			var indent = blank.substring(0, status.indent*Log.indentSize);
 			if (status.level != 'Info')
 				indent += status.level;
-                        args = [ indent + args.join(' ') ];
-		  console.log.apply(console, args);
+			logfun.apply(console, [indent].concat(args));
 		}
 	}
 }
@@ -50,9 +71,27 @@ function log(status /*, varargs*/) {
 // Calls global.logIndent if defined.
 // Useful for example to create nested boxes in the output.
 function logIndent(indentLevel) {
-	if (process.title != 'browser' && global.logIndent && !global.logToConsole)
+	if (process.title != 'browser' && global.logIndent && !Log.logToConsole) {
 		global.logIndent(indentLevel);
+	} else {
+		// Manage groups in console output. This is a bit of a hack...
+		if (console.group) {
+			while (indentLevel > consoleIndentLevel) {
+				if (consoleNewGroup) {	// in case we skip more than one level
+					console.group();
+				}
+				consoleNewGroup = true;	// tells log to create group.
+				consoleIndentLevel++;
+			}
+			while (indentLevel < consoleIndentLevel) {
+				console.groupEnd();
+				consoleIndentLevel--;
+			}
+		}
+	}
 }
+var consoleIndentLevel = 0;	// keep track of grouping in the console output
+var consoleNewGroup = false;
 
 // The `Log` class.
 var Log = OO.newClass().name('Log')
@@ -62,6 +101,7 @@ var Log = OO.newClass().name('Log')
 		stack: [],			// indent call stack, to check proper balancing
 		sharedLogger: null,	// the logger returned by `Log.shared()`
 		display: 'show',	// global logging style
+		logToConsole: false,// true: log to window, false: log to console
 		domains: {}			// for each domain, whether it is logged or not and which entries are logged or not
 /*
 		domains: {
