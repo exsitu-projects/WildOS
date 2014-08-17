@@ -39,8 +39,10 @@ function processLogDebugOptions(program) {
 	// - 0: no trace, no titlebars (i.e. no access to debugger), trace windows hidden
 	// - 1: trace all, show titlebars, hide trace windows
 	// - 2: trace all, show titlebars, show trace windows
+        // - 3: trace all, show titlebars, log to console
+	global.logToConsole = (program.debug >= 3);
+	program.showWindows = (program.debug >= 2) && !global.logToConsole;
 	program.showToolbar = (program.debug >= 1);
-	program.showWindows = (program.debug >= 2);
 
 	// Load load config file if debugging is enabled
 	if (program.debug) {
@@ -100,7 +102,7 @@ exports.init = function () {
 	var renderer = App.server = Renderer.create(program).connect();
 
 	// Hack to make the logging window available
-	App.logWindow = win;
+	//App.logWindow = win;
 
 	// Set log window title
 	win.window.setTitle(renderer.host+'_'+program.instance);

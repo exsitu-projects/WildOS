@@ -14,7 +14,7 @@ var log = require('Log').logger('WebServer');
 // The `WebServer` class.
 var WebServer = OO.newClass().name('WebServer')
 	.fields({
-		port: 8080,		// port
+		port: 8088,		// port
 		routes: null,	// array of static routes `{ path: <prefix>, dir: <fulldir> }`
 		root: null,		// directory for static content (static route without prefix)
 		http: null,		// http server
