@@ -35,12 +35,11 @@ var Browser = App.subclass().name('Browser')
 			// Find out the size of the surface
 			var surface = platform.findDevice({type: 'Surface'});
 			if (surface && surface.width) {
-					log.warn.method(this, 'initPlatform/onDeviceAvailable', 'surface size', surface.width, surface.height);
+					// Guess a reasonable zoom factor
 					this.zoom = surface.width / 1280;
 					this.width = surface.width / this.zoom;
 					this.height = surface.height / this.zoom;
 					this.offsetX = this.offsetY = 0;
-					// Guess a reasonable zoom factor
 			}
 
 			// The path for `injectJSFile` is relative to the url of the document.

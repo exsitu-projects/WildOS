@@ -167,6 +167,8 @@ function startServerAndApps(platform) {
 
 	// Run the apps (specified as the remaining arguments on the command line)
 	var appNames = program.args;
+
+// *** Quick hack to make sure the apps are loaded after the platform is fully initialized
 setTimeout(function() {
 
 	App.loadApps(appNames, function(apps) {

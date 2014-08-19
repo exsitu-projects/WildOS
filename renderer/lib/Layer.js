@@ -38,6 +38,7 @@ var Layer = OO.newClass().name('Layer')
 
 		type: 'normal',	// 'normal', 'iframe', 'component'
 		overlay: false,	// If true, layer has no background and is on top of other layers
+		mode: 'tiled',	// 'tiled' for a layer that spans the screen, 'grid' for a layer
 
 		left: 100,		// Layer position and size *** default values for testing
 		top: 100,
@@ -93,13 +94,17 @@ var Layer = OO.newClass().name('Layer')
 			if (this.type == 'iframe')
 				layerTag = 'iframe scrolling=no class=layer';
 
+			var position = 'absolute';
+			if (this.mode == 'grid')	// In grid mode, we create one full-screen layer per tile at 0,0
+				position = 'fixed';
+
 			// Create the layer element
 			var layerElement = HTML.add(tile.window.window, 
 				[layerTag, 
 					{
 						id: this.id, 
 						style: {
-							position: 'absolute',
+							position: position,
 							overflow: 'hidden',
 						},
 					},
@@ -116,8 +121,8 @@ var Layer = OO.newClass().name('Layer')
 			}
 
 			// *** why is layerElement.setAttribute null ??
-			if (!layerElement.setAttibute)
-				log.warn.method(this, 'tileReady (before set url)', 'layerElement.setAttibute undefined!!');
+			//if (!layerElement.setAttibute)
+			//	log.warn.method(this, 'tileReady (before set url)', 'layerElement.setAttibute undefined!!');
 
 			// Load content if any
 			if (this.url) {
@@ -165,6 +170,16 @@ var Layer = OO.newClass().name('Layer')
 
 		getFrameStyleForTile: function(frame, tile) {
 			var attrSet = {};
+
+			if (frame.mode == 'grid') {
+				// In grid mode, we ignore the tile offset
+				attrSet.left = 0;
+				attrSet.top = 0;
+				attrSet.width = tile.width;
+				attrSet.height = tile.height;
+				return attrSet;
+			}
+
 			if (frame.left !== undefined)
 				attrSet.left = Math.round(frame.left - tile.originX)+"px";
 			if (frame.top !== undefined)

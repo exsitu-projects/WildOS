@@ -1,0 +1,34 @@
+/* Photoz - View and autozoom photo collections
+   (c) 2013-2014 - Michel Beaudouin-Lafon - mbl@lri.fr
+*/
+
+html {
+	background-color: black;
+}
+body {
+	margin: 0;
+	background-color: black;
+}
+
+.photo {
+	position: fixed;
+	background-color: black;
+}
+.photo img {
+	display: block;
+	margin: auto;
+	height: 100%;		/* was max-height but does not work with half-size pictures */
+	max-width: 100%;
+}
+
+.flash {
+	display: none;
+	z-index: 1000000;
+	position: fixed;
+	background-color: rgba(200, 200, 200, 0.5);
+	top: 100px;
+	left: 100px;
+	padding: 20px;
+	font-size: 50pt;
+	font-family: sans-serif;
+}
