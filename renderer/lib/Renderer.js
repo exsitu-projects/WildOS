@@ -30,7 +30,7 @@ var Renderer = SharingServer.subclass().name('Renderer')
 	.constructor(function(program) {
 		log.enter(this, 'constructor');
 
-		this.host = os.hostname().split('.')[0];
+		this.host = program.hostname || os.hostname().split('.')[0];
 		// If running clients locally, call ourselves 'localhost'
 		if (program.local)
 			this.host = 'localhost';

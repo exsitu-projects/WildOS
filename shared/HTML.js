@@ -1,9 +1,23 @@
 
 var fs = require('fs');
 var Path = require('path');
-var util = require('util');
 
-var log = require('./Log').logger('HTML');
+var log;
+try {
+	// Use our logger if available
+	log = require('./Log').logger('HTML');
+} catch (e) {
+	// Otherwise use console
+	log = {
+		message: console.info,
+		warn: {
+			message: console.warn,
+		},
+		error: {
+			message: console.error,
+		},
+	};
+}
 
 // --- what is supported ---
 
@@ -110,7 +124,7 @@ function parseStyleAttr(attr, prefix, obj) {
 				break;
 
 			default: 
-				attr[attrName] = util.inspect(val);
+				attr[attrName] = ''+val;	// convert to string
 				break;
 		}
 	}
@@ -478,6 +492,7 @@ function CSSText(win, text, attr) {
 	return element(win, 'style type=text/css', attr, text);
 }
 
+// make sync/async versions of this - with a promise 
 function CSSFile(win, path, attr) {
 	var text = getFile(path);
 	if (text)

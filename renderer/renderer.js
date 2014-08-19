@@ -11,6 +11,7 @@ program
 	.option('-l, --local', 'Run locally: server is on localhost')
 	.option('-s, --server <name[:port]>', 'Server to connect to (defaults to $SSH_CLIENT)')
 	.option('-p, --port <number>', 'Port number (defaults to 8080)', parseInt)
+	.option('-h, --hostname <name>', 'Host name to send to server (defaults to the hostname returned by node.js)')
 	.option('-i, --instance <name>', 'Instance name (required)')
 	.option('-d, --debug [level]', 'Enable debugging')
 	.option('--log file', 'Log config file')

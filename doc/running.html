@@ -30,6 +30,7 @@
 <li class="toc3"><a href="#preferencepanel">Preference panel</a></li>
 <li class="toc3"><a href="#runningthewebclients">Running the web clients</a></li>
 <li class="toc3"><a href="#shuttingdown">Shutting down</a></li>
+<li class="toc3"><a href="#runningrenderersbyhand">Running renderers by hand</a></li>
 
             </ul>
           </li>
@@ -104,7 +105,7 @@ The <code>Shutdown</code> button sends a message to the clients to quit them gra
 <li><code>-w|--wall &lt;config&gt;</code> specifies a different config file, overriding the <code>$WALL</code> setting;</li>
 <li><code>-c|--config &lt;path&gt;</code> specified a colon-separated list of directories where to look up the config file;</li>
 <li><code>-p|--port &lt;number&gt;</code> specifies a different port number than the one specified in the config file for the server to listen to;</li>
-<li><code>-d|--debug [0|1|2]</code> specifies debugging level: 0 (no logging), 1 (logging window hidden), 2 (logging window open);</li>
+<li><code>-d|--debug [0|1|2|3]</code> specifies debugging level: 0 (no logging), 1 (logging window hidden), 2 (logging window open), 3 (logging redirected to the console);</li>
 <li><code>-l|--log file</code> specifies the log configuration file (defaults to <code>logdefault.js</code>);</li>
 <li><code>app ...</code> is an optional list of apps. The available apps, such as <code>Browser</code> are described later in this document.</li>
 </ul>
@@ -151,6 +152,31 @@ The <code>Shutdown</code> button sends a message to the clients to quit them gra
 </code></pre>
 
 <p>(If you are running local clients, you can kill them in the usual way, e.g. by selecting their <code>Quit</code> command).</p>
+
+<h3 id="runningrenderersbyhand">Running renderers by hand</h3>
+
+<p>Normally, the renderers are started and stopped by the server, based on the commands specified in the config file.</p>
+
+<p>If you need to run the renderers by hand, run node-webkit on the client machine with the , e.g.:</p>
+
+<pre><code>    % nw ~/WildOS/renderer &lt;instancename&gt;
+</code></pre>
+
+<p>The only required option is the name of the instance, as specified in the platform config file.
+The full list of options is as follows:</p>
+
+<ul>
+<li><code>-s, --server &lt;name[:port]&gt;</code> specifies the server and, optionally, port number to connect to (defaults to $SSH_CLIENT and the port number specified by <code>--port</code>);</li>
+<li><code>-l, --local</code> runs the renderer locally: server is on localhost;</li>
+<li><code>-p, --port &lt;number&gt;</code> specifies the port number on the server (defaults to 8080);</li>
+<li><code>-h, --hostname &lt;name&gt;</code> &#8217;Host name to send to server (defaults to the hostname returned by node.js);</li>
+<li><code>-i, --instance &lt;name&gt;</code> &#8217;Instance name (required);</li>
+<li><code>-d, --debug [level]</code> &#8217;Enable debugging (same as for the server above);</li>
+<li><code>--log file</code> &#8217;Log config file;</li>
+</ul>
+
+<p>Note that additional options are processed by node-webkit.
+Of particular interest is the option <code>--remote-debugging-port=9222</code> (you can use a different port number), which lets you debug the client from a remote machine by connecting to the URL <code>http://&lt;client&gt;:9222</code> from a Chrome browser.</p>
 
     </div>
     <script type="text/javascript" src="assets/js/jquery-1.11.0.min.js"></script>

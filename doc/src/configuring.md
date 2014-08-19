@@ -61,7 +61,15 @@ The `wall` property defines the geometry of the tiled display:
 - The `renderer` property can be set to `perTile` or `perHost`. The former means that one rendering client is launched for each tile, while the latter means that one rendering client is launched for each host (if the host runs multiple tiles, the client will create one window per tile). Currently, we use mostly `perTile` (in fact, `perHost` has not been tested recently);
 - The `domain` property is optional, it is the domain name to add to the host names listed in the `tiles` array;
 - The `env` property is optional. It lists per-instance values that can be used in the `start`, `stop` and `restart` properties below. If defined, it must be an object whose properties are the instance names and the values are a string (see example below);
-- The `start` and `stop` properties are the shell commands to start / kill all the clients. Before execution, the following string substitutions take place: %HOST% is replaced by the client host name, %PORT% is replaced by the port number of the server, %INSTANCE% is replaced by the instance name to run on the client, and %ENV% is replaced by the content of the `env` property for the instance. Also, process environment variables, e.g. `$PATH`, are replaced by their value. The % and $ signs can be protected by a backslash (which is specified as two backslashes in a JSON file);
+- The `start` and `stop` properties are the shell commands to start / kill all the clients. Before execution, the following string substitutions take place: 
+	- `%HOST%` is replaced by the client host name, 
+	- `%PORT%` is replaced by the port number of the server, 
+	- `%INSTANCE%` is replaced by the instance name to run on the client, 
+	- `%ENV%` is replaced by the content of the `env` property for the instance, 
+	- `%DEBUG%` is replaced by the debugging option of the server + the option `--remote-debugging-port=9222` to enable remote debugging of the clients (connect to `http://<client>:922` on a Chrome browser to access the debugging tools of the client),
+	- `%LOG%` is replaced by the logging file option of the server,
+	- Process environment variables, e.g. `$PATH`, are replaced by their value,
+	- The `%` and `$` signs can be protected by a backslash (which is specified as two backslashes in a JSON file);
 - The optional `restart` property is a shell command to kill then start all the clients. If absent, it is replaced by calling `stop` then `start`;
 - The optional `startDelay` property specifies a delay in milliseconds to separate the launch of each client. This can be useful when there are many clients and they do not reliable connect to the server.
 

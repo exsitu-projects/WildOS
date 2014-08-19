@@ -43,7 +43,7 @@ The first form runs the server and takes the following arguments:
 * `-w|--wall <config>` specifies a different config file, overriding the `$WALL` setting;
 * `-c|--config <path>` specified a colon-separated list of directories where to look up the config file;
 * `-p|--port <number>` specifies a different port number than the one specified in the config file for the server to listen to;
-* `-d|--debug [0|1|2]` specifies debugging level: 0 (no logging), 1 (logging window hidden), 2 (logging window open);
+* `-d|--debug [0|1|2|3]` specifies debugging level: 0 (no logging), 1 (logging window hidden), 2 (logging window open), 3 (logging redirected to the console);
 * `-l|--log file` specifies the log configuration file (defaults to `logdefault.js`);
 * `app ...` is an optional list of apps. The available apps, such as `Browser` are described later in this document.
 
@@ -84,3 +84,26 @@ You can also click the `Shutdown` button or select the `Shutdown` command in the
 
 (If you are running local clients, you can kill them in the usual way, e.g. by selecting their `Quit` command).
 
+### Running renderers by hand ###
+
+Normally, the renderers are started and stopped by the server, based on the commands specified in the config file.
+
+If you need to run the renderers by hand, run node-webkit on the client machine with the , e.g.:
+
+```
+	% nw ~/WildOS/renderer <instancename>
+```
+
+The only required option is the name of the instance, as specified in the platform config file.
+The full list of options is as follows:
+
+* `-s, --server <name[:port]>` specifies the server and, optionally, port number to connect to (defaults to $SSH_CLIENT and the port number specified by `--port`);
+* `-l, --local` runs the renderer locally: server is on localhost;
+* `-p, --port <number>` specifies the port number on the server (defaults to 8080);
+* `-h, --hostname <name>` 'Host name to send to server (defaults to the hostname returned by node.js);
+* `-i, --instance <name>` 'Instance name (required);
+* `-d, --debug [level]` 'Enable debugging (same as for the server above);
+* `--log file` 'Log config file;
+
+Note that additional options are processed by node-webkit.
+Of particular interest is the option `--remote-debugging-port=9222` (you can use a different port number), which lets you debug the client from a remote machine by connecting to the URL `http://<client>:9222` from a Chrome browser.

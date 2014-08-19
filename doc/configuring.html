@@ -127,7 +127,18 @@ Each object has a mandatory property: <code>type</code>. The root object must be
 <li>The <code>renderer</code> property can be set to <code>perTile</code> or <code>perHost</code>. The former means that one rendering client is launched for each tile, while the latter means that one rendering client is launched for each host (if the host runs multiple tiles, the client will create one window per tile). Currently, we use mostly <code>perTile</code> (in fact, <code>perHost</code> has not been tested recently);</li>
 <li>The <code>domain</code> property is optional, it is the domain name to add to the host names listed in the <code>tiles</code> array;</li>
 <li>The <code>env</code> property is optional. It lists per-instance values that can be used in the <code>start</code>, <code>stop</code> and <code>restart</code> properties below. If defined, it must be an object whose properties are the instance names and the values are a string (see example below);</li>
-<li>The <code>start</code> and <code>stop</code> properties are the shell commands to start / kill all the clients. Before execution, the following string substitutions take place: %HOST% is replaced by the client host name, %PORT% is replaced by the port number of the server, %INSTANCE% is replaced by the instance name to run on the client, and %ENV% is replaced by the content of the <code>env</code> property for the instance. Also, process environment variables, e.g. <code>$PATH</code>, are replaced by their value. The % and $ signs can be protected by a backslash (which is specified as two backslashes in a JSON file);</li>
+<li>The <code>start</code> and <code>stop</code> properties are the shell commands to start / kill all the clients. Before execution, the following string substitutions take place:
+
+<ul>
+<li><code>%HOST%</code> is replaced by the client host name,</li>
+<li><code>%PORT%</code> is replaced by the port number of the server,</li>
+<li><code>%INSTANCE%</code> is replaced by the instance name to run on the client,</li>
+<li><code>%ENV%</code> is replaced by the content of the <code>env</code> property for the instance,</li>
+<li><code>%DEBUG%</code> is replaced by the debugging option of the server + the option <code>--remote-debugging-port=9222</code> to enable remote debugging of the clients (connect to <code>http://&lt;client&gt;:922</code> on a Chrome browser to access the debugging tools of the client),</li>
+<li><code>%LOG%</code> is replaced by the logging file option of the server,</li>
+<li>Process environment variables, e.g. <code>$PATH</code>, are replaced by their value,</li>
+<li>The <code>%</code> and <code>$</code> signs can be protected by a backslash (which is specified as two backslashes in a JSON file);</li>
+</ul></li>
 <li>The optional <code>restart</code> property is a shell command to kill then start all the clients. If absent, it is replaced by calling <code>stop</code> then <code>start</code>;</li>
 <li>The optional <code>startDelay</code> property specifies a delay in milliseconds to separate the launch of each client. This can be useful when there are many clients and they do not reliable connect to the server.</li>
 </ul>
