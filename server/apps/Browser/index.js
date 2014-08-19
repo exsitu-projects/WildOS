@@ -5,14 +5,11 @@
 //
 
 // Shared modules
-var OO = require('OO');
 var log = require('Log').logger('Browser');
 
 // Server modules
 var App = require('../../lib/App');
 
-// Device modules
-var Surface = require('../../devices/Surface');
 
 // The `Browser` class.
 var Browser = App.subclass().name('Browser')
@@ -32,9 +29,21 @@ var Browser = App.subclass().name('Browser')
 	})
 	.methods({
 		initPlatform: function(platform) {
-			log.method(this, 'initPlatform');
+			log.warn.method(this, 'initPlatform', platform);
 			this.platform = platform;
-			// The path for `injectUIScript` is relative to the url of the document.
+
+			// Find out the size of the surface
+			var surface = platform.findDevice({type: 'Surface'});
+			if (surface && surface.width) {
+					log.warn.method(this, 'initPlatform/onDeviceAvailable', 'surface size', surface.width, surface.height);
+					this.zoom = surface.width / 1280;
+					this.width = surface.width / this.zoom;
+					this.height = surface.height / this.zoom;
+					this.offsetX = this.offsetY = 0;
+					// Guess a reasonable zoom factor
+			}
+
+			// The path for `injectJSFile` is relative to the url of the document.
 			// Since we don't control this, we use an absolute path, based on
 			// `this.__dirname`, the absolute path from which the app was loaded.
 			platform.injectJSFile('file://'+this.__dirname+'/jquery.mousewheel.min.js', 'mousewheelJS');

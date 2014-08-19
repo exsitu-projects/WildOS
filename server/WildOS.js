@@ -167,6 +167,8 @@ function startServerAndApps(platform) {
 
 	// Run the apps (specified as the remaining arguments on the command line)
 	var appNames = program.args;
+setTimeout(function() {
+
 	App.loadApps(appNames, function(apps) {
 		// *** we should also use this callback to tell we are ready, in case it's done asynchronously (which is not the case at the moment)
 		appNames.forEach(function(app) {
@@ -181,6 +183,8 @@ function startServerAndApps(platform) {
 			}, 1000);			
 		}
 	});
+
+}, 100);
 
 	log.exit(null, 'startServerAndApps');
 }
