@@ -368,6 +368,10 @@
 			disconnected: function() {
 				this._super();
 
+				this.deviceName = null;
+				setDeviceName(null);
+				msg('Lost connection');
+
 				App.unloadAllApps();
 			},
 		})
