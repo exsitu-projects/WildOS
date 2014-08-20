@@ -268,9 +268,9 @@
 	log.spyMethods(App);
 	
 	var Controller = SharingServer.subclass().name('Controller')
-		.fields{
+		.fields({
 			deviceName: null,	// name of the device assigned by the server
-		}
+		})
 		.methods({
 			// Called when the connection is created.
 			created: function() {
@@ -353,7 +353,7 @@
 
 					this.deviceName = name;
 					setDeviceName(name);
-					
+
 					log.eventExit(self, 'deviceName');
 				});
 				
