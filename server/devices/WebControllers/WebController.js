@@ -25,6 +25,9 @@ var WebController = Device.subclass().name('WebController')
 		added: function() {
 			// Notify of availability
 			this.deviceAvailable();
+			
+			// Tell the client our name
+			this.emit("deviceName", this.name);
 		},
 
 		disconnected: function() {

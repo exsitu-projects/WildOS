@@ -28,7 +28,12 @@ var Photoz = App.subclass().name('Photoz')
 		log.exit(this, 'create');
 	})
 	.methods({
-
+		// Clean up when application is closed
+		stop: function() {
+			this.layer.close();
+			this.layer = null;
+			this._super();
+		},
 	})
 	.shareState()
 ;

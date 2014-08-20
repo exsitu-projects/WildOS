@@ -62,6 +62,11 @@
 		$('#status').html(message);
 	}
 
+	// Called when the server tells us our (unique) name
+	function setDeviceName(name) {
+		$('#deviceName').html(name || 'web controller');
+	}
+
 	var OO = require('OO');
 	var ObjectSharer = require('./ObjectSharer');
 	var SharingServer = require('./SharingServer');
@@ -71,6 +76,7 @@
 		.classFields({
 			instances: {},		// app instances by name
 			apps: [],			// list of app instances
+			deviceName: null,	// name of the device in the server
 		})
 		.classMethods({
 			// Return the list of running app names
@@ -262,6 +268,9 @@
 	log.spyMethods(App);
 	
 	var Controller = SharingServer.subclass().name('Controller')
+		.fields{
+			deviceName: null,	// name of the device assigned by the server
+		}
 		.methods({
 			// Called when the connection is created.
 			created: function() {
@@ -337,6 +346,17 @@
 				this.on('quit', function() {
 					// quit();
 				});
+
+				this.on('deviceName', function(name) {
+					log.eventEnter(self, 'deviceName', name);
+					msg('Name '+name);
+
+					this.deviceName = name;
+					setDeviceName(name);
+					
+					log.eventExit(self, 'deviceName');
+				});
+				
 			},
 			
 			connected: function() {
@@ -371,7 +391,7 @@
 	</script>
 </head>
 <body>
-	<h2>WildOS web controller</h2>
+	<h2>WildOS <span id="deviceName">web controller</span></h2>
 	<div id="controller"></div>
 	<p id="status">Waiting for connection</p>
 </body>
