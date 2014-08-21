@@ -40,10 +40,10 @@ var Layer = OO.newClass().name('Layer')
 		overlay: false,	// If true, layer has no background and is on top of other layers
 		mode: 'tiled',	// 'tiled' for a layer that spans the screen, 'grid' for a layer
 
-		left: 100,		// Layer position and size *** default values for testing
-		top: 100,
-		width: 400,
-		height: 300,
+		left: 0,		// Layer position and size
+		top: 0,
+		width: 0,
+		height: 0,
 		zoom: 1.0,
 
 		url: null,		// If non null, url to load into the layer
@@ -171,23 +171,38 @@ var Layer = OO.newClass().name('Layer')
 		getFrameStyleForTile: function(frame, tile) {
 			var attrSet = {};
 
+			// Overlay layer: make it transparent and ignore input events
+			if (frame.overlay) {
+				attrSet.backgroundColor = 'transparent';
+				attrSet.pointerEvents = 'none';
+			}
+
+			// Grid mode: ignore tile offset and cover entire tile
 			if (frame.mode == 'grid') {
-				// In grid mode, we ignore the tile offset
 				attrSet.left = 0;
 				attrSet.top = 0;
 				attrSet.width = tile.width;
 				attrSet.height = tile.height;
+
 				return attrSet;
 			}
 
+			// Tile mode: use position and size.
 			if (frame.left !== undefined)
 				attrSet.left = Math.round(frame.left - tile.originX)+"px";
 			if (frame.top !== undefined)
 				attrSet.top = Math.round(frame.top - tile.originY)+"px";
-			if (frame.width !== undefined)
+			// If size not specified or zero (or negative), make it big enough to cover the tile
+			// *** this does not take into account the zoom factor
+			if (frame.width !== undefined && frame.width > 0)
 				attrSet.width = Math.round(frame.width)+'px';
-			if (frame.height !== undefined)
+			else
+				attrSet.width = Math.round((frame.left || 0) + tile.width - tile.originX)+"px";
+			if (frame.height !== undefined && frame.height > 0)
 				attrSet.height = Math.round(frame.height)+'px';
+			else
+				attrSet.height = Math.round((frame.top || 0) + tile.height - tile.originY)+"px";
+			// Apply zoom to the layer (affects the size as well as the content)
 			if (frame.zoom) {
 				attrSet['-webkit-transform'] = "scale("+(Math.round(frame.zoom *100)/100)+")";
 				attrSet['-webkit-transform-origin']= "0 0";
@@ -211,11 +226,11 @@ var Layer = OO.newClass().name('Layer')
 			} else {
 				var self = this;
 				if (url.match(/^https?:\/\//))
-					this.mapReadyTiles(function(tile) {
+					Tile.mapReadyTiles(function(tile) {
 						HTML.addHTML_URL(tile.window.window, url, 'content', layerElement);
 					});
 				else
-					this.mapReadyTiles(function(tile) {
+					Tile.mapReadyTiles(function(tile) {
 						HTML.addHTMLFile(tile.window.window, url, 'content', layerElement);
 					});
 			}

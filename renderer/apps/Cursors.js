@@ -5,9 +5,11 @@
 // Shared modules
 var OO = require('OO');
 var log = require('Log').logger('Cursors');
+var HTML = require('HTML');
 
 // Renderer modules
 var App = require('../lib/App');
+var Layer = require('../lib/Layer');
 
 // Use different logger for Cursor class
 var cursorLog = require('Log').logger('Cursor');
@@ -32,60 +34,62 @@ var Cursor = OO.newClass().name('Cursor')
 	.methods({
 		// Add a div to the tile's page representing the cursor
 		createCursor: function(tile) {
-			if (!tile || !tile.ready || !tile.window)
+			if (!tile || !tile.ready || !tile.window) {	// should not happen
+				log.warn.method('createCursor', 'called with tile not ready');
 				return;
+			}
 
-			var doc = tile.window.window.document;
+			var win = tile.window.window;
 			var id = 'Cursor_'+this.id;
 
 			// Remove the element if it already exists
-			var el = doc.getElementById(id);
-			if (el)
-				doc.body.removeChild(el);
+			HTML.remove(win, id);
 
-			// We use plain DOM manipulation instead of jQuery since we don't know it it's loaded and it's easy anyway
-			// $('html').append('<div id="'+id+'" class="Cursor" style="position: fixed; z-index: 1000; min-width: 10px; min-height: 10px; background-color: '+this.color+'"></div>');
-			el = doc.createElement('div');
-				el.setAttribute('id', id);
-				el.setAttribute('class', 'Cursor');
-				el.setAttribute('style', 'position: fixed; z-index: 1000; min-width: 10px; min-height: 10px; background-color: '+this.color);
 			var left = this.x - tile.originX -5;
 			var top = this.y - tile.originY -5;
-				el.style.left = left+'px';
-				el.style.top =  top +'px';
-			doc.body.appendChild(el);
+			var cursor = HTML.element(win, 'div class="Cursor"', {
+					id: id,
+					style: {
+						position: 'fixed',
+						zIndex: '1000',
+						minWidth: '10px',
+						minHeight: '10px',
+						backgroundColor: this.color,
+						left: left+'px',
+						top: top +'px',
+					}
+				});
+
+			HTML.add(win, cursor, 'end', this.app.layer.id);
 		},
 
 		// Remove the cursor's div
 		removeCursor: function(tile) {
-			if (!tile || !tile.ready || !tile.window)
+			if (!tile || !tile.ready || !tile.window) {	// should not happen
+				log.warn.method('removeCursor', 'called with tile not ready');
 				return;
+			}
 
-			var doc = tile.window.window.document;
-			var id = 'Cursor_'+this.id;
-			// We use plain DOM manipulation instead of jQuery since we don't know it it's loaded and it's easy anyway
-			// $('#'+id).remove();
-			var el = doc.getElementById(id);
-			if (el)
-				doc.body.removeChild(el);
+			HTML.remove(tile.window.window, 'Cursor_'+this.id);
 		},
 
 		// Adjust the position of the cursor's div.
 		// Recreate it if it does not exist.
 		adjustPos: function(tile) {
-			if (!tile || !tile.ready || !tile.window)
+			if (!tile || !tile.ready || !tile.window) {	// should not happen
+				log.warn.method('adjustPos', 'called with tile not ready');
 				return;
+			}
 
-			var doc = tile.window.window.document;
-			var id = 'Cursor_'+this.id;
-			var left = this.x - tile.originX -5;
-			var top = this.y - tile.originY -5;
-			// We use plain DOM manipulation instead of jQuery since we don't know it it's loaded and it's easy anyway
-			// $('#'+id).css('left', left + 'px').css('top', top + 'px');
-			var el = doc.getElementById(id);
-			if (el) {
-				el.style.left = left+'px';
-				el.style.top  = top+'px';
+			var win = tile.window.window;
+			var cursor = HTML.findElement(win, 'Cursor_'+this.id);
+			if (cursor) {
+				var left = this.x - tile.originX -5;
+				var top = this.y - tile.originY -5;
+				HTML.setStyle(win, cursor, {
+					left: left+'px',
+					top: top+'px',
+				});
 			} else
 				this.createCursor(tile);
 		},
@@ -102,6 +106,16 @@ var Cursors = App.subclass().name('Cursors')
 	})
 	.constructor(function(config) {
 		this._super(config);
+
+		this.layer = Layer.create({
+			overlay: true,
+			mode: 'grid',
+		});
+
+		var self = this;
+		this.mapReadyTiles(function(tile) {
+			self.createCursors(tile);
+		});
 	})
 	.methods({
 		// Make sure all cursors exist in the tile
@@ -118,44 +132,41 @@ var Cursors = App.subclass().name('Cursors')
 			});
 		},
 
-		// Called by the framework when the webpage representing the tile is ready
-		tileReady: function(tile) {
-			this.createCursors(tile);
-
-			if (! tile.window) {
-				log.warn.method(this, 'tileReady', '- tile.window is null!!');
-				return;
-			}
-			// Set a permanent handler for subsequent loads.
-			// Note that this works too when a page has an auto-refresh.
-			var self = this;
-			tile.window.on('loaded', function() {
-				log.enter(self, 'loaded');
-				self.createCursors(tile);
-				log.exit(self, 'loaded');
-			});
-
-		},
-
 		// Adjust the position of a cursor in all tiles
 		updateCursor: function(cursor) {
 			var self = this;
-			this.mapTiles(function(tile) {
+			this.mapReadyTiles(function(tile) {
 				cursor.adjustPos(tile);
 			});
+		},
+
+		// Called when the layer is removed
+		stop: function() {
+			this.layer.close();
+			this.layer = null;
+			this._super();
 		},
 
 		// Called by the notification system when a cursor is added/removed:
 		// Add/remove the cursor from all tiles
 		cursorCreated_after: function(cursor) {
 			cursor.app = this;
-			this.mapTiles(function(tile) {
+
+			// The content of the cursors array is not shared, so we have to update it
+			if (this.cursors.indexOf(cursor) < 0)
+				this.cursors.push(cursor);
+
+			this.mapReadyTiles(function(tile) {
 				cursor.createCursor(tile);
 			});
 		},
 
 		cursorRemoved_after: function(cursor) {
-			this.mapTiles(function(tile) {
+			var idx = this.cursors.indexOf(cursor);
+			if (idx >= 0)
+				this.cursors.splice(idx, 1);
+
+			this.mapReadyTiles(function(tile) {
 				cursor.removeCursor(tile);
 			});
 		},

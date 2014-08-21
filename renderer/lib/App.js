@@ -401,10 +401,20 @@ return;
 				this.tiles.splice(i, 1);
 		},
 
+		// These are redundant with Tile.mapTiles and Tile.mapReadyTiles
 		// Execute `f` for each tile
 		mapTiles: function(f) {
 			for (var i = this.tiles.length - 1; i >= 0; i--)
 				f(this.tiles[i]);			
+		},
+		
+		// Execute `f` for each tile that is ready
+		mapReadyTiles: function(f) {
+			for (var i = this.tiles.length - 1; i >= 0; i--) {
+				var tile = this.tiles[i];
+				if (tile.ready && tile.window)
+					f(tile);			
+			}
 		},
 	})
 ;

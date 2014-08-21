@@ -1,6 +1,5 @@
 
-var fs = require('fs');
-var Path = require('path');
+// --- Use our logger if availabel, otherwise the console
 
 var log;
 try {
@@ -387,18 +386,6 @@ function processElement(win, element) {
 	return elem;
 }
 
-// Return the content of a file, or null if an error occurs.
-// *** Should use a search path
-function getFile(path) {
-//	path = Path.join(__dirname , '../content', path);
-
-	try {
-		return fs.readFileSync(path, 'utf8');
-	} catch(e) {
-		return null;
-	}	
-}
-
 // --- External functions ---
 
 // Create an attribute object, to be used, e.g.
@@ -423,9 +410,10 @@ function text(win, t) {
 	return win.createTextNode(t);
 }
 
-// Set style attributes of an element
+// Set style attributes of an element.
+// `id` is passed to `findElement` to specify the element to be affected
 function setStyle(win, id, attrSet) {
-	var elem = win.document.getElementById(id);
+	var elem = findElement(win, id);
 	if (elem)
 		setStyleAttr(elem, attrSet);
 	else
@@ -433,8 +421,9 @@ function setStyle(win, id, attrSet) {
 }
 
 // Set attributes of an element
+// `id` is passed to `findElement` to specify the element to be affected
 function setAttributes(win, id, attrSet) {
-	var elem = win.document.getElementById(id);
+	var elem = findElement(win, id);
 	if (elem)
 		setAttrSet(elem, attrSet);
 	else
@@ -444,7 +433,7 @@ function setAttributes(win, id, attrSet) {
 // Create HTML elements from a descriptor
 //
 function element(win, tag, attr /* ... */, content /* ... */) {
-	log.message('element', Array.prototype.slice.call(arguments, 1));
+	//log.message('element', Array.prototype.slice.call(arguments, 1));
 
 	return processElement(win, Array.prototype.slice.call(arguments, 1));
 }
@@ -474,14 +463,6 @@ function JSText(win, text, attr) {
 	return element(win, 'script type=text/javascript', attr, text);
 }
 
-function JSFile(win, path, attr) {
-	var text = getFile(path);
-	if (text)
-		return JSText(win, text, attr);
-	log.warn.message('JSFile: could not load file', path);
-	return null;
-}
-
 function JS_URL(win, url, attr) {
 	return element(win, 'script type=text/javascript', {src: url}, attr);
 }
@@ -490,15 +471,6 @@ function JS_URL(win, url, attr) {
 
 function CSSText(win, text, attr) {
 	return element(win, 'style type=text/css', attr, text);
-}
-
-// make sync/async versions of this - with a promise 
-function CSSFile(win, path, attr) {
-	var text = getFile(path);
-	if (text)
-		return CSSText(win, text, attr);
-	log.warn.message('CSSFile: could not load file', path);
-	return null;
 }
 
 function CSS_URL(win, url, attr) {
@@ -544,14 +516,6 @@ log.message('HTMLText', 'inner=', root.innerHTML, 'outer=', root.outerHTML, 'fir
 	return root;
 }
 
-function HTMLFile(win, path, attr) {
-	var text = getFile(path);
-	if (text)
-		return HTMLText(win, text, attr);
-	log.warn.message('HTMLFile: could not load file', path);
-	return null;
-}
-
 // Returns a promise, which is resolved when the URL is loaded.
 // The promise is called with the imported elements:
 // a document fragment if there are more than one elements, 
@@ -576,9 +540,16 @@ function HTML_URL(win, url, attr) {
 	xhr.onload = function() {
 // *** VERY WEIRD: if I remove 'xhr' in the trace below, node-webkit quits.
 // *** Not clear if it's in error or not, and/or whether it's due to the Mocha testing stuff.
-log.message('HTML_URL', 'loaded', xhr);
+//log.message('HTML_URL', 'loaded', xhr);
+
 		// We go through the elements in the body
-		var body = xhr.responseXML.body;
+		var xml = xhr.responseXML;
+		if (!xml) {
+			fail(new Error('XMLHttpRequest failed'));
+			return;
+		}
+
+		var body = xml.body;
 //log.message('HTML_URL', 'body=', body);
 		result = win.document.createDocumentFragment();
 
@@ -886,16 +857,6 @@ function addJSText(win, text, attr, how, ref) {
 	return add(win, JSText(win, text, attr), how, ref);
 }
 
-function addJSFile(win, path, attr, how, ref) {
-	if (notAnAttr(attr)) {	// Handle optional attr
-		ref = how; how = attr; attr=null;
-	}
-	var text = JSFile(win, path, attr);
-	if (text)
-		return add(win, text, how, ref);
-	return null;
-}
-
 // For this one, you can define the `onload` and `onerror`
 // attributes to be notified when the script is actually loaded (or not).
 function addJS_URL(win, url, attr, how, ref) {
@@ -918,16 +879,6 @@ function addCSSText(win, text, attr, how, ref) {
 		ref = how; how = attr; attr=null;
 	}
 	return add(win, CSSText(win, text, attr), how, ref);
-}
-
-function addCSSFile (win, path, attr, how, ref) {
-	if (notAnAttr(attr)) {	// Handle optional attr
-		ref = how; how = attr; attr=null;
-	}
-	var text = CSSFile(win, path, attr);
-	if (text)
-		return add(win, text, how, ref);
-	return null;
 }
 
 // For this one, you can define the `onload` and `onerror`
@@ -971,14 +922,6 @@ function addHTMLText(win, text, attr, how, ref) {
 	return result;
 }
 
-function addHTMLFile(win, path, attr, how, ref) {
-	var text = getFile(path);
-	if (text)
-		return addHTMLText(win, text, attr, how, ref);
-	log.warn.message('addHTMLFile: could not load file', path);
-	return null;
-}
-
 // This one returns a promise since loading is asynchronous
 // and there is no preexisting element onto which to set a handler.
 // *** unless we extract onload and onerror handlers from attr for this purpose.
@@ -1006,10 +949,16 @@ function addHTML_URL(win, url, attr, how, ref) {
 
 // *** VERY WEIRD: if I remove 'xhr' in the trace below, node-webkit quits.
 // *** Not clear if it's in error or not, and/or whether it's due to the Mocha testing stuff.
-log.message('addHTML_URL', 'onload', xhr);
+//log.message('addHTML_URL', 'onload', xhr);
 
 		// We go through the elements in the body
-		var body = xhr.responseXML.body;
+		var xml = xhr.responseXML;
+		if (!xml) {
+			fail(new Error('XMLHttpRequest failed'));
+			return;
+		}
+
+		var body = xml.body;
 //log.message('addHTML_URL', 'body=');//, body);
 		result = {
 			first: null,
@@ -1054,6 +1003,230 @@ function addHTMLImport (win, url, attr, how, ref) {
 		ref = how; how = attr; attr=null;
 	}
 	return add(win, HTMLImport(win, url, attr), how, ref);
+}
+
+// Add a shadow DOM under `host`.
+// `host` must be an id or a DOM element.
+// `content` can be an id or a DOM tree. 
+// 	If it identifies a template, a copy of the template content is used.
+// A copy of content is created if content has a parent.
+// The functions returns this copy, or the content itself if no copy was made.
+function addShadow(win, host, content) {
+	log.message('addShadow');
+
+	if (!support.shadowDOM(win)) {
+		log.warn.message('addShadow: browser does not support ShadowDOM');
+		return null;
+	}
+
+	if (!win)
+		return null;
+
+	host = findElement(win, host);
+	if (!host) {
+		log.warn.message('addShadow: could not find host element');
+		return null;
+	}
+	log.message('  host is', host.outerHTML);
+
+	// *** should consider `content` to be varargs ?
+	if (Array.isArray(content)) {
+		content = processElement(win, content);
+		log.message('  content array', content.outerHTML);
+	} else {
+		content = findElement(win, content);
+		log.message('  content element', content.outerHTML);
+	}
+
+	if (! content) {
+		log.warn.message('addShadow: could not find or create content');
+		return null;
+	}
+
+	var root = host.createShadowRoot();
+	var copy = content;
+	if (content.tagName == 'TEMPLATE') {
+		copy = win.document.importNode(content.content, true);
+		log.message('  importing template in shadowRoot');
+	} else if (content.parentNode !== null) {
+		copy = content.cloneNode(true);
+		log.message('  copying content in shadowRoot');
+	} else {
+		log.message('  inserting content in shadowRoot');
+	}
+
+	if (copy)
+    	root.appendChild(copy);
+    else
+    	log.message('  copy is empty');
+
+	return copy;
+}
+
+// Register a new element
+// *** TODO *** (and to add to the exports)
+function registerElement(win, elName, attr, classyClass) {
+	if (!support.shadowDOM(win)) {
+		log.warn.message('registerElement: browser does not support user-defined HTML elements');
+		return null;
+	}
+
+	if (!win)
+		return null;
+
+	var elProto = Object.create(HTMLElement.prototype, {
+		createdCallback: function() { /* create Classy object with attributes values + field wrappers */ },
+			/* alternatively : don't create object but let the application bind to an object */
+		attachedCallback: function() { /* call object's attach */ },
+		detachedCallback: function() { /* call object's dettach */ },
+		attributeChangedCallback: function(attName, oldVal, newVal) { /* mirror in object */},
+	});
+
+	var elType = win.document.registerElement(name, {
+		prototype: elProto,
+	});
+
+	return elType;
+}
+
+// ==== EXPORTS ====
+
+var HTML = {
+	attr: attr,
+	data: data,
+
+	setAttributes: setAttributes,
+	setStyle: setStyle,
+
+	element: element,
+	elements: elements,
+
+	JSText: JSText,
+//	JSFile: JSFile,
+	JS_URL: JS_URL,
+
+	CSSText: CSSText,
+//	CSSFile: CSSFile,
+	CSS_URL: CSS_URL,
+	CSSImport: CSSImport,
+
+	HTMLText: HTMLText,
+//	HTMLFile: HTMLFile,
+	HTML_URL: HTML_URL,
+	HTMLImport: HTMLImport,
+
+	findElement: findElement,
+
+	add: add,
+	remove: remove,
+	replace: replace,
+
+	addJSText: addJSText,
+//	addJSFile: addJSFile,
+	addJS_URL: addJS_URL,
+
+	addCSSText: addCSSText,
+//	addCSSFile: addCSSFile,
+	addCSS_URL: addCSS_URL,
+	addCSSImport: addCSSImport,
+
+	addHTMLText: addHTMLText,
+//	addHTMLFile: addHTMLFile,
+	addHTML_URL: addHTML_URL,
+	addHTMLImport: addHTMLImport,
+
+//	addFile: addFile,
+//	addDir: addDir,
+
+	addShadow: addShadow,
+};
+
+// node-compatible export
+if (typeof exports !== 'undefined')
+	module.exports = HTML;
+
+// ==== FUNCTIONS THAT RELY ON ACCESS TO FILE SYSTEM ====
+
+var fs = null;
+var Path = null;
+
+try {
+	fs = require('fs');
+	Path = require('path');
+} catch(e) {
+	// Omit subsequent functions
+}
+
+if (fs && Path) {
+
+// Return the content of a file, or null if an error occurs.
+// *** Should use a search path
+function getFile(path) {
+//	path = Path.join(__dirname , '../content', path);
+
+	try {
+		return fs.readFileSync(path, 'utf8');
+	} catch(e) {
+		return null;
+	}	
+}
+
+// make sync/async versions of these - with a promise 
+
+// --- Create JS/CSS/HTML elements with content from a file ---
+ 
+function JSFile(win, path, attr) {
+	var text = getFile(path);
+	if (text)
+		return JSText(win, text, attr);
+	log.warn.message('JSFile: could not load file', path);
+	return null;
+}
+
+function CSSFile(win, path, attr) {
+	var text = getFile(path);
+	if (text)
+		return CSSText(win, text, attr);
+	log.warn.message('CSSFile: could not load file', path);
+	return null;
+}
+
+function HTMLFile(win, path, attr) {
+	var text = getFile(path);
+	if (text)
+		return HTMLText(win, text, attr);
+	log.warn.message('HTMLFile: could not load file', path);
+	return null;
+}
+
+// --- Add JS/CSS/HTML elements with content from a file ---
+
+function addJSFile(win, path, attr, how, ref) {
+	if (notAnAttr(attr)) {	// Handle optional attr
+		ref = how; how = attr; attr=null;
+	}
+	var text = JSFile(win, path, attr);
+	if (text)
+		return add(win, text, how, ref);
+	return null;
+}
+
+function addCSSFile (win, path, attr, how, ref) {
+	if (notAnAttr(attr)) {	// Handle optional attr
+		ref = how; how = attr; attr=null;
+	}
+	var text = CSSFile(win, path, attr);
+	if (text)
+		return add(win, text, how, ref);
+	return null;
+}
+
+function addHTMLFile(win, path, attr, how, ref) {
+	var text = getFile(path);
+	if (text)
+		return addHTMLText(win, text, attr, how, ref);
+	log.warn.message('addHTMLFile: could not load file', path);
+	return null;
 }
 
 // Inject a file, using the extension to guess its type, or the content of a directory.
@@ -1170,136 +1343,17 @@ function addDir(win, path, how, ref) {
 	return res;
 }
 
-// Add a shadow DOM under `host`.
-// `host` must be an id or a DOM element.
-// `content` can be an id or a DOM tree. 
-// 	If it identifies a template, a copy of the template content is used.
-// A copy of content is created if content has a parent.
-// The functions returns this copy, or the content itself if no copy was made.
-function addShadow(win, host, content) {
-	log.message('addShadow');
+// --- export file-specific functions ---
 
-	if (!support.shadowDOM(win)) {
-		log.warn.message('addShadow: browser does not support ShadowDOM');
-		return null;
-	}
+HTML.JSFile = JSFile;
+HTML.CSSFile = CSSFile;
+HTML.HTMLFile = HTMLFile;
 
-	if (!win)
-		return null;
+HTML.addJSFile = addJSFile;
+HTML.addCSSFile = addCSSFile;
+HTML.addHTMLFile = addHTMLFile;
 
-	host = findElement(win, host);
-	if (!host) {
-		log.warn.message('addShadow: could not find host element');
-		return null;
-	}
-	log.message('  host is', host.outerHTML);
+HTML.addFile = addFile;
+HTML.addDir = addDir;
 
-	// *** should consider `content` to be varargs ?
-	if (Array.isArray(content)) {
-		content = processElement(win, content);
-		log.message('  content array', content.outerHTML);
-	} else {
-		content = findElement(win, content);
-		log.message('  content element', content.outerHTML);
-	}
-
-	if (! content) {
-		log.warn.message('addShadow: could not find or create content');
-		return null;
-	}
-
-	var root = host.createShadowRoot();
-	var copy = content;
-	if (content.tagName == 'TEMPLATE') {
-		copy = win.document.importNode(content.content, true);
-		log.message('  importing template in shadowRoot');
-	} else if (content.parentNode !== null) {
-		copy = content.cloneNode(true);
-		log.message('  copying content in shadowRoot');
-	} else {
-		log.message('  inserting content in shadowRoot');
-	}
-
-	if (copy)
-    	root.appendChild(copy);
-    else
-    	log.message('  copy is empty');
-
-	return copy;
 }
-
-// Register a new element
-// *** TODO *** (and to add to the exports)
-function registerElement(win, elName, attr, classyClass) {
-	if (!support.shadowDOM(win)) {
-		log.warn.message('registerElement: browser does not support user-defined HTML elements');
-		return null;
-	}
-
-	if (!win)
-		return null;
-
-	var elProto = Object.create(HTMLElement.prototype, {
-		createdCallback: function() { /* create Classy object with attributes values + field wrappers */ },
-			/* alternatively : don't create object but let the application bind to an object */
-		attachedCallback: function() { /* call object's attach */ },
-		detachedCallback: function() { /* call object's dettach */ },
-		attributeChangedCallback: function(attName, oldVal, newVal) { /* mirror in object */},
-	});
-
-	var elType = win.document.registerElement(name, {
-		prototype: elProto,
-	});
-
-	return elType;
-}
-
-// ==== EXPORTS ====
-
-module.exports = {
-	attr: attr,
-	data: data,
-
-	setAttributes: setAttributes,
-	setStyle: setStyle,
-
-	element: element,
-	elements: elements,
-
-	JSText: JSText,
-	JSFile: JSFile,
-	JS_URL: JS_URL,
-
-	CSSText: CSSText,
-	CSSFile: CSSFile,
-	CSS_URL: CSS_URL,
-	CSSImport: CSSImport,
-
-	HTMLText: HTMLText,
-	HTMLFile: HTMLFile,
-	HTML_URL: HTML_URL,
-	HTMLImport: HTMLImport,
-
-	add: add,
-	remove: remove,
-	replace: replace,
-
-	addJSText: addJSText,
-	addJSFile: addJSFile,
-	addJS_URL: addJS_URL,
-
-	addCSSText: addCSSText,
-	addCSSFile: addCSSFile,
-	addCSS_URL: addCSS_URL,
-	addCSSImport: addCSSImport,
-
-	addHTMLText: addHTMLText,
-	addHTMLFile: addHTMLFile,
-	addHTML_URL: addHTML_URL,
-	addHTMLImport: addHTMLImport,
-
-	addFile: addFile,
-	addDir: addDir,
-
-	addShadow: addShadow,
-};
