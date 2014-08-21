@@ -1,0 +1,15 @@
+{
+	"type": "Platform",
+	"name": "WILD room 2 screens per display",
+	"inherit": "WILD",
+	"wall": {		
+		"env": {
+			"L": "DISPLAY=:0.0",
+			"R": "DISPLAY=:1.0"
+		},
+		"layout": {
+			"L": {"left": 0, "top": 0},
+			"R": {"left": 2560, "top": 0}
+		}
+	}
+}
