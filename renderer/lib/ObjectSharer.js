@@ -109,6 +109,7 @@ var ObjectSharer = ObjectStore.subclass().name('ObjectSharer')
 		},
 
 		// Request an object from the server.
+		// *** THIS CANNOT WORK because the list of sharers is in the SharingServer!!!
 		requestObject: function(oid) {
 			for (var i = 0; i < this.sharers.length; i++) {
 				var obj = this.sharers[i].getObject(oid);

@@ -27,8 +27,8 @@ var Cursor = OO.newClass().name('Cursor')
 			this.set(config);
 
 		this.wrapFields({
-			set x(x) { this._set(x); if (this.app) this.app.updateCursor(this); },
-			set y(y) { this._set(y); if (this.app) this.app.updateCursor(this); },
+			set x(x) { this._set(x); this.updateCursor(); },
+			set y(y) { this._set(y); this.updateCursor(); },
 		});
 	})
 	.methods({
@@ -60,7 +60,10 @@ var Cursor = OO.newClass().name('Cursor')
 					}
 				});
 
-			HTML.add(win, cursor, 'end', this.app.layer.id);
+			if (this.app && this.app.layer)
+				HTML.add(win, cursor, 'end', this.app.layer.id);
+			else
+				log.warn.method(this, 'createCursor', 'app or layer not available');
 		},
 
 		// Remove the cursor's div
@@ -93,6 +96,15 @@ var Cursor = OO.newClass().name('Cursor')
 			} else
 				this.createCursor(tile);
 		},
+
+		updateCursor: function() {
+			if (this.app) {
+				var self = this;
+				this.app.mapReadyTiles(function(tile) {
+					self.adjustPos(tile);
+				});
+			}
+		},
 	})
 ;
 
@@ -112,34 +124,51 @@ var Cursors = App.subclass().name('Cursors')
 			mode: 'grid',
 		});
 
-		var self = this;
-		this.mapReadyTiles(function(tile) {
-			self.createCursors(tile);
+		this.wrapFields({
+			set cursors(list)   { this._set(list); this.createCursors(); },
 		});
+
+		this.createCursors();
+
 	})
 	.methods({
 		// Make sure all cursors exist in the tile
-		createCursors: function(tile) {
+		createCursorsForTile: function(tile) {
 			var self = this;
-			this.cursors.forEach(function(cursor) {
-				// The objects may not have been resolved yet
-				if (cursor && cursor.oid && ! cursor.id)
-					cursor = self.classs().sharer.getObject(cursor.oid);
-				if (cursor) {
-					cursor.app = self;
-					cursor.createCursor(tile);
-				}
+
+			// Local function to create the cursor when it is ready
+			function resolve(cursor, idx) {
+				if (idx >= 0) log.method(self, 'createCursorsForTile', 'resolving pending object', cursor.oid);
+				if (idx >= 0)
+					self.cursors[idx] = cursor;
+				cursor.app = self;
+				cursor.createCursor(tile);
+			}
+
+			this.cursors.forEach(function(cursor, idx) {
+				// Some cursors may not have been received yet:
+				if (cursor.isPendingObject) {
+					log.method(self, 'createCursorsForTile', 'pending object', cursor.oid);
+					cursor.onResolved(function(obj) {
+						resolve(obj, idx);
+					});
+				} else 
+					resolve(cursor, -1);
 			});
 		},
 
-		// Adjust the position of a cursor in all tiles
-		updateCursor: function(cursor) {
+		createCursors: function() {
 			var self = this;
 			this.mapReadyTiles(function(tile) {
-				cursor.adjustPos(tile);
-			});
+				self.createCursorsForTile(tile);
+			});			
 		},
 
+		// This is called after the layer is created for the corresponding tile
+		tileReady: function(tile) {
+			this.createCursorsForTile(tile);
+		},
+		
 		// Called when the layer is removed
 		stop: function() {
 			this.layer.close();

@@ -18,6 +18,43 @@
 var OO = require('./OO');
 var log = require('./Log').logger('ObjectStore');
 
+// The `PendingObject` class.
+// Objects that are referenced but not in the object store.
+// Clients can attach listeners to them to be notified when they are resolved.
+var PendingObject = OO.newClass().name('PendingObject')
+	.fields({
+		isPendingObject: true,
+		oid: null,
+		listeners: [],
+	})
+	.constructor(function(oid) {
+		log.enter(this, 'create', oid);
+		this.oid = oid;
+		log.exit(this, 'create');
+	})
+	.methods({
+		onResolved: function(f) {
+			this.listeners.push(f);
+		},
+
+		offResolved: function(f) {
+			var idx = this.listeners.indexOf(f);
+			if (idx >= 0)
+				this.listeners.splice(idx, 1);
+		},
+
+		resolved: function(obj) {
+			log.enter(this, 'resolved', this.oid, obj);
+			this.listeners.forEach(function(listener) {
+				listener(obj);
+			});
+			this.listeners = [];
+			log.exit(this, 'resolved');
+		}
+	})
+;
+log.spyMethods(PendingObject);
+
 // The `ObjectStore` class.
 var ObjectStore = OO.newClass().name('ObjectStore')
 	.classFields({
@@ -25,6 +62,7 @@ var ObjectStore = OO.newClass().name('ObjectStore')
 	})
 	.fields({
 		objects: {},		// Set of objects being stored.
+		pending: {},		// Set of objects referenced but not in the store.
 		sharedClasses: {},	// The set of classes whose objects are in the store.
 		recordNew: false,	// Whether objects without an oid should be recorded or not.
 	})
@@ -48,8 +86,6 @@ var ObjectStore = OO.newClass().name('ObjectStore')
 		// otherwise a warning is issued.
 		// The oid is used to communicate object identites with clients.
 		recordObject: function(obj) {
-			// Since all objects are received, unlike on the server side,
-			// we do not assign an oid if there isn't one.
 			if (! obj.oid) {
 				if (this.recordNew) {
 					obj.oid = obj._name || (obj.className()+'_'+(ObjectStore.nextId++));
@@ -60,6 +96,14 @@ var ObjectStore = OO.newClass().name('ObjectStore')
 			}
 			log.method(this, 'recordObject', obj.oid, 'store', this._name);
 			this.objects[obj.oid] = obj;
+
+			// If the object was pending, call the listeners if any, 
+			// and remove it from the pending list
+			if (this.pending[obj.oid]) {
+				this.pending[obj.oid].resolved(obj);
+				delete this.pending[obj.oid];
+			}
+
 			return obj.oid;
 		},
 
@@ -122,13 +166,25 @@ var ObjectStore = OO.newClass().name('ObjectStore')
 
 		// Decode values received from a client into actual values.
 		decode: function(value) {
+			var res = null;
+
 			// Simple value: as is.
 			if (!value || typeof(value) != 'object')
 				return value;
 
 			// An object with an `oid` property: one of our objects.
-			if (value.oid && this.objects[value.oid])
-				return this.objects[value.oid];
+//			if (value.oid && this.objects[value.oid])
+//				return this.objects[value.oid];
+			if (value.oid) {
+				res = this.objects[value.oid];
+				// Record pending objects
+				if (! res) {
+					res = this.pending[value.oid];
+					if (! res)
+						res = this.pending[value.oid] = PendingObject.create(value.oid);
+				}
+				return res;
+			}
 
 			// An array: recurse over its elements.
 			if (value instanceof Array) {
@@ -152,27 +208,46 @@ var ObjectStore = OO.newClass().name('ObjectStore')
 		makeObject: function(obj) {
 			if (! obj.oid)
 				return null;
+
+			// Look up object
 			var object = this.objects[obj.oid];
+			var field;
+			
 			if (object) {
 				// Object already exists.
 				log.method(this, 'makeObject', '- returned existing object ', object);
-				// Update its state with the received object.
+
+				// Decode received state
+				for (field in obj)
+					obj[field] = this.decode(obj[field]);
+
+				// Update object with received state
 				object.set(obj);
 				return this.objects[obj.oid];
 			}
+
+			// Object was not found: try to create it.
+
 			// Parse object id to extract class name
 			var match = obj.oid.match(/^(.*)_[0-9]+$/);
 			if (match && match[1]) {
 				var clinfo = this.sharedClasses[match[1]];
+
 				// If we find the class, find or create the object.
 				if (clinfo) {
+					// Decode object fields
+					for (field in obj)
+						obj[field] = this.decode(obj[field]);
+
 					/*** hack for Apps ***/
 					if (clinfo.cls.findObject)
 						object = clinfo.cls.findObject(obj.oid, obj);
 					if (!object)
 					/*** end hack ***/
+
 					object = clinfo.cls.create(obj);
 				}
+
 				// If we have a new object, record it.
 				if (object) {
 					object.oid = obj.oid;

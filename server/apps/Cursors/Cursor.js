@@ -13,7 +13,7 @@ var Cursor = OO.newClass().name('Cursor')
 		nextId: 0,
 	})
 	.fields({
-		id: null,
+		id: null,		// Unique id for the cursor
 		x: 100,
 		y: 100,
 		color: 'yellow',
