@@ -9,9 +9,11 @@ var Path = require('path');
 // Shared modules
 var OO = require('OO');
 var log = require('Log').logger('SlideShow');
+var HTML = require('HTML');
 
 // Renderer modules
 var App = require('../lib/App');
+var Layer = require('../lib/Layer');
 
 // Root of the executable
 var appRoot = Path.join(__dirname, "../..");	// *** probably wrong when the app is packaged
@@ -30,9 +32,16 @@ var SlideShow = App.subclass().name('SlideShow')
 	.constructor(function(config) {
 		this._super(config);
 
+		this.layer = Layer.create({
+			type: 'image',
+			mode: 'grid',
+		});
+
 		this.wrapFields({
 			set currentSlide(path) { this._set(path); this.adjustSlides(); },
 		});
+
+		this.adjustSlides();
 	})
 	.methods({
 		// Return the tilename, which corresponds to the root of the name of the image to load in the tile.
@@ -42,11 +51,6 @@ var SlideShow = App.subclass().name('SlideShow')
 			if (tile.rank !== null)
 				name += '_'+tile.rank;
 			return name;
-		},
-
-		// Called by the framework when the webpage representing the tile is ready
-		tileReady: function(tile) {
-			this.adjustSlide(tile, this.tileName(tile));
 		},
 
 		// Return the absolute path to `file`:
@@ -66,18 +70,26 @@ var SlideShow = App.subclass().name('SlideShow')
 		// Adjust the view
 		adjustSlides: function() {
 			var self = this;
-			this.mapTiles(function(tile) {
+			this.mapReadyTiles(function(tile) {
 				self.adjustSlide(tile, self.tileName(tile));
 			});
 		},
 
 		adjustSlide: function(tile, tileName) {
-			if (! tile) log.warn.method(this, 'adjustSlide', 'No tile!!');
-			else if (! tile.ready) log.warn.method(this, 'adjustSlide', 'Tile not ready!!');
-			else if (! tile.window) log.warn.method(this, 'ajustSlide', 'No window!!');
+			if (!tile || !tile.ready || !tile.window) {	// should not happen
+				log.warn.method('adjustSlide', 'called with tile not ready');
+				return;
+			}
 
-			if (tile && tile.ready && tile.window && this.currentSlide)
-				tile.window.window.location.href = 'file://'+Path.join(this.slidePath(this.currentSlide), 'tiles_byhost', tileName+'.png');			
+			var url = 'file://'+Path.join(this.slidePath(this.currentSlide), 'tiles_byhost', tileName+'.png');
+			HTML.setAttributes(tile.window.window, this.layer.id, {src: url});
+		},
+
+		// Called when the layer is removed
+		stop: function() {
+			this.layer.close();
+			this.layer = null;
+			this._super();
 		},
 	})
 	.shareState()

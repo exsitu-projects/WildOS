@@ -36,7 +36,7 @@ var Layer = OO.newClass().name('Layer')
 	.fields({
 		id: null,		// Element id
 
-		type: 'normal',	// 'normal', 'iframe', 'component'
+		type: 'normal',	// 'normal', 'iframe', 'image'
 		overlay: false,	// If true, layer has no background and is on top of other layers
 		mode: 'tiled',	// 'tiled' for a layer that spans the screen, 'grid' for a layer
 
@@ -91,9 +91,15 @@ var Layer = OO.newClass().name('Layer')
 
 		tileReady: function(tile) {
 			var layerTag = 'div class=layer';
-			if (this.type == 'iframe')
-				layerTag = 'iframe scrolling=no class=layer';
-
+			switch (this.type) {
+				case 'iframe':
+					layerTag = 'iframe scrolling=no class=layer';
+					break;
+				case 'image':
+					layerTag = 'img class=layer';
+					break;
+			}
+				
 			var position = 'absolute';
 			if (this.mode == 'grid')	// In grid mode, we create one full-screen layer per tile at 0,0
 				position = 'fixed';
@@ -125,14 +131,20 @@ var Layer = OO.newClass().name('Layer')
 			//	log.warn.method(this, 'tileReady (before set url)', 'layerElement.setAttibute undefined!!');
 
 			// Load content if any
+			var win = tile.window.window;
 			if (this.url) {
-				if (this.type == 'iframe')
-					// layerElement.setAttibute('src', this.url);	*** does not work (see above)
-					HTML.setAttributes(tile.window.window, this.id, {src: this.url});
-				else if (this.url.match(/^http?s:\/\//))
-					HTML.addHTML_URL(tile.window.window, this.url, 'content', layerElement);
-				else
-					HTML.addHTMLFile(tile.window.window, this.url, 'content', layerElement);
+				switch (this.type) {
+					case 'iframe':
+					case 'image':
+						// layerElement.setAttibute('src', this.url);	*** does not work (see above)
+						HTML.setAttributes(win, this.id, {src: this.url});
+						break;
+					default:
+						if (this.url.match(/^http?s:\/\//))
+								HTML.addHTML_URL(win, this.url, 'content', layerElement);
+						else
+							HTML.addHTMLFile(win, this.url, 'content', layerElement);	
+				}
 			}
 		},
 
