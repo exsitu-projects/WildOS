@@ -75,7 +75,7 @@ var Browser = App.subclass().name('Browser')
 			this.offsetY += dY;
 		},
 
-		// Called by the UI to zoom the page.
+		// Zoom the content of the page (and resize it accordingly)
 		zoomBy: function(dZ, x, y) {
 			log.method(this, 'zoomBy', dZ, x, y);
 			this.offsetX = x + (this.offsetX - x) * dZ;
@@ -83,7 +83,7 @@ var Browser = App.subclass().name('Browser')
 			this.zoom *= dZ;
 		},
 
-		// Called by the UI to resize the page
+		// Resize the page (without scaling the content)
 		resizeBy: function(dW, dH) {
 			log.method(this, 'resizeBy', dW, dH);
 			var width = this.width + dW;

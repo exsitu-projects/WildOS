@@ -235,7 +235,7 @@ PanZoomResize.prototype.start = function() {
 			var deltaZ = 1;
 			if (deltaY > 0)
 				deltaZ = 1.05;
-			else if (delta < 0)
+			else if (deltaY < 0)
 				deltaZ = 1 / 1.05;
 			else
 				return;

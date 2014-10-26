@@ -184,13 +184,13 @@ var Layer = OO.newClass().name('Layer')
 			var attrSet = {};
 
 			// Overlay layer: make it transparent and ignore input events
-			if (frame.overlay) {
+			if (tile.overlay) {
 				attrSet.backgroundColor = 'transparent';
 				attrSet.pointerEvents = 'none';
 			}
 
 			// Grid mode: ignore tile offset and cover entire tile
-			if (frame.mode == 'grid') {
+			if (tile.mode == 'grid') {
 				attrSet.left = 0;
 				attrSet.top = 0;
 				attrSet.width = tile.width;
@@ -204,16 +204,16 @@ var Layer = OO.newClass().name('Layer')
 				attrSet.left = Math.round(frame.left - tile.originX)+"px";
 			if (frame.top !== undefined)
 				attrSet.top = Math.round(frame.top - tile.originY)+"px";
-			// If size not specified or zero (or negative), make it big enough to cover the tile
+//			// If size not specified or zero (or negative), make it big enough to cover the tile
 			// *** this does not take into account the zoom factor
 			if (frame.width !== undefined && frame.width > 0)
 				attrSet.width = Math.round(frame.width)+'px';
-			else
-				attrSet.width = Math.round((frame.left || 0) + tile.width - tile.originX)+"px";
+//			else
+//				attrSet.width = Math.round((frame.left || 0) + tile.width - tile.originX)+"px";
 			if (frame.height !== undefined && frame.height > 0)
 				attrSet.height = Math.round(frame.height)+'px';
-			else
-				attrSet.height = Math.round((frame.top || 0) + tile.height - tile.originY)+"px";
+//			else
+//				attrSet.height = Math.round((frame.top || 0) + tile.height - tile.originY)+"px";
 			// Apply zoom to the layer (affects the size as well as the content)
 			if (frame.zoom) {
 				attrSet['-webkit-transform'] = "scale("+(Math.round(frame.zoom *100)/100)+")";
