@@ -33,7 +33,7 @@ The `Applications` menu lists the available applications. Select an application 
 The general format of the `wildos` command is as follows:
 
 ```
-	% wildos [start] [-n|--no-clients] [-w|--wall config] [-c|--config path] [-p|--port number] [-d|--debug [0|1|2]] [-l|--log file] [app ...]
+	% wildos [start] [-n|--no-clients] [-w|--wall config] [-c|--config path] [-p|--port number] [-d|--debug [0|1|2]] [-l|--log file] [--no-GUI] [app ...]
 	% wildos stop
 ```
 
@@ -45,6 +45,7 @@ The first form runs the server and takes the following arguments:
 * `-p|--port <number>` specifies a different port number than the one specified in the config file for the server to listen to;
 * `-d|--debug [0|1|2|3]` specifies debugging level: 0 (no logging), 1 (logging window hidden), 2 (logging window open), 3 (logging redirected to the console);
 * `-l|--log file` specifies the log configuration file (defaults to `logdefault.js`);
+* `--no-GUI` specifies to run the server faceless (see below);
 * `app ...` is an optional list of apps. The available apps, such as `Browser` are described later in this document.
 
 The second form stops the rendering clients (but not the server).
@@ -100,10 +101,30 @@ The full list of options is as follows:
 * `-s, --server <name[:port]>` specifies the server and, optionally, port number to connect to (defaults to $SSH_CLIENT and the port number specified by `--port`);
 * `-l, --local` runs the renderer locally: server is on localhost;
 * `-p, --port <number>` specifies the port number on the server (defaults to 8080);
-* `-h, --hostname <name>` 'Host name to send to server (defaults to the hostname returned by node.js);
-* `-i, --instance <name>` 'Instance name (required);
-* `-d, --debug [level]` 'Enable debugging (same as for the server above);
+* `-h, --hostname <name>` specifies the host name to send to the server (defaults to the hostname returned by node.js);
+* `-i, --instance <name>` specifies the instance name (required);
+* `-d, --debug [level]` enables debugging (same as for the server above);
 * `--log file` 'Log config file;
 
 Note that additional options are processed by node-webkit.
 Of particular interest is the option `--remote-debugging-port=9222` (you can use a different port number), which lets you debug the client from a remote machine by connecting to the URL `http://<client>:9222` from a Chrome browser.
+
+### Running a faceless server ###
+
+When the server is running on a computer that does not have a display directly connected to it, it may be useful to avoid displaying the platform user interface by running the server in so-called faceless mode.
+However, this also means that a number of interactive controls are not available anymore
+(a future version may support a version of the platform interface running remotely, in a regular browser.)
+
+You can run the server in faceless mode by adding the option `--no-GUI`.
+This still uses `node-webkit` but does not open any window nor change the application menus.
+
+Alternatively, you can run the server with `node.js` as follows:
+
+	% cd server
+	% node wildos.js [same options as wildos]
+
+Note that when running with `node.js`, the preferences of the server and the state that applications may have stored in the webkit localStorage are not used, since they are not accessible.
+The applications also cannot save such state.
+(This may be fixed in future versions.)
+
+To quit a faceless server, simply type control-C.

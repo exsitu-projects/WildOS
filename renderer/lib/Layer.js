@@ -184,13 +184,13 @@ var Layer = OO.newClass().name('Layer')
 			var attrSet = {};
 
 			// Overlay layer: make it transparent and ignore input events
-			if (tile.overlay) {
+			if (this.overlay) {
 				attrSet.backgroundColor = 'transparent';
 				attrSet.pointerEvents = 'none';
 			}
 
 			// Grid mode: ignore tile offset and cover entire tile
-			if (tile.mode == 'grid') {
+			if (this.mode == 'grid') {
 				attrSet.left = 0;
 				attrSet.top = 0;
 				attrSet.width = tile.width;

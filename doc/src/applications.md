@@ -8,6 +8,9 @@ The Browser application lets you display any web page on the tiled display.
 You specify the web page to be displayed either in the platform window or in the web controller.
 In the platform window, you can pan the page by dragging the miniature image of the page, and you can zoom it in/out by using the scrollwheel of your mouse when the cursor is on the miniature image. This makes it easy to scale the web page to the size of your wall display.
 
+These functions are also available on the web controller: tap one of the three buttons `Zoom`, `Move` or `Resize`;
+a trackpad appears; dragging in the trackpad controls the corresponding function.
+
 ![Screendump of the browser app](img/browser.png)
 
 ![Screendump of the browser web controller](img/browser-controller.png)

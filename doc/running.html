@@ -31,6 +31,7 @@
 <li class="toc3"><a href="#runningthewebclients">Running the web clients</a></li>
 <li class="toc3"><a href="#shuttingdown">Shutting down</a></li>
 <li class="toc3"><a href="#runningrenderersbyhand">Running renderers by hand</a></li>
+<li class="toc3"><a href="#runningafacelessserver">Running a faceless server</a></li>
 
             </ul>
           </li>
@@ -94,7 +95,7 @@ The <code>Shutdown</code> button sends a message to the clients to quit them gra
 
 <p>The general format of the <code>wildos</code> command is as follows:</p>
 
-<pre><code>    % wildos [start] [-n|--no-clients] [-w|--wall config] [-c|--config path] [-p|--port number] [-d|--debug [0|1|2]] [-l|--log file] [app ...]
+<pre><code>    % wildos [start] [-n|--no-clients] [-w|--wall config] [-c|--config path] [-p|--port number] [-d|--debug [0|1|2]] [-l|--log file] [--no-GUI] [app ...]
     % wildos stop
 </code></pre>
 
@@ -107,6 +108,7 @@ The <code>Shutdown</code> button sends a message to the clients to quit them gra
 <li><code>-p|--port &lt;number&gt;</code> specifies a different port number than the one specified in the config file for the server to listen to;</li>
 <li><code>-d|--debug [0|1|2|3]</code> specifies debugging level: 0 (no logging), 1 (logging window hidden), 2 (logging window open), 3 (logging redirected to the console);</li>
 <li><code>-l|--log file</code> specifies the log configuration file (defaults to <code>logdefault.js</code>);</li>
+<li><code>--no-GUI</code> specifies to run the server faceless (see below);</li>
 <li><code>app ...</code> is an optional list of apps. The available apps, such as <code>Browser</code> are described later in this document.</li>
 </ul>
 
@@ -169,14 +171,35 @@ The full list of options is as follows:</p>
 <li><code>-s, --server &lt;name[:port]&gt;</code> specifies the server and, optionally, port number to connect to (defaults to $SSH_CLIENT and the port number specified by <code>--port</code>);</li>
 <li><code>-l, --local</code> runs the renderer locally: server is on localhost;</li>
 <li><code>-p, --port &lt;number&gt;</code> specifies the port number on the server (defaults to 8080);</li>
-<li><code>-h, --hostname &lt;name&gt;</code> &#8217;Host name to send to server (defaults to the hostname returned by node.js);</li>
-<li><code>-i, --instance &lt;name&gt;</code> &#8217;Instance name (required);</li>
-<li><code>-d, --debug [level]</code> &#8217;Enable debugging (same as for the server above);</li>
+<li><code>-h, --hostname &lt;name&gt;</code> specifies the host name to send to the server (defaults to the hostname returned by node.js);</li>
+<li><code>-i, --instance &lt;name&gt;</code> specifies the instance name (required);</li>
+<li><code>-d, --debug [level]</code> enables debugging (same as for the server above);</li>
 <li><code>--log file</code> &#8217;Log config file;</li>
 </ul>
 
 <p>Note that additional options are processed by node-webkit.
 Of particular interest is the option <code>--remote-debugging-port=9222</code> (you can use a different port number), which lets you debug the client from a remote machine by connecting to the URL <code>http://&lt;client&gt;:9222</code> from a Chrome browser.</p>
+
+<h3 id="runningafacelessserver">Running a faceless server</h3>
+
+<p>When the server is running on a computer that does not have a display directly connected to it, it may be useful to avoid displaying the platform user interface by running the server in so-called faceless mode.
+However, this also means that a number of interactive controls are not available anymore
+(a future version may support a version of the platform interface running remotely, in a regular browser.)</p>
+
+<p>You can run the server in faceless mode by adding the option <code>--no-GUI</code>.
+This still uses <code>node-webkit</code> but does not open any window nor change the application menus.</p>
+
+<p>Alternatively, you can run the server with <code>node.js</code> as follows:</p>
+
+<pre><code>% cd server
+% node wildos.js [same options as wildos]
+</code></pre>
+
+<p>Note that when running with <code>node.js</code>, the preferences of the server and the state that applications may have stored in the webkit localStorage are not used, since they are not accessible.
+The applications also cannot save such state.
+(This may be fixed in future versions.)</p>
+
+<p>To quit a faceless server, simply type control-C.</p>
 
     </div>
     <script type="text/javascript" src="assets/js/jquery-1.11.0.min.js"></script>
