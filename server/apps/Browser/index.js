@@ -45,16 +45,17 @@ var Browser = App.subclass().name('Browser')
 			// The path for `injectJSFile` is relative to the url of the document.
 			// Since we don't control this, we use an absolute path, based on
 			// `this.__dirname`, the absolute path from which the app was loaded.
-			platform.injectJSFile('file://'+this.__dirname+'/jquery.mousewheel.min.js', 'mousewheelJS');
-			platform.injectJSFile('file://'+this.__dirname+'/ui.js', 'browserJS');
+			platform.GUI.injectJSFile('file://'+this.__dirname+'/jquery.mousewheel.min.js', 'mousewheelJS');
+			platform.GUI.injectJSFile('file://'+this.__dirname+'/ui.js', 'browserJS');
 		},
 
 		// Called when the app is about to be unloaded.
 		stop: function() {
 			this._super();
 
-			if (this.platform.window)
-				this.platform.window.window.browserApp.stop();
+			var win = this.platform.GUI.getUIWindow();
+			if (win)
+				win.browserApp.stop();
 		},
 
 		// These methods are meant to be called by clients to change the state of the app

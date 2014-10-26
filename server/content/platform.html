@@ -99,11 +99,11 @@
 </head>
 <body>
 	<div id="top">
-		<button onmousedown='rollDown(platform.menu, this, event)'>Platform</button>
-		<button onmousedown='rollDown(platform.apps.menu, this, event)'>Apps</button>
+		<button onmousedown='rollDown(platform.GUI.getPlatformMenu(), this, event)'>Platform</button>
+		<button onmousedown='rollDown(platform.GUI.getAppsMenu(platform.App), this, event)'>Apps</button>
 		<span style="color:grey">(Right click tiles for renderer menu)</span>
-		<button style="float: right" onclick='platform.showTraceWindow()'>Open log</button>
-		<button style="float: right" onclick='platform.showDevTools()'>Dev tools</button>
+		<button style="float: right" onclick='platform.GUI.showTraceWindow()'>Open log</button>
+		<button style="float: right" onclick='platform.GUI.showDevTools()'>Dev tools</button>
 	</div>
 	<div id="platform">
 	</div>

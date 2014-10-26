@@ -9,10 +9,13 @@
 // a motion capture system, a tablet used as a controller, etc.
 //
 
-// *** pending problem - this does not work
+// This is only called when running under node.js
 process.on('SIGINT', function() {
 	console.log('Interrupt - quitting');
-	gui.App.quit();
+	//gui.App.quit();
+	if (global.platform)
+		global.platform.shutdown();
+	process.exit(1);
 });
 
 // Command line options
@@ -27,6 +30,7 @@ program
 	.option('-n, --no-clients', 'Do not start/stop clients with server')
 	.option('-d, --debug [level]', 'Enable debugging')
 	.option('-l, --log file', 'Log config file')
+	.option('--no-GUI', 'Do not create graphical user interface')
 ;
 
 // Node modules
@@ -37,6 +41,7 @@ var Log = require('Log');
 var log = null;
 
 // Internal modules - initialized after logging has been configured
+var GUI = null; // require('./lib/gui');
 var App = null; // require('./lib/App');
 var Config = null; // require('./lib/config');
 var Platform = null; // require('./lib/Platform');
@@ -74,6 +79,7 @@ function processLogDebugOptions(program) {
 	log = Log.logger('WildOS');
 
 	// Now that the logger is configured, load modules
+	GUI = require('./lib/gui'); if (! program.GUI) GUI.disable();
 	App = require('./lib/App');
 	Config = require('./lib/config');
 	Platform = require('./lib/Platform');
@@ -125,16 +131,20 @@ function loadPlatform(name, cb) {
 	// Give access to program arguments
 	platform.program = program;
 
+	// Give access to GUI
+	platform.GUI = GUI;
+
 	// Create the platform UI, if any, start the platform and notify the apps.
 	// If there is a UI, we only start the platform and notify the apps once the UI is loaded,
 	// so that both the platform and the apps have access to it.
 	var init = function() {
 		platform.addDevices();
+		GUI.getPlatformMenu(platform);		
 		if (cb)
 			cb(platform);
 	};
 
-	var win = platform.makeUI();
+	var win = GUI.makePlatformUI(platform, program.showToolbar);
 	if (win) {
 		log.message('loadPlatform', name, '- will start when window ready');
 		win.once('loaded', init);
@@ -163,7 +173,7 @@ function startServerAndApps(platform) {
 	server.start();
 
 	// Create the Applications menu
-	App.makeMenu();
+	GUI.getAppsMenu(App);
 
 	// Run the apps (specified as the remaining arguments on the command line)
 	var appNames = program.args;
@@ -245,3 +255,27 @@ exports.init = function() {
 	// so that the UI can register listeners, etc. 
 	return platform;
 };
+
+
+// Launch with node.js instead of webkit.
+// There is no 'window' object under node, and therefore the GUI will disable itself.
+// Note that in this case we're not using the stored preferences.
+// *** maybe they should be saved by node-webkit in a json file rather than in the localStorage?
+if (typeof window === 'undefined') {
+	program.parse(process.argv);
+
+	// Process logging and debugging options
+	processLogDebugOptions(program);
+
+	// Get platform name: --wall argument, otherwise $WALL, defaulting to 'WILD'
+	/*jshint sub:true */
+	var platformName = program.wall || process.env["WALL"] || 'WILD';
+	/*jshint sub:false */
+
+	// Create the platform
+	// When the platform is ready, start the server and the apps
+	var platform = loadPlatform(platformName, startServerAndApps);
+
+	// Store platform in global object
+	global.platform = platform;
+}

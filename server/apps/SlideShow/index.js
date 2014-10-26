@@ -57,18 +57,20 @@ var SlideShow = App.subclass().name('SlideShow')
 			// The path for `injectJSFile` is relative to the url of the document.
 			// Since we don't control this, we use an absolute path, based on
 			// `this.__dirname`, the absolute path from which the app was loaded.
-			platform.injectJSFile('file://'+this.__dirname+'/ui.js', 'slideShowJS');
+			platform.GUI.injectJSFile('file://'+this.__dirname+'/ui.js', 'slideShowJS');
 
 			// Make the app an emitter to signal state changes to the local UI.
 			this.uievents = new events.EventEmitter();
 
-			var gui = process.mainModule.exports.gui;
-			var url = '../apps/SlideShow/content/serverBrowser.html';	// URL is relative to the lib folder
-			this.browserWindow = gui.Window.open(url, {
-				width: 1200,
-				height: 800,
-				toolbar: platform.program.showToolbar,
-			});
+			var gui = platform.GUI.getGUI();
+			if (gui) {
+				var url = '../apps/SlideShow/content/serverBrowser.html';	// URL is relative to the lib folder
+				this.browserWindow = gui.Window.open(url, {
+					width: 1200,
+					height: 800,
+					toolbar: platform.program.showToolbar,
+				});				
+			}
 		},
 
 		// Called when the app is about to be unloaded.
@@ -77,8 +79,9 @@ var SlideShow = App.subclass().name('SlideShow')
 
 			platform.server.removeRoute(urlRoot);
 
-			if (this.platform.window)
-				this.platform.window.window.slideShowApp.stop();
+			var win = this.platform.GUI.getUIWindow();
+			if (win)
+				win.slideShowApp.stop();
 
 			if (this.browserWindow)
 				this.browserWindow.close();

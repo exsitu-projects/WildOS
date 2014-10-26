@@ -51,8 +51,11 @@ var WebControllers = Device.subclass().name('WebControllers')
 
 		//
 		createUI: function() {
-			var gui = process.mainModule.exports.gui;
 			var platform = this.findAncestor({type: 'Platform'});
+			var gui = platform.GUI.getGUI();
+			if (! gui)
+				return null;
+
 			var hostname = this.config.hostname || os.hostname();
 			var url = '../content/qrcode.html#'+hostname+':'+platform.serverPort;	// URL is relative to the lib folder
 			// We can't set the position here so we hide the window and it positions and shows itself

@@ -28,6 +28,7 @@ var log = require('Log').logger('App');
 var Config = require('./config');
 var ObjectSharer = require('./ObjectSharer');
 var SharingClient = require('./SharingClient');
+var GUI = require('./gui');
 
 // The server-side `App` class.
 var App = OO.newClass().name('App')
@@ -42,70 +43,6 @@ var App = OO.newClass().name('App')
 		defaultSearchPath: 'apps:../apps',	// default search path for apps
 	})
 	.classMethods({
-
-		// Create the Apps menu
-		makeMenu: function() {
-			// Create Platform menu in UI
-			var gui = null;
-			try {
-				gui = window.require('nw.gui');
-			} catch(e) {
-				// We're not running under node-webkit - give up
-				this.menu = null;
-				return;
-			}
-
-			// Create a menu item for the Apps menu
-			var self = this;
-			function makeItem(menu, appName) {
-				menu.append(new gui.MenuItem({
-					label: appName,
-					type: 'checkbox',
-					checked: self.instances[appName],
-					click: function() { 
-						if (self.instances[appName])
-							self.unloadApp(appName);
-						else
-							self.loadApp(appName);
-					}
-				}));
-			}
-
-			var win = gui.Window.get();
-			if (!win.menu)
-				win.menu = new gui.Menu({ type: 'menubar' });
-			var menuBar = win.menu;
-
-			var appsMenu = new gui.Menu();
-			var apps = this.availableApps();
-			for (var i = 0; i < apps.length; i++)
-				makeItem(appsMenu, apps[i]);
-			
-			menuBar.insert(new gui.MenuItem({
-				label: 'Applications',
-				submenu: appsMenu,
-			}), process.platform === 'darwin' ? 3 : 0);	// only Mac OS has predefined menus
-
-			this.menu = appsMenu;
-		},
-
-		// Check/uncheck app in apps menu
-		checkAppMenuItem: function(appName, checked) {
-			if (! this.menu)
-				return;	// no GUI
-
-			var items = this.menu.items;
-			for (var i = 0; i < items.length; i++) {
-				var item = items[i];
-				if (item.label == appName) {
-					item.checked = checked;
-					return;
-				}
-			}
-			log.warn.message('*** app', appName, 'not found in menu');
-			// not found
-		},
-
 		// Change the search paths for app modules.
 		// Defaults to `apps` and `../apps` (relative to `server`)
 		setSearchPath: function(path) {
@@ -212,7 +149,7 @@ var App = OO.newClass().name('App')
 				app.started();
 
 				// Check it in App menu
-				this.checkAppMenuItem(appName, true);
+				GUI.checkAppsMenuItem(appName, true);
 
 				log.exit(this, 'loadApp', '- app', appName, 'created');
 				return app;
@@ -279,7 +216,7 @@ var App = OO.newClass().name('App')
 			log.enter(this, 'unregister', app.name);
 
 			// Uncheck it in App menu
-			this.checkAppMenuItem(app.name, false);
+			GUI.checkAppsMenuItem(app.name, false);   
 
 			// Remove the app from our records
 			var i = this.apps.indexOf(app);

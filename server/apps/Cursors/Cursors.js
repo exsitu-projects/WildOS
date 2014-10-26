@@ -34,7 +34,7 @@ var Cursors = App.subclass().name('Cursors')
 			// The path for `injectUIScript` is relative to the url of the document.
 			// Since we don't control this, we use an absolute path, based on
 			// `this.__dirname`, the absolute path from which the app was loaded.
-			platform.injectJSFile('file://'+this.__dirname+'/ui.js', 'cursorsJS');
+			platform.GUI.injectJSFile('file://'+this.__dirname+'/ui.js', 'cursorsJS');
 
 			Cursor.wall = platform.findDevice({type: 'Surface'});
 
@@ -62,8 +62,9 @@ var Cursors = App.subclass().name('Cursors')
 		stop: function() {
 			this._super();
 
-			if (this.platform.window)
-				this.platform.window.window.cursorsApp.stop();
+			var win = this.platform.GUI.getUIWindow();
+			if (win)
+				win.cursorsApp.stop();
 		},
 
 		// Find a cursor by name.

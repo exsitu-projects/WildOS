@@ -83,8 +83,8 @@ var Surface = Device.subclass().name('Surface')
 			// Inject CSS and JS in platform UI.
 			// Because the insertion and execution of JS is asynchronous
 			// we create the tiles in the callback called when the JS is done.
-			platform.injectCSSFile('../devices/Surface/content/surface-ui.css');
-			platform.injectJSFile('../devices/Surface/content/surface-ui.js', createTiles);
+			platform.GUI.injectCSSFile('../devices/Surface/content/surface-ui.css');
+			platform.GUI.injectJSFile('../devices/Surface/content/surface-ui.js', createTiles);
 		},
 
 		// Add a tile to the surface, whose size and position are stored in `options`
