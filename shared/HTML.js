@@ -282,7 +282,7 @@ function processContent(win, elem, content) {
 			if (content.match(/^</))	// it may be HTML
 				elem.insertAdjacentHTML('beforeend', content);
 			else
-				elem.insertBefore(win.document.createTextNode(content));
+				elem.insertBefore(win.document.createTextNode(content), null);
 			break;
 
 		case 'function':
@@ -291,9 +291,9 @@ function processContent(win, elem, content) {
 
 		case 'object':
 			if (content instanceof win.Node)
-				elem.insertBefore(content);
+				elem.insertBefore(content, null);
 			else if (Array.isArray(content))
-				elem.insertBefore(processElement(win, content));
+				elem.insertBefore(processElement(win, content), null);
 			else
 				log.warn.message('processContent: unknow content type', content.constructor.toString());
 			break;
@@ -352,7 +352,7 @@ function processTag(win, tag) {
 			// and elements are added to this child
 			if (tag == 'TEMPLATE') {
 				log.message('processTag: template tag: creating document fragment');
-				elem.insertBefore(win.document.createDocumentFragment());
+				elem.insertBefore(win.document.createDocumentFragment(), null);
 			}
 						
 			return elem;
@@ -504,7 +504,7 @@ function HTMLText(win, text, attr) {
 	var root = win.document.createDocumentFragment();
 	var node = doc.body;
 	while (node.firstChild) 
-		root.insertBefore(node.firstChild);
+		root.insertBefore(node.firstChild, null);
 
 	if (attr && root.firstElementChild)
 		setAttrSet(root.firstElementChild, attr);
@@ -556,7 +556,7 @@ function HTML_URL(win, url, attr) {
 		// Nodes are removed as they are transferred to the document,
 		// hence the loop on firstChild:
 		while(body.firstChild)
-			result.insertBefore(body.firstChild);
+			result.insertBefore(body.firstChild, null);
 
 		// Set attributes on first inserted node
 		if (attr && result.firstChild)

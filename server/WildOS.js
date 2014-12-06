@@ -256,16 +256,16 @@ exports.init = function() {
 	return platform;
 };
 
-
 // Launch with node.js instead of webkit.
 // There is no 'window' object under node, and therefore the GUI will disable itself.
 // Note that in this case we're not using the stored preferences.
 // *** maybe they should be saved by node-webkit in a json file rather than in the localStorage?
-if (typeof window === 'undefined') {
+exports.headless = function() {
 	program.parse(process.argv);
 
 	// Process logging and debugging options
 	processLogDebugOptions(program);
+	log.message('runnning headless');
 
 	// Get platform name: --wall argument, otherwise $WALL, defaulting to 'WILD'
 	/*jshint sub:true */
@@ -278,4 +278,4 @@ if (typeof window === 'undefined') {
 
 	// Store platform in global object
 	global.platform = platform;
-}
+};

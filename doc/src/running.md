@@ -121,7 +121,7 @@ This still uses `node-webkit` but does not open any window nor change the applic
 Alternatively, you can run the server with `node.js` as follows:
 
 	% cd server
-	% node wildos.js [same options as wildos]
+	% node headless.js [same options as wildos]
 
 Note that when running with `node.js`, the preferences of the server and the state that applications may have stored in the webkit localStorage are not used, since they are not accessible.
 The applications also cannot save such state.
