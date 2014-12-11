@@ -25,10 +25,14 @@ then
         if [ $# -ge 1 -a -d "$1" -a -f "$1/package.json" ]
         then
                 # node-webkit wants a full path for the package
-                case $1 in
-                        /*) PACKAGE=$1 ;;
-                        *) PACKAGE=`pwd`/$1 ;;
-                esac
+#               case $1 in
+#                       /*) PACKAGE=$1 ;;
+#                       *) PACKAGE=`pwd`/$1 ;;
+#               esac
+# Do this instead because otherwise the app protocol does not seem to work!
+                cd $1
+                PACKAGE=.
+###
                 shift
                 "$NW" "$PACKAGE" $*
         else
@@ -43,10 +47,14 @@ fi
 if [ $# -ge 1 -a -d "$1" -a -f "$1/package.json" ]
 then
         # node-webkit wants a full path for the package
-        case $1 in
-                /*) PACKAGE=$1 ;;
-                *) PACKAGE=`pwd`/$1 ;;
-        esac
+#       case $1 in
+#               /*) PACKAGE=$1 ;;
+#               *) PACKAGE=`pwd`/$1 ;;
+#       esac
+# Do this instead because otherwise the app protocol does not seem to work!
+        cd $1
+        PACKAGE=`pwd`
+###
         shift
         open -n "$NWAPP" --args "$PACKAGE" $*
 else
