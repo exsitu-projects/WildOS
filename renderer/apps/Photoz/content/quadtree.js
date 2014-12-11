@@ -53,15 +53,15 @@ function createPhoto(node) {
 	var data = "";
 
 	// Store the paths to the multiple resolutions of the image in data- attributes
-	if (img.full) {
+	if (img && img.full) {
 		src = img.full;
 		data += ' data-full="'+img.full+'"';
 	}
-	if (img.half) {
+	if (img && img.half) {
 		src = img.half;
 		data += ' data-half="'+img.half+'"';
 	}
-	if (img.quarter) {
+	if (img && img.quarter) {
 		src = img.quarter;
 		data += ' data-quarter="'+img.quarter+'"';			
 	}

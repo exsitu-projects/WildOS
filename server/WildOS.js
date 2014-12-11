@@ -18,6 +18,17 @@ process.on('SIGINT', function() {
 	process.exit(1);
 });
 
+function checkVersion() {
+	// Check node-webkit version
+	var nwversion = process.versions['node-webkit'];
+	var nodeversion = process.versions['node'];
+	if (nwversion) {
+		nwversion = nwversion.split('.');
+	} else {
+		// not running under node or node-webkit?!?
+	}	
+}
+
 // Command line options
 var program = require('commander');
 
@@ -169,7 +180,7 @@ function startServerAndApps(platform) {
 	log.enter(null, 'startServerAndApps');
 
 	// Create the web and websocket servers.
-	var server = platform.server = Server.create(platform, { port: platform.serverPort });
+	var server = platform.server = App.server = Server.create(platform, { port: platform.serverPort });
 	server.start();
 
 	// Create the Applications menu

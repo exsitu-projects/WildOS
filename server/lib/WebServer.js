@@ -6,6 +6,7 @@
 // Node modules
 var express = require('express');
 var http = require('http');
+var os = require('os');
 
 // Shared modules
 var OO = require('OO');
@@ -28,6 +29,11 @@ var WebServer = OO.newClass().name('WebServer')
 		log.newObject(this);
 	})
 	.methods({
+		// Return the root URL for this server
+		rootURL: function() {
+			return 'http://'+os.hostname()+':'+this.port;
+		},
+
 		// Edit the routes in the Express server.
 		// *** This is not officially supported, but there does not seem to be a proper way to do it.
 		insertRoute: function(path, dir) {

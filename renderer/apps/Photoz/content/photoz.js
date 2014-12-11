@@ -1,37 +1,25 @@
 // Photoz - View and autozoom photo collections
 // (c) 2013-2014 - Michel Beaudouin-Lafon - mbl@lri.fr
 
-// Update the directories in the index to be relative to the current directory
-if (photos.fullFrameDir)
-	photos.fullFrameDir = photos.dir + '/' + photos.fullFrameDir;
-if (photos.halfFrameDir)
-	photos.halfFrameDir = photos.dir + '/' + photos.halfFrameDir;
-if (photos.quarterFrameDir)
-	photos.quarterFrameDir = photos.dir + '/' + photos.quarterFrameDir;
+// The Photoz app
+var photoz;
 
-// Return a random photo from the index, making sure that each photo is used at most once.
-var unused = [];
+// Called by quadtree
 function getNextPhotoFor(node) {
-	// When `unused` is empty, refill with all photos
-	if (unused.length === 0) {
-		unused.push.apply(unused, photos.all);
-	}
+	var photo = photoz.getNextUnusedPhoto();
+	if (! photo)
+		return null;
 
-	// Pick an unused photo at random
-	var idx = Math.floor(Math.random()*unused.length);
-	var photo = unused[idx];
-	// Remove it from the unused array
-	unused.splice(idx, 1);
-
-	// Return the path to the photo or the collection of paths if we have multiple resolutions
-	if (photos.halfFrameDir)
-		return {
-			full: photos.fullFrameDir+'/'+photo.file,
-			half: photos.halfFrameDir+'/'+photo.file,
-			quarter: photos.quarterFrameDir+'/'+photo.file,
-		};
-
-	return photos.dir+'/'+photo.file;
+	var server = global.renderer;
+	var root = photoz.imageRoot; //'http://'+server.hostname+':'+server.port+'/Photoz/photoz/';
+	if (! root.match(/\/$/))
+		root += '/';
+	
+	return {
+		full: root + photoz.fullFrameDir + photo,
+		half: root + photoz.halfFrameDir + photo,
+		quarter: root + photoz.quarterFrameDir + photo,
+	};
 }
 
 // Get the size of the display window
@@ -96,8 +84,10 @@ function switchToResolution(img, res) {
 		img.attr('src', next);
 }
 
-// Get started!
-$(document).ready(function () {
+function initContent() {
+	makeQuadTree(2, displayWidth, displayHeight);	// # levels, width, height
+//	makeQuadTree(3, displayWidth, displayHeight);	// # levels, width, height
+
 	// Assign initial positions
 	$('.photo').each(function() {
 		setAnimProps($(this));
@@ -156,4 +146,15 @@ $(document).ready(function () {
 
 	// Wait 5 seconds before starting autozoom
 	setTimeout(startAnimation, Math.round(Math.random()*5000));
+}
+
+// Get started!
+$(document).ready(function() {
+	//get the Photoz app object
+	photoz = global.renderer.apps.getApp('Photoz');
+
+//	if (photoz.unused.length > 0)
+		initContent();
+//	else // content not here yet: init when content arrives
+//		photoz.onLoad = initContent;
 });

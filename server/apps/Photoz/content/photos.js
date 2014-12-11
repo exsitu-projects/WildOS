@@ -1,7 +1,7 @@
 // Photoz - View and autozoom photo collections
 // (c) 2013-2014 - Michel Beaudouin-Lafon - mbl@lri.fr
 
-var photos = {};
+var photos = module.exports = {};
 photos.dir ="photos";
 photos.fullFrameDir = "fullSize";
 photos.halfFrameDir = "halfSize";

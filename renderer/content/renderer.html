@@ -147,7 +147,7 @@ p { margin: 5px; padding: 0;}
 			e.stopPropagation();
 		});
 
-		process.mainModule.exports.init();
+		global.renderer = process.mainModule.exports.init();
 	});
 </script>
 </head>

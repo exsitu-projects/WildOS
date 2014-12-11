@@ -102,6 +102,9 @@ exports.init = function () {
 	// Create and start the client.
 	var renderer = App.server = Renderer.create(program).connect();
 
+	// Make the App objects available to client code
+	renderer.apps = App;
+
 	// Hack to make the logging window available
 	//App.logWindow = win;
 
