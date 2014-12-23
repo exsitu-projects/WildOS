@@ -153,8 +153,8 @@ $(document).ready(function() {
 	//get the Photoz app object
 	photoz = global.renderer.apps.getApp('Photoz');
 
-//	if (photoz.unused.length > 0)
+	if (photoz.unused.length > 0)
 		initContent();
-//	else // content not here yet: init when content arrives
-//		photoz.onLoad = initContent;
+	else // content not here yet: init when content arrives
+		photoz.onLoad = initContent;
 });
