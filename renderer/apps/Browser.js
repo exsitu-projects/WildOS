@@ -10,6 +10,7 @@ var log = require('Log').logger('Browser');
 // Renderer modules
 var App = require('../lib/App');
 var Layer = require('../lib/Layer');
+var Tile = require('../lib/Tile');
 
 // The `Browser` class.
 var Browser = App.subclass().name('Browser')
@@ -71,6 +72,24 @@ var Browser = App.subclass().name('Browser')
 			this.layer = null;
 			this._super();
 		},
+
+		// execute a script in the local page
+		remoteExec_after: function(obj, fun, args) {
+			if (!this.layer)
+				return;
+
+			var self = this;
+			Tile.mapReadyTiles(function(tile) {
+				var targetWindow = tile.window.window.frames[self.layer.id].contentWindow;
+				if (targetWindow)
+					try {
+						targetWindow[obj][fun](); // *** ignore args for now
+					} catch(e) {
+						// ignore errors
+					}
+			});
+		},
+
 	})
 	.shareState()
 ;

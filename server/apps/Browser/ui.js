@@ -54,6 +54,12 @@ function startBrowser() {
 
 	// Add a text field to load a different URL
 	$('#browserApp').append('<input id="browserUrl" type="text" size="80"/><input id="setBrowserUrl" type="button" value="Set URL"/>');
+
+	$('#browserApp').append('<br/><input id="revealPrev" type="button" value="Prev"/>');
+	$('#browserApp').append('<input id="revealNext" type="button" value="Next"/>');
+	$('#revealPrev').click(function() { app.remoteExec('Reveal', 'left'); });
+	$('#revealNext').click(function() { app.remoteExec('Reveal', 'right'); });
+
 	$('#browserApp').append('<br/><span style="color:grey">Drag web page to move, shift-drag to resize, scrollwheel to zoom.</span>');
 	$('#browserUrl').keypress(function(e) { if (e.which == 13) $('#setBrowserUrl').click(); });
 	$('#setBrowserUrl').click(function() { app.setURL($('#browserUrl').val()); });

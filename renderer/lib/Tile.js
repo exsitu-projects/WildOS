@@ -82,14 +82,19 @@ var Tile = OO.newClass().name('Tile')
 				height: this.height,
 				frame: false,
 				toolbar: false,
-				resizable: false,
+//				resizable: false,
+				fullscreen: true,
 			};
+// need an option in config file to enable fullscreen
+// also need to take into account the viewport, if any [for WILDER]
 
 			// *** Hack for testing
 			if (this.left !== 0 && this.top !== 0) {
 				// Assume we're testing and add frame & toolbar so we can get to the developer tools
 				tile.frame = true;
 				tile.toolbar = true;
+				tile.resizable = true;
+				tile.fullscreen = false;
 			}
 
 			// Open the tile page

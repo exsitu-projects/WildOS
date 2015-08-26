@@ -63,7 +63,7 @@ var Browser = App.subclass().name('Browser')
 		// Set the URL
 		setURL: function(url) {
 			// Prepend local content dir if no http prefix
-			if (! url.match(/http:\/\//))
+			if (! url.match(/https?:\/\//))
 				url = 'app://localhost/content/' + url;
 			this.url = url;
 		},
@@ -94,9 +94,21 @@ var Browser = App.subclass().name('Browser')
 				height = 10;
 			this.width = width;
 			this.height = height;
+		},
+
+		// Execute Javascript method in the web page of each client
+		remoteExec: function(obj, fun, args) {
+			// execute in the local UI and remotely at each client
+			var targetWindow = this.platform.GUI.getUIWindow().frames['browserPage'].contentWindow;
+			if (targetWindow)
+				try {
+					targetWindow[obj][fun](); // *** ignore args for now
+				} catch(e) {
+					// ignore errors
+				}
 		}
 	})
-	.shareState('own', 'own')
+	.shareState('own', 'own', ['remoteExec'], 'after')
 ;
 
 log.spyMethods(Browser);
