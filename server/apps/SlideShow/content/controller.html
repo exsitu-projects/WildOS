@@ -97,7 +97,7 @@ var SlideShow = App.subclass().name('SlideShow')
 			this.slideShowChangedListeners.push(cb);
 		},
 	})
-	.shareState('own', ['getSlideShowList', 'loadSlideShow', 'firstSlide', 'prevSlide', 'nextSlide', 'lastSlide', 'gotoSlide'])
+	.shareState('own', ['getSlideShowList:sync', 'loadSlideShow', 'firstSlide', 'prevSlide', 'nextSlide', 'lastSlide', 'gotoSlide'])
 ;
 
 var slideShowApp = SlideShow.create();
@@ -149,7 +149,7 @@ var slideShowApp = SlideShow.create();
             case 'Open':
                 list.html('');
                 button.data('state', 'Loading').data('state', 'Loading');
-                slideShowApp.getSlideShowList(function(slideShowList) {
+                slideShowApp.getSlideShowList().then(function(slideShowList) {
                     if (button.data('state') != 'Loading')  // button was closed while loading
                         return;
                     button.html('Close').data('state', 'Close');

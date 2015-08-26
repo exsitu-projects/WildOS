@@ -31,7 +31,10 @@ var ObjectSharer = ObjectStore.subclass().name('ObjectSharer')
 		// Make the objects of a class be the slaves of a distributed class.
 		//	- `fields` is a list of field names that are shared, or `'all'` for all fields, or `'own'` for own fields
 		//	- `methods` is a list of methods that are called remotely, or `'all'` for all methods, or `'own'` for own methods
-		slave: function(cls, fields, methods, when) {
+		//	  If it is a list, each method name can be suffixed by ':sync'. In this case the method call returns a promise 
+		//	  that is resolved when the result is received.
+		//	- `how`, if specified, can be 'sync', in which case it applies to all methods specified by `method`
+		slave: function(cls, fields, methods, how) {
 
 			// Record the description of the class.
 			if (fields == 'all')
@@ -45,8 +48,8 @@ var ObjectSharer = ObjectStore.subclass().name('ObjectSharer')
 				methods = cls.listOwnMethods();
 			if (methods)
 				for (i = 0; i < methods.length; i++) {
-					var method = methods[i];
-					this.wrapRemoteCall(cls, method);
+					var method = methods[i].split(':');
+					this.wrapRemoteCall(cls, method[0], method[1] || how);
 				}
 
 			this.sharedClasses[cls.className()] = {
@@ -58,8 +61,8 @@ var ObjectSharer = ObjectStore.subclass().name('ObjectSharer')
 		},
 
 		// Helper method to wrap a method with a function that sends the call to the server.
-		// If the last argument is a function, it is a callback to be called with the result when it is received.
-		wrapRemoteCall: function(cls, method /*, arguments [, cb] */) {
+		// If `how` is 'sync', return a promise that gets resolved when the result is received.
+		wrapRemoteCall: function(cls, method, how) {
 			var sharer = this;
 
 			cls.wrap(method, function() {
@@ -70,21 +73,36 @@ var ObjectSharer = ObjectStore.subclass().name('ObjectSharer')
 					sharer.remoteCall(this, method, args, cb);
 				} else
 					sharer.remoteCall(this, method, args);
+
+				// Call local body (most often, it's empty)
+				return this._inner.apply(this, arguments);
 			});
-/* old
-			cls.wrap(method, function() {
-				sharer.remoteCall(this, method, [].slice.apply(arguments));
-				// Don't call body - or should we???
-				//var ret = this._inner.apply(this, arguments);
-				//return ret;
-			});
-*/
+
+			if (how === 'sync')
+				cls.wrap(method, function() {
+					var args = [].slice.apply(arguments);
+					// Call local body (most often, it's empty)
+					this._inner.apply(this, arguments);
+
+					// Here we ignore the return value from the local call
+					// and we return the promise for the value of the RPC
+					return sharer.remoteCallWithResult(this, method, args);
+				});
+			else
+				cls.wrap(method, function() {
+					var args = [].slice.apply(arguments);
+					sharer.remoteCall(this, method, args);
+
+					// Call local body (most often, it's empty)
+					return this._inner.apply(this, arguments);
+				});
+			
 		},
 
 		// --- Send messages to server ---
 
 		// Issue a method call to an object.
-		remoteCall: function(obj, method, args, cb) {
+		remoteCall: function(obj, method, args) {
 			log.method(this, 'remoteCall', obj.oid+'.'+method, '(',this.encode(args),')');
 			if (! this.server || ! obj.oid)
 				return;
@@ -94,21 +112,34 @@ var ObjectSharer = ObjectStore.subclass().name('ObjectSharer')
 				method: method,
 				args: this.encode(args),
 			};
-			if (cb && typeof cb == 'function') {
-				var id = message.returnId = method + ObjectSharer.pendingId++;
-				this.pendingResults[id] = {
-					object: obj,
-					cb: cb,
-				};
-			}
+
 			this.server.emit('callMethod', message);
-/* old
-			this.server.emit('callMethod', {
+		},
+
+		// Issue a method call to an object and expect a result.
+		// Return a promise to be resolved when the result is received.
+		remoteCallWithResult: function(obj, method, args, cb) {
+			log.method(this, 'remoteCallWithResult', obj.oid+'.'+method, '(',this.encode(args),')');
+			if (! this.server)
+				return Promise.reject('missing server');
+			if (! obj.oid)
+				return Promise.reject('missing object id');
+
+			var id = method + ObjectSharer.pendingId++;
+			var message = {
 				oid: obj.oid,
 				method: method,
 				args: this.encode(args),
+				returnId: id,
+			};
+			this.server.emit('callMethod', message);
+
+			// Store the promise, which will be resolved by callResult below
+			var promise = this.pendingResults[id] = {};
+			return new Promise(function(resolve, reject) {
+				promise.resolve = resolve;
+				promise.reject = reject;
 			});
-*/
 		},
 
 		// Process a result sent by the server
@@ -116,12 +147,13 @@ var ObjectSharer = ObjectStore.subclass().name('ObjectSharer')
 			var promise = this.pendingResults[id];
 			if (! promise)
 				return false;
-			promise.cb.call(promise.obj, result);
+			promise.resolve(result);
 			delete this.pendingResults[id];
 			return true;
 		},
 
 		// Request an object from the server.
+		// *** THIS CANNOT WORK because the list of sharers is in the SharingServer!!!
 		requestObject: function(oid) {
 			for (var i = 0; i < this.sharers.length; i++) {
 				var obj = this.sharers[i].getObject(oid);
@@ -179,7 +211,7 @@ function getServer() {
 var SharingServer = SocketIOServer.subclass().name('SharingServer')
 	.classFields({
 		host: getServer(),
-		port: 8080,
+		port: 8088,
 	})
 	.fields({
 		sharers: [],		// list of ObjectSharer objects attached to this server
@@ -253,7 +285,7 @@ var SharingServer = SocketIOServer.subclass().name('SharingServer')
 			});
 
 			this.on('callResult', function(result) {
-				log.event(self, 'callResult', result.id, '=', result.result);
+				log.eventEnter(self, 'callResult', result.id, '=', result.result);
 				self.sharers.some(function(sharer) {
 					if (sharer.callResult(result.id, result.result)) {
 						log.event(self, 'callResult', 'found');
@@ -262,7 +294,7 @@ var SharingServer = SocketIOServer.subclass().name('SharingServer')
 					return false;
 				});
 				log.eventExit(self, 'callResult');
-			})
+			});
 		},
 
 		// Add a sharer to the set of sharers managed by this client.
@@ -566,18 +598,40 @@ var OO = require('./OO');
 // otherwise to the console.
 function log(status /*, varargs*/) {
 	// process.title is set to 'browser' by browserify, to 'node' by node and node-webkit
-	if (process.title != 'browser' && global.log)
+	if (process.title != 'browser' && global.log && !Log.logToConsole) {
 		global.log.apply(this, arguments);
-	else {
+	} else {
+		// log with console
+		var logfun = console.log;
+		switch (status.level) {
+			case 'Info':  logfun = console.info; break;
+			case 'Warning':  logfun = console.warn; break;
+			case 'Error': 
+			case 'Fatal': logfun = console.error; break;
+		}
+
 		var args = Array.prototype.slice.call(arguments, 1);
+
+		// If indent level has increased, logIndent has set consoleNewGroup to true,
+		// signaling that we need to create a new group. This is a bit of a hack...
+		// *** Note 1: in node-webkit, output goes to devtools + console, but console does not implement group so we loose the enter messages
+		// *** Note 2: we should remove the indent when using groups, as they are redundant in devtools ... but not in console output
+		if (consoleNewGroup) {
+			if (status.display == 'closed')
+				logfun = console.groupCollapsed;
+			else
+				logfun = console.group;
+			consoleNewGroup = false;
+		}
+
 		if (status.indent === 0 && status.level == 'Info')
-			console.log.apply(console, args);
+			logfun.apply(console, args);
 		else {
 			var blank = '                                                                                ';
 			var indent = blank.substring(0, status.indent*Log.indentSize);
 			if (status.level != 'Info')
 				indent += status.level;
-			console.log.apply(console, [indent].concat(args));
+			logfun.apply(console, [indent].concat(args));
 		}
 	}
 }
@@ -585,9 +639,27 @@ function log(status /*, varargs*/) {
 // Calls global.logIndent if defined.
 // Useful for example to create nested boxes in the output.
 function logIndent(indentLevel) {
-	if (process.title != 'browser' && global.logIndent)
+	if (process.title != 'browser' && global.logIndent && !Log.logToConsole) {
 		global.logIndent(indentLevel);
+	} else {
+		// Manage groups in console output. This is a bit of a hack...
+		if (console.group) {
+			while (indentLevel > consoleIndentLevel) {
+				if (consoleNewGroup) {	// in case we skip more than one level
+					console.group();
+				}
+				consoleNewGroup = true;	// tells log to create group.
+				consoleIndentLevel++;
+			}
+			while (indentLevel < consoleIndentLevel) {
+				console.groupEnd();
+				consoleIndentLevel--;
+			}
+		}
+	}
 }
+var consoleIndentLevel = 0;	// keep track of grouping in the console output
+var consoleNewGroup = false;
 
 // The `Log` class.
 var Log = OO.newClass().name('Log')
@@ -597,6 +669,7 @@ var Log = OO.newClass().name('Log')
 		stack: [],			// indent call stack, to check proper balancing
 		sharedLogger: null,	// the logger returned by `Log.shared()`
 		display: 'show',	// global logging style
+		logToConsole: false,// true: log to window, false: log to console
 		domains: {}			// for each domain, whether it is logged or not and which entries are logged or not
 /*
 		domains: {
@@ -1667,6 +1740,43 @@ exports.object = object;
 var OO = require('./OO');
 var log = require('./Log').logger('ObjectStore');
 
+// The `PendingObject` class.
+// Objects that are referenced but not in the object store.
+// Clients can attach listeners to them to be notified when they are resolved.
+var PendingObject = OO.newClass().name('PendingObject')
+	.fields({
+		isPendingObject: true,
+		oid: null,
+		listeners: [],
+	})
+	.constructor(function(oid) {
+		log.enter(this, 'create', oid);
+		this.oid = oid;
+		log.exit(this, 'create');
+	})
+	.methods({
+		onResolved: function(f) {
+			this.listeners.push(f);
+		},
+
+		offResolved: function(f) {
+			var idx = this.listeners.indexOf(f);
+			if (idx >= 0)
+				this.listeners.splice(idx, 1);
+		},
+
+		resolved: function(obj) {
+			log.enter(this, 'resolved', this.oid, obj);
+			this.listeners.forEach(function(listener) {
+				listener(obj);
+			});
+			this.listeners = [];
+			log.exit(this, 'resolved');
+		}
+	})
+;
+log.spyMethods(PendingObject);
+
 // The `ObjectStore` class.
 var ObjectStore = OO.newClass().name('ObjectStore')
 	.classFields({
@@ -1674,6 +1784,7 @@ var ObjectStore = OO.newClass().name('ObjectStore')
 	})
 	.fields({
 		objects: {},		// Set of objects being stored.
+		pending: {},		// Set of objects referenced but not in the store.
 		sharedClasses: {},	// The set of classes whose objects are in the store.
 		recordNew: false,	// Whether objects without an oid should be recorded or not.
 	})
@@ -1697,8 +1808,6 @@ var ObjectStore = OO.newClass().name('ObjectStore')
 		// otherwise a warning is issued.
 		// The oid is used to communicate object identites with clients.
 		recordObject: function(obj) {
-			// Since all objects are received, unlike on the server side,
-			// we do not assign an oid if there isn't one.
 			if (! obj.oid) {
 				if (this.recordNew) {
 					obj.oid = obj._name || (obj.className()+'_'+(ObjectStore.nextId++));
@@ -1709,6 +1818,14 @@ var ObjectStore = OO.newClass().name('ObjectStore')
 			}
 			log.method(this, 'recordObject', obj.oid, 'store', this._name);
 			this.objects[obj.oid] = obj;
+
+			// If the object was pending, call the listeners if any, 
+			// and remove it from the pending list
+			if (this.pending[obj.oid]) {
+				this.pending[obj.oid].resolved(obj);
+				delete this.pending[obj.oid];
+			}
+
 			return obj.oid;
 		},
 
@@ -1771,13 +1888,25 @@ var ObjectStore = OO.newClass().name('ObjectStore')
 
 		// Decode values received from a client into actual values.
 		decode: function(value) {
+			var res = null;
+
 			// Simple value: as is.
 			if (!value || typeof(value) != 'object')
 				return value;
 
 			// An object with an `oid` property: one of our objects.
-			if (value.oid && this.objects[value.oid])
-				return this.objects[value.oid];
+//			if (value.oid && this.objects[value.oid])
+//				return this.objects[value.oid];
+			if (value.oid) {
+				res = this.objects[value.oid];
+				// Record pending objects
+				if (! res) {
+					res = this.pending[value.oid];
+					if (! res)
+						res = this.pending[value.oid] = PendingObject.create(value.oid);
+				}
+				return res;
+			}
 
 			// An array: recurse over its elements.
 			if (value instanceof Array) {
@@ -1801,27 +1930,46 @@ var ObjectStore = OO.newClass().name('ObjectStore')
 		makeObject: function(obj) {
 			if (! obj.oid)
 				return null;
+
+			// Look up object
 			var object = this.objects[obj.oid];
+			var field;
+			
 			if (object) {
 				// Object already exists.
 				log.method(this, 'makeObject', '- returned existing object ', object);
-				// Update its state with the received object.
+
+				// Decode received state
+				for (field in obj)
+					obj[field] = this.decode(obj[field]);
+
+				// Update object with received state
 				object.set(obj);
 				return this.objects[obj.oid];
 			}
+
+			// Object was not found: try to create it.
+
 			// Parse object id to extract class name
 			var match = obj.oid.match(/^(.*)_[0-9]+$/);
 			if (match && match[1]) {
 				var clinfo = this.sharedClasses[match[1]];
+
 				// If we find the class, find or create the object.
 				if (clinfo) {
+					// Decode object fields
+					for (field in obj)
+						obj[field] = this.decode(obj[field]);
+
 					/*** hack for Apps ***/
 					if (clinfo.cls.findObject)
 						object = clinfo.cls.findObject(obj.oid, obj);
 					if (!object)
 					/*** end hack ***/
+
 					object = clinfo.cls.create(obj);
 				}
+
 				// If we have a new object, record it.
 				if (object) {
 					object.oid = obj.oid;
@@ -1884,10 +2032,7 @@ var ObjectStore = OO.newClass().name('ObjectStore')
 			// Return an object to distinguish from returning 'false' above.
 			return {
 				result: m.apply(obj, this.decode(args)),
-			}
-/* old
-			return true;
-*/
+			};
 		},
 
 		// Call an object method. 

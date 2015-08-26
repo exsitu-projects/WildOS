@@ -28,7 +28,10 @@ var ObjectSharer = ObjectStore.subclass().name('ObjectSharer')
 		// Make the objects of a class be the slaves of a distributed class.
 		//	- `fields` is a list of field names that are shared, or `'all'` for all fields, or `'own'` for own fields
 		//	- `methods` is a list of methods that are called remotely, or `'all'` for all methods, or `'own'` for own methods
-		slave: function(cls, fields, methods, when) {
+		//	  If it is a list, each method name can be suffixed by ':sync'. In this case the method call returns a promise 
+		//	  that is resolved when the result is received.
+		//	- `how`, if specified, can be 'sync', in which case it applies to all methods specified by `method`
+		slave: function(cls, fields, methods, how) {
 
 			// Record the description of the class.
 			if (fields == 'all')
@@ -42,8 +45,8 @@ var ObjectSharer = ObjectStore.subclass().name('ObjectSharer')
 				methods = cls.listOwnMethods();
 			if (methods)
 				for (i = 0; i < methods.length; i++) {
-					var method = methods[i];
-					this.wrapRemoteCall(cls, method);
+					var method = methods[i].split(':');
+					this.wrapRemoteCall(cls, method[0], method[1] || how);
 				}
 
 			this.sharedClasses[cls.className()] = {
@@ -55,8 +58,8 @@ var ObjectSharer = ObjectStore.subclass().name('ObjectSharer')
 		},
 
 		// Helper method to wrap a method with a function that sends the call to the server.
-		// If the last argument is a function, it is a callback to be called with the result when it is received.
-		wrapRemoteCall: function(cls, method /*, arguments [, cb] */) {
+		// If `how` is 'sync', return a promise that gets resolved when the result is received.
+		wrapRemoteCall: function(cls, method, how) {
 			var sharer = this;
 
 			cls.wrap(method, function() {
@@ -71,13 +74,32 @@ var ObjectSharer = ObjectStore.subclass().name('ObjectSharer')
 				// Call local body (most often, it's empty)
 				return this._inner.apply(this, arguments);
 			});
+
+			if (how === 'sync')
+				cls.wrap(method, function() {
+					var args = [].slice.apply(arguments);
+					// Call local body (most often, it's empty)
+					this._inner.apply(this, arguments);
+
+					// Here we ignore the return value from the local call
+					// and we return the promise for the value of the RPC
+					return sharer.remoteCallWithResult(this, method, args);
+				});
+			else
+				cls.wrap(method, function() {
+					var args = [].slice.apply(arguments);
+					sharer.remoteCall(this, method, args);
+
+					// Call local body (most often, it's empty)
+					return this._inner.apply(this, arguments);
+				});
+			
 		},
 
 		// --- Send messages to server ---
 
 		// Issue a method call to an object.
-		// If `cb` is a function, it is called when the result is received.
-		remoteCall: function(obj, method, args, cb) {
+		remoteCall: function(obj, method, args) {
 			log.method(this, 'remoteCall', obj.oid+'.'+method, '(',this.encode(args),')');
 			if (! this.server || ! obj.oid)
 				return;
@@ -87,15 +109,34 @@ var ObjectSharer = ObjectStore.subclass().name('ObjectSharer')
 				method: method,
 				args: this.encode(args),
 			};
-			if (cb && typeof cb == 'function') {
-				// Store the promise, which will be resolved by callResult below
-				var id = message.returnId = method + ObjectSharer.pendingId++;
-				this.pendingResults[id] = {
-					object: obj,
-					cb: cb,
-				};
-			}
+
 			this.server.emit('callMethod', message);
+		},
+
+		// Issue a method call to an object and expect a result.
+		// Return a promise to be resolved when the result is received.
+		remoteCallWithResult: function(obj, method, args, cb) {
+			log.method(this, 'remoteCallWithResult', obj.oid+'.'+method, '(',this.encode(args),')');
+			if (! this.server)
+				return Promise.reject('missing server');
+			if (! obj.oid)
+				return Promise.reject('missing object id');
+
+			var id = method + ObjectSharer.pendingId++;
+			var message = {
+				oid: obj.oid,
+				method: method,
+				args: this.encode(args),
+				returnId: id,
+			};
+			this.server.emit('callMethod', message);
+
+			// Store the promise, which will be resolved by callResult below
+			var promise = this.pendingResults[id] = {};
+			return new Promise(function(resolve, reject) {
+				promise.resolve = resolve;
+				promise.reject = reject;
+			});
 		},
 
 		// Process a result sent by the server
@@ -103,7 +144,7 @@ var ObjectSharer = ObjectStore.subclass().name('ObjectSharer')
 			var promise = this.pendingResults[id];
 			if (! promise)
 				return false;
-			promise.cb.call(promise.obj, result);
+			promise.resolve(result);
 			delete this.pendingResults[id];
 			return true;
 		},
