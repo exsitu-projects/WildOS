@@ -65,19 +65,6 @@ var ObjectSharer = ObjectStore.subclass().name('ObjectSharer')
 		wrapRemoteCall: function(cls, method, how) {
 			var sharer = this;
 
-			cls.wrap(method, function() {
-				var args = [].slice.apply(arguments);
-				var cb = args[args.length-1];
-				if (typeof cb == 'function') {
-					args.splice(-1, 1);	// remove last argument
-					sharer.remoteCall(this, method, args, cb);
-				} else
-					sharer.remoteCall(this, method, args);
-
-				// Call local body (most often, it's empty)
-				return this._inner.apply(this, arguments);
-			});
-
 			if (how === 'sync')
 				cls.wrap(method, function() {
 					var args = [].slice.apply(arguments);
@@ -118,7 +105,7 @@ var ObjectSharer = ObjectStore.subclass().name('ObjectSharer')
 
 		// Issue a method call to an object and expect a result.
 		// Return a promise to be resolved when the result is received.
-		remoteCallWithResult: function(obj, method, args, cb) {
+		remoteCallWithResult: function(obj, method, args) {
 			log.method(this, 'remoteCallWithResult', obj.oid+'.'+method, '(',this.encode(args),')');
 			if (! this.server)
 				return Promise.reject('missing server');
@@ -263,7 +250,14 @@ var SharingServer = SocketIOServer.subclass().name('SharingServer')
 			this.on('callMethod', function (call) {
 				log.event(self, 'callMethod', call.oid+'.'+call.method+'(',call.args,')');
 				self.sharers.some(function(sharer) {
-					if (sharer.callMethod(call.oid, call.method, call.args)) {
+					var result = sharer.callMethod(call.oid, call.method, call.args);
+					if (result !== false) {
+						if (data.returnId) {
+							// we need to return the result
+							result.id = data.returnId;
+							log.event(self, 'callMethod', 'sending result id', data.returnId, 'value', result);
+							self.socket.emit('callResult', sharer.encode(result));
+						}
 						log.event(self, 'callMethod', 'found');
 						return true;
 					}

@@ -62,19 +62,6 @@ var ObjectSharer = ObjectStore.subclass().name('ObjectSharer')
 		wrapRemoteCall: function(cls, method, how) {
 			var sharer = this;
 
-			cls.wrap(method, function() {
-				var args = [].slice.apply(arguments);
-				var cb = args[args.length-1];
-				if (typeof cb == 'function') {
-					args.splice(-1, 1);	// remove last argument
-					sharer.remoteCall(this, method, args, cb);
-				} else
-					sharer.remoteCall(this, method, args);
-
-				// Call local body (most often, it's empty)
-				return this._inner.apply(this, arguments);
-			});
-
 			if (how === 'sync')
 				cls.wrap(method, function() {
 					var args = [].slice.apply(arguments);
@@ -115,7 +102,7 @@ var ObjectSharer = ObjectStore.subclass().name('ObjectSharer')
 
 		// Issue a method call to an object and expect a result.
 		// Return a promise to be resolved when the result is received.
-		remoteCallWithResult: function(obj, method, args, cb) {
+		remoteCallWithResult: function(obj, method, args) {
 			log.method(this, 'remoteCallWithResult', obj.oid+'.'+method, '(',this.encode(args),')');
 			if (! this.server)
 				return Promise.reject('missing server');

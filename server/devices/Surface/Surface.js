@@ -125,6 +125,7 @@ var Surface = Device.subclass().name('Surface')
 
 			// Create the tiles in the mosaic.
 			var yO = 0; // x0 & y0 = coordinates relative to the subset
+			var tilesByHost = {};	// to assign debugPort when multiple clients are on same host
 			for (var r = firstRow; r <= lastRow; r++) {
 				var xO = 0;
 				for (var c = firstCol; c <= lastCol; c++) {
@@ -179,6 +180,13 @@ var Surface = Device.subclass().name('Surface')
 						fullName += '_'+rank;
 					}
 
+					// Compute debugPort
+					if (!tilesByHost.hasOwnProperty(host))
+						tilesByHost[host] = 0;
+					else
+						tilesByHost[host]++;
+					var debugPort = (config.debugPort || 9222) + tilesByHost[host];
+
 					// Now we can create the tile.
 					this.addTile({
 						left: left, top: top, width: width, height: height,
@@ -189,6 +197,7 @@ var Surface = Device.subclass().name('Surface')
 						rank: rank,			// e.g., 1
 						tileName: tileName,	// e.g., "Left_1"
 						name: fullName,		// e.g., "a1_Left_1"
+						debugPort: debugPort,
 					});
 
 					xO += width + hGap;
@@ -238,12 +247,8 @@ var Surface = Device.subclass().name('Surface')
 				var clientName = tile.instance;
 
 				var debug = '';
-				if (program.debug) {
-					debug = '--debug '+program.debug;
-					debug += ' --remote-debugging-port=';
-					// *** Problem when multiple clients run on the same computer
-					debug += self.config.debugPort || 9222;
-				}
+				if (program.debug)
+					debug = '--debug '+program.debug+' --remote-debugging-port='+tile.debugPort;
 
 				ctxByClient[clientName] = {
 					HOST: tile.host + domain,
@@ -290,8 +295,8 @@ var Surface = Device.subclass().name('Surface')
 				INSTANCE: tile.instanceName,
 				PORT: platform.serverPort,
 				ENV: env[tile.instanceName],
-				DEBUG: program.debug ? ("--debug "+program.debug) : "",
-				LOG: program.log ? ("--log "+program.log) : "",
+				DEBUG: program.debug ? ('--debug '+program.debug+' --remote-debugging-port='+tile.debugPort) : '',
+				LOG: program.log ? ('--log '+program.log) : '',
 			};
 
 			this.spawn(cmd, ctx);

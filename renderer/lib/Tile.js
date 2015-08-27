@@ -47,8 +47,10 @@ var Tile = OO.newClass().name('Tile')
 		originY: 0,
 		// Rank of tile when the host manages multiple tiles
 		rank: null,
-		// Tile name (used only for display)
+		// Tile name (used only to display it in tile.html)
 		tileName: null,
+		// port for debugger (used only to display it in tile.html)
+		debugPort: null,
 	})
 	.constructor(function (state){
 		log.enter(this, 'constructor');
@@ -114,7 +116,7 @@ var Tile = OO.newClass().name('Tile')
 				log.event(self, 'loaded', self.oid);
 				var id = win.window.document.getElementById('renderer');
 				if (id)
-					id.innerHTML = self.tileName;
+					id.innerHTML = self.tileName + ' debugPort=' + self.debugPort;
 
 				// Tell the layers and apps that the tile is ready.
 				Layer.tileReady(self);

@@ -80,6 +80,14 @@ function tileMenu(tile) {
 			tile.clearLog();
 		},
 	}));
+
+	menu.append(new gui.MenuItem({
+		label: 'Debug tile',
+		click: function() {
+			gui.Window.open('http://'+tile.host+':'+tile.debugPort);
+		},
+	}));
+
 	return menu;
 }
 
@@ -98,7 +106,7 @@ function updateMenu(tile, id) {
 	menu.items[3].enabled = connected;
 	menu.items[4].enabled = connected;
 	menu.items[5].enabled = connected;
-	
+	menu.items[6].enabled = connected;
 }
 
 // Creates a div with `id` representing `tile`

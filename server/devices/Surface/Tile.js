@@ -48,6 +48,7 @@ var Tile = Device.subclass().name('Tile')
 		rank: null,		// `null` or a number denoting the rank of the tile when there are multiple tiles per instance
 		tileName: null,	// same as `instance` if one tile per host, or `instance_rank` if multiple tiles per host.
 		// Note that `name` holds the full name : `host_instance_rank`
+		debugPort: null,	// port number of for remote debugging
 	})
 	.constructor(function(options, events) {
 		this._super({}, options, events);
