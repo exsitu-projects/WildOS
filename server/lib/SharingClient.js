@@ -46,6 +46,20 @@ var SharingClient = SocketIOClient.subclass().name('SharingClient')
 			log.eventExit(self, 'callMethod');
 		});
 
+		// Event handler when a result is received from a client
+		this.on('callResult', function(result) {
+			log.eventEnter(self, 'callResult', result.id, '=', result.result);
+			// Forward the result to the sharers until one of them handles it.
+			self.sharers.some(function(s) {
+				if (s.sharer.callResult(result)) {
+					log.event(self, 'callResult', 'found');
+					return true;
+				}
+				return false;
+			});
+			log.eventExit(self, 'callResult');
+		});
+
 		// Event handler when the client is requesting an object
 		this.on('getObject', function(oid) {
 			log.event(self, 'getObject', oid);

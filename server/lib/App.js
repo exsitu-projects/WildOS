@@ -323,10 +323,10 @@ return;
 
 		// Set up an object sharer to share this app's state with clients
 		// This must be called before the app is created, typically when creating the class.
-		shareState: function(sharedFields, sharedMethods, notifyMethods, when) {
+		shareState: function(sharedFields, sharedMethods, notifyMethods, when, remoteMethods, how) {
 			log.enter(this, 'shareState');
 			this.sharer = ObjectSharer.create().name(this.className()+'ObjectSharer')
-							.master(this, sharedFields || 'own', sharedMethods, notifyMethods, when || 'after');
+							.master(this, sharedFields || 'own', sharedMethods, notifyMethods, when || 'after', remoteMethods, how);
 			log.exit(this, 'shareState');
 			return this;
 		},

@@ -86,13 +86,30 @@ var SharingServer = SocketIOServer.subclass().name('SharingServer')
 
 			this.on('callMethod', function (call) {
 				log.event(self, 'callMethod', call.oid+'.'+call.method+'(',call.args,')');
-				self.sharers.some(function(sharer) {
-					if (sharer.callMethod(call.oid, call.method, call.args)) {
+				var found = self.sharers.some(function(sharer) {
+					var response = sharer.callMethod(call.oid, call.method, call.args);
+
+					// ignore if method does not exist
+					// or if it exists but returned 'undefined' as result
+					if (response === false || response.result === undefined)
+						return false;
+
+					if (call.returnId) {
+						// we need to return the result
+						response.id = call.returnId;
+						log.event(self, 'callMethod', 'sending result id', call.returnId, 'value', response);
+						self.socket.emit('callResult', sharer.encode(response));
+					} else
 						log.event(self, 'callMethod', 'found');
-						return true;
-					}
-					return false;
+					return true;
 				});
+
+				if (!found && call.returnId) {
+					// we need to notify that we did not get a result
+					response = {id: call.returnId}; // no result field
+					log.event(self, 'callMethod', 'sending not found', call.returnId);
+					self.socket.emit('callResult', response /* no encoding needed */);
+				}
 				log.eventExit(self, 'callMethod');
 			});
 

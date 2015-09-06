@@ -19,8 +19,12 @@ var log = require('Log').logger('ObjectSharer');
 
 // The server-side `ObjectSharer` class.
 var ObjectSharer = ObjectStore.subclass().name('ObjectSharer')
+	.classFields({
+		pendingId: 0,		// Counter to generate continuation ids		
+	})
 	.fields({
 		events: null,		// Where to send / listen to events
+		pendingResults: {},	// Continuations for remote function calls awaiting their response
 	})
 	.constructor(function(eventEmitter) {
 		// Create an event source if we're not given one.
@@ -42,7 +46,11 @@ var ObjectSharer = ObjectStore.subclass().name('ObjectSharer')
 		//		Calls to these methods are notified to the clients.
 		//	- `when` can be omitted, or can be `'before'` or `'after'`,
 		//	  to notify of method calls only before or after (default = both)
-		master: function(cls, fields, methods, notifyMethods/*opt*/, when/*opt*/) {
+		//	- `remoteMethods` is an array of method names that are called remotely and return a result.
+		//		Each method can be suffixed by `':all'` or `':any'` to specify if the call should return
+		//		when one result is received, or all of them. Default is any, unless `how` is specified
+		//	- `how` can be `'all'` or `'any'` and specifies the default return mode for remote methods
+		master: function(cls, fields, methods, notifyMethods/*opt*/, when/*opt*/, remoteMethods/*opt*/, how /*opt*/) {
 			log.method(this, 'master', cls.className(), fields, methods);
 			var sharer = this;
 			var i;
@@ -86,7 +94,7 @@ var ObjectSharer = ObjectStore.subclass().name('ObjectSharer')
 			else if (methods == 'own')
 				methods = cls.listOwnMethods();
 			this.events.on('callMethod', function(data) {
-				return this.callMethod(data.oid, data.method, data.args);
+				return sharer.callMethod(data.oid, data.method, data.args);
 			});
 
 			// Wrap object methods to notify when they are called
@@ -102,6 +110,19 @@ var ObjectSharer = ObjectStore.subclass().name('ObjectSharer')
 					this.wrapCallNotify(cls, method[0], method[1] || when);
 				}
 
+			// Wrap remote methods to notify when they are called
+			// `'all'` and `'own'` are as above, otherwise a list of methods
+			// *** Maybe we should have a value `'mixin'` to include mixin methods?
+			if (remoteMethods === 'all')
+				remoteMethods = cls.listMethods();
+			else if (remoteMethods === 'own')
+				remoteMethods = cls.listOwnMethods();
+			if (remoteMethods)
+				for (i = 0; i < remoteMethods.length; i++) {
+					var method = remoteMethods[i].split(':');	// parse 'foo:any'
+					this.wrapRemoteCall(cls, method[0], method[1] || how);
+				}
+
 			// Store info about the class being shared.
 			// *** Note that this assumes that the class name is unique 
 			// (at least within the classes shared by this sharer). 
@@ -111,6 +132,7 @@ var ObjectSharer = ObjectStore.subclass().name('ObjectSharer')
 				fields: fields || [],
 				methods: methods || [],
 				notifyMethods: notifyMethods || [],
+				remoteMethods: remoteMethods || [],
 			};
 
 			return this;
@@ -146,63 +168,21 @@ var ObjectSharer = ObjectStore.subclass().name('ObjectSharer')
 			});
 		},
 
-		// --- Slave ---
+		// Helper method to wrap a method with a remote call
+		// `how` specifies how the call returns: on the first result ('any')
+		// or once all results are received ('all'). In that case, an array of results is returned.
+		wrapRemoteCall: function(cls, method, how) {
+			if (!how)
+				how = 'any';
 
-		// Make the objects of a class be the slaves of a distributed class.
-		//	- `fields` is a list of field names, or `'all'` for all fields, or `'own'` for own fields
-		//	- `methods` is a list of methods, or `'all'` for all methods, or `'own'` for own methods
-		slave: function(cls, fields, methods, when) {
-
-			// Record the description of the class.
-			if (fields == 'all')
-				fields = cls.listFields();
-			else if (fields == 'own')
-				fields = cls.listOwnFields();
-
-			if (methods == 'all')
-				methods = cls.listMethods();
-			else if (methods == 'own')
-				methods = cls.listOwnMethods();
-
-			this.sharedClasses[cls.className()] = {
-				cls: cls,
-				fields: fields || [],
-				methods: methods || [],
-			};
-
-			// Note that the handlers for the events notifying the changes are not set up here.
-			// They should be set up by the client.
-/*
-			if (! this.events)
-				return this;
-
-			this.events.on('newObject', function(obj) {
-				return this.makeObject(obj);
-			});
-			this.events.on('dieObject', function(oid) {
-				return this.killObject(oid);
-			});
-			this.events.on('setField', function(data) {
-				return this.setField(data.oid, data.field, data.value);
-			});
-			this.events.on('callMethod', function(data) {
-				return this.callMethod(data.oid, data.method, data.args);
-			});
-			this.events.on('callNotify', function(data) {
-				return this.callNotify(data.oid, data.method, data.when, data.args);
-			});
-*/
-			return this;
-		},
-
-		// Helper method to wrap a method with a function that 
-		wrapRemoteCall: function(cls, method) {
 			var sharer = this;
 			cls.wrap(method, function() {
-				sharer.remoteCall(this, method, [].slice.apply(arguments));
-				// Don't call body - or should we???
-				//var ret = this._inner.apply(this, arguments);
-				//return ret;
+				var args = [].slice.apply(arguments);
+				// Call local body (most often, it's empty)
+				this._inner.apply(this, arguments);
+
+				// Return the promise for the result
+				return sharer.remoteCallWithResult(this, method, args, how);
 			});
 		},
 
@@ -250,15 +230,83 @@ var ObjectSharer = ObjectStore.subclass().name('ObjectSharer')
 			});
 		},
 		// We want to call a remote object method.
-		remoteCall: function(obj, method, args) {
-			if (! this.events || ! obj.oid)
-				return;
-			log.method(this, 'remoteCall', obj._name, '-', obj.oid+'.'+method, '(', args, ')');
-			this.events.emit('callMethod', {
+		remoteCallWithResult: function(obj, method, args, how) {
+			log.method(this, 'remoteCallWithResult', obj.oid+'.'+method, '(',this.encode(args),')');
+			if (! this.events)
+				return Promise.reject('missing server');
+			if (! obj.oid)
+				return Promise.reject('missing object id');
+
+			var id = method + ObjectSharer.pendingId++;
+			var message = {
 				oid: obj.oid,
 				method: method,
 				args: this.encode(args),
+				returnId: id,
+			};
+			this.events.emit('callMethod', message);
+
+			// Store the promise, which will be resolved by callResult below
+			// ***TODO*** we should also set a timeout, especially if 'how' is 'all'			
+			log.method(this, 'remoteCallWithResult', 'returning promise');
+			this.pendingResults[id] = {
+				pendingResponses: events.EventEmitter.listenerCount(this.events, 'callMethod'),
+				how: how,
+				results: [],
+			};
+			var self = this;
+			return new Promise(function(resolve, reject) {
+				var promise = self.pendingResults[id];
+				promise.resolve = resolve;
+				promise.reject = reject;
 			});
+		},
+
+		// Process a result received by the server
+		// `response` is an object with the request id and an optional result.
+		// if the result is missing, the callee could not resolve the call
+		// or the call returned undefined to signal that it should be ignored
+		callResult: function(response) {
+			var id = response.id;
+			var promise = this.pendingResults[id];
+			if (! promise) {
+				log.method(this, 'callResult', 'no pending promise with id', id);
+				return false;
+			}
+
+			--promise.pendingResponses;
+			log.method(this, 'callResult', promise.how, '('+promise.pendingResponses+' pending)', ' response =',this.encode(response));
+
+			switch(promise.how) {
+				case 'any':
+					if (response.hasOwnProperty('result')) {
+						log.method(this, 'callResult', 'fulfilled "any"');
+						promise.resolve(response.result);
+						promise.how = 'done';						
+					}
+					break;
+				case 'all':
+					if (response.hasOwnProperty('result'))
+						promise.results.push(response.result);
+					if (promise.pendingResponses === 0) {
+						log.method(this, 'callResult', 'fulfilled "all"');
+						promise.resolve(promise.results);
+						promise.how = 'done';
+					}
+					break;
+				case 'done':
+					break;
+			}
+
+			if (promise.pendingResponses === 0) {
+				// reject the promise if `mode` was 'any' and we got no answer
+				// ***TODO*** the promise should also be rejected with the timeout fires
+				if (promise.how !== 'done')
+					promise.reject('no result');
+				delete this.pendingResults[id];
+			}
+
+			return true;
 		},
 
 		// --- Send / handle events ---

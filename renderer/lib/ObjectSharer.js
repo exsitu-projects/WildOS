@@ -31,7 +31,8 @@ var ObjectSharer = ObjectStore.subclass().name('ObjectSharer')
 		//	  If it is a list, each method name can be suffixed by ':sync'. In this case the method call returns a promise 
 		//	  that is resolved when the result is received.
 		//	- `how`, if specified, can be 'sync', in which case it applies to all methods specified by `method`
-		slave: function(cls, fields, methods, how) {
+		//	- `callableMethods` is the set of methods that can be called remotely
+		slave: function(cls, fields, methods, how, callableMethods) {
 
 			// Record the description of the class.
 			if (fields == 'all')
@@ -52,7 +53,7 @@ var ObjectSharer = ObjectStore.subclass().name('ObjectSharer')
 			this.sharedClasses[cls.className()] = {
 				cls: cls,
 				fields: fields || [],
-				methods: methods || [],
+				methods: callableMethods || [],
 			};
 			return this;
 		},
@@ -131,7 +132,8 @@ var ObjectSharer = ObjectStore.subclass().name('ObjectSharer')
 			var promise = this.pendingResults[id];
 			if (! promise)
 				return false;
-			promise.resolve(result);
+			if (promise.resolve)
+				promise.resolve(result);
 			delete this.pendingResults[id];
 			return true;
 		},
