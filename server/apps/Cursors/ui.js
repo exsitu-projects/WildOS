@@ -135,21 +135,21 @@ function stopCursors() {
 }
 
 // A `Joystick` interactor.
+// Behaves like a trackpad instead if delay is set to -1
 function Joystick(options) {
 	this.down = false;
 	this.dragging = false;
 	this.screenX = this.screenY = 0;
 	this.deltaX = this.deltaY = 0;
-	this.delay = 100;
 	this.timer = null;
 
+	this.delay = options.delay || 50;
 	this.target = options.target || 'html';
 	this.dragTarget = options.dragTarget || this.target;
 	this.clicked = options.clicked || function() {};
 	this.startedDragging = options.startedDragging || function() {};
 	this.stoppedDragging = options.stoppedDragging || function() {};
 	this.draggedBy = options.draggedBy || function() {};
-	this.dragChanged = options.dragChanged || function() {};
 }
 
 // The `start` method sets the handlers to implement the panzoom interaction.
@@ -174,20 +174,22 @@ Joystick.prototype.start = function() {
 			if(! self.dragging && (Math.abs(self.deltaX) > 3 || Math.abs(self.deltaY) > 3)) {
 				self.dragging = true;
 				self.startedDragging(self.dragTarget);
-				if (self.delay)
+				if (self.delay > 0)
 					self.timer = window.setInterval(function() {
-						if (self.deltaX && self.deltaY && self.dragging)
+						if ((self.deltaX || self.deltaY) && self.dragging)
 							self.draggedBy(self.dragTarget, self.deltaX, self.deltaY);
 					}, self.delay);
 			}			
-			if (self.dragging) {
-				self.dragChanged(self.dragTarget, self.deltaX, self.deltaY);
+			if (self.dragging && self.delay < 0) { // Trackpad mode
+				self.draggedBy(self.dragTarget, self.deltaX, self.deltaY);
+				self.screenX = event.screenX;
+				self.screenY = event.screenY;
 			}
 		})
 		.mouseup(self.mouseup = function(event) {
 			if (! self.down)
 				return;
-			
+
 			self.down = false;
 			if (self.dragging) {
 				self.dragging = false;

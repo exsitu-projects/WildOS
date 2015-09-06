@@ -19,6 +19,7 @@
 <input id="newCursor" type="button" value="New Cursor"/>
 <span id="cursors"></span>
 <input id="removeCursor" type="button" value="Remove selected"/>
+<input id="cursorTouchpadMode" type="checkbox"/>Joystick mode<br/>
 <div id="cursorTouchpad"></div>
 
 <script>
@@ -213,99 +214,46 @@
 	$('#newCursor').click(function() { cursors.addCursor(); });
 	$('#removeCursor').click(function() { cursors.removeSelected(); });
 
+	var joystickMode = false;
+	var timer = null, dx = 0, dy = 0;
+	var interactable = interact('#cursorTouchpad');
+	interactable.on('tap', function(event) { cursors.clickSelected(); });
 
-	// A `Joystick` interactor.
-	function Joystick(options) {
-		this.down = false;
-		this.dragging = false;
-		this.screenX = this.screenY = 0;
-		this.deltaX = this.deltaY = 0;
-		this.delay = 100;
-		this.timer = null;
+	var touchpadOptions = {
+			inertia: true,
+			onmove: function(event) {
+				cursors.moveSelectedBy(event.dx, event.dy);
+			}
+		},
+		joystickOptions = {
+				inertia: false,
+				onstart: function(event) {
+					dx = dy = 0;
+					timer = window.setInterval(function() {
+						cursors.moveSelectedBy(dx, dy);
+					}, 50);
+				},
+				onmove: function(event) {
+					dx = event.clientX - event.clientX0;
+					dy = event.clientY - event.clientY0;
+				},
+				onend: function(event) {
+					if (timer)
+						window.clearInterval(timer);
+					timer = null;
+				},			
+		};
 
-		this.target = options.target || 'html';
-		this.dragTarget = options.dragTarget || this.target;
-		this.clicked = options.clicked || function() {};
-		this.startedDragging = options.startedDragging || function() {};
-		this.stoppedDragging = options.stoppedDragging || function() {};
-		this.draggedBy = options.draggedBy || function() {};
-		this.dragChanged = options.dragChanged || function() {};
-	}
+	interactable.draggable(touchpadOptions);
 
-	// The `start` method sets the handlers to implement the panzoom interaction.
-	Joystick.prototype.start = function() {
-		var self = this;
-		$(self.target)
-			.mousedown(self.mousedown = function(event) {
-				self.down = true;
-				self.screenX = event.screenX;
-				self.screenY = event.screenY;
-				self.deltaX = self.deltaY = 0;
-			});
-
-		$('html')
-			.mousemove(self.mousemove = function(event) {
-				if (!self.down)
-					return;
-
-				self.deltaX = event.screenX - self.screenX;
-				self.deltaY = event.screenY - self.screenY;
-
-				if(! self.dragging && (Math.abs(self.deltaX) > 3 || Math.abs(self.deltaY) > 3)) {
-					self.dragging = true;
-					self.startedDragging(self.dragTarget);
-					if (self.delay)
-						self.timer = window.setInterval(function() {
-							if (self.deltaX && self.deltaY && self.dragging)
-								self.draggedBy(self.dragTarget, self.deltaX, self.deltaY);
-						}, self.delay);
-				}
-				if (self.dragging) {
-					self.dragChanged(self.dragTarget, self.deltaX, self.deltaY);
-				}
-			})
-			.mouseup(self.mouseup = function(event) {
-				if (! self.down)
-					return;
-				
-				self.down = false;
-				if (self.dragging) {
-					self.dragging = false;
-					if (self.timer) {
-						window.clearInterval(self.timer);
-						self.timer = null;
-					}
-					self.stoppedDragging(self.dragTarget);					
-				} else {
-					self.clicked(self.dragTarget);
-				}
-			})
-		;
-
-		return this;
-	};
-
-	// The `stop` method removes the listeners.
-	Joystick.prototype.stop = function() {
-		$(this.target).off('mousedown', this.mousedown);
-		$('html').off('mousemove', this.mousemove).off('mouseup', this.mouseup);
-		delete this.mousedown;
-		delete this.mousemove;
-		delete this.mouseup;
-		if (this.timer) {
-			window.clearInterval(this.timer);
-			this.timer = null;
-		}
-	};
-
-	new Joystick({
-		target: '#cursorTouchpad',
-		dragTarget: cursors,
-		draggedBy: function(target, dx, dy) { if (target) target.moveSelectedBy(dx, dy); },
-		clicked: function(target) { if (target) target.clickSelected(); },
-	}).start();
+	$('#cursorTouchpadMode').change(function() { 
+		joystickMode = this.checked;
+		interactable.draggable(joystickMode ? joystickOptions : touchpadOptions);
+	});
 
 // Invoke the main function
 }) ();
+
+
 </script>
 </div>

@@ -4,6 +4,7 @@
 	<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 	<title>Wild OS controller</title>
 	<script src="jquery-mbl-1.8.3.min.js"></script>
+	<script src="interact.min.js"></script>
 	<!--<script src="/socket.io/socket.io.js"></script>-->
 	<script src="wildos.js"></script>
 
@@ -67,10 +68,13 @@
 		$('#deviceName').html(name || 'web controller');
 	}
 
+	var Log = require('Log');
+	Log.display = 'skip';	// disable logging because it slows down the client tremendously
+
 	var OO = require('OO');
 	var ObjectSharer = require('./ObjectSharer');
 	var SharingServer = require('./SharingServer');
-	var log = require('Log').shared();
+	var log = Log.shared();
 
 	var App = OO.newClass().name('App')
 		.classFields({

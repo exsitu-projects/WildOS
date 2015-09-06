@@ -45,8 +45,7 @@
 <span class="browserTouchpadTab browserMove" id="browserMove">Move</span>
 <span class="browserTouchpadTab browserResize" id="browserResize">Resize</span><br/>
 <div id="browserTouchpad" style="display: none">
-	<!--<div class="bottom_aligner"></div>-->
-	<div class="bottom">Use this trackpad as a joystick</div>
+	<div id="browserTouchpadMsg" class="bottom"></div>
 </div>
 
 <script>
@@ -87,50 +86,7 @@
 	$('#browserURL').keypress(function(ev) { if (ev.which == 13) $('#browserSetURL').click(); });
 	$('#browserSetURL').click(function() { browser.setURL($('#browserURL').val()); });
 
-
 	var touchAction = null;
-	var touchX = 0;
-	var touchY = 0;
-	var deltaX = 0;
-	var deltaY = 0;
-	var touching = false;
-	var delay = 100;
-	var timer = null;
-
-	function startDrag(event) {
-		touchX = event.screenX;
-		touchY = event.screenY;
-		deltaX = 0;
-		deltaY = 0;
-		touching = true;
-
-		if (delay)
-			timer = window.setInterval(function() {
-				if (deltaX && deltaY && touching && touchAction)
-					touchAction(deltaX, deltaY);
-			}, delay);
-	}
-
-	function drag(event) {
-		if (! touching)
-			return;
-
-		deltaX = event.screenX - touchX;
-		deltaY = event.screenY - touchY;
-	}
-
-	function stopDrag(event) {
-		touching = false;
-		if (timer) {
-			window.clearInterval(timer);
-			timer = null;
-		}
-	}
-
-	$('#browserTouchpad').mousedown(startDrag);
-	$('#browserTouchpad').mousemove(drag);
-	$('html').mouseup(stopDrag);
-
 	function touchPadButton(tag, cb) {
 		if (touchAction === cb) {
 			// tapping active mode = hide touchpad
@@ -149,10 +105,7 @@
 			return;
 
 		var dZ = 1.05;
-		if (dY > 0)
-			dZ = 1 / 1.05;
-
-		browser.zoomBy(dZ, 0, 0);
+		browser.zoomBy(dY > 0 ? 1/dZ : dZ, 0, 0);
 	}
 
 	function touchPadMove (dX, dY) {
@@ -163,10 +116,39 @@
 		browser.resizeBy(dX, dY);
 	}
 
-	$('#browserZoom').click(function() { touchPadButton('browserZoom', touchPadZoom); });
-	$('#browserMove').click(function() { touchPadButton('browserMove', touchPadMove); });
-	$('#browserResize').click(function() { touchPadButton('browserResize', touchPadResize); });
+	if (!interact.supportsTouch()) {
+		$('#browserZoom').click(function() { touchPadButton('browserZoom', touchPadZoom); });
+		$('#browserMove').click(function() { touchPadButton('browserMove', touchPadMove); });
+		$('#browserResize').click(function() { touchPadButton('browserResize', touchPadResize); });
 
+		interact('#browserTouchpad')
+			.draggable({
+				inertia: true,
+				onmove: function(event) {
+					if (touchAction)
+						touchAction(event.dx, event.dy);
+				},
+			});
+	} else {
+		$('#browserZoom').hide();
+		$('#browserTouchpadMsg').html('Pinch to zoom');
+		$('#browserMove').click(function() { touchPadButton('browserMove', touchPadMove); });
+		$('#browserResize').click(function() { touchPadButton('browserResize', touchPadResize); });
+
+		interact('#browserTouchpad')
+			.draggable({
+				inertia: true,
+				onmove: function(event) {
+					if (touchAction)
+						touchAction(event.dx, event.dy);
+				},
+			})
+			.gesturable({
+				onmove: function(event) {
+					browser.zoomBy(1 + event.ds, 0, 0);
+				},
+			});
+	}
 
 // Invoke the main function
 }) ();
