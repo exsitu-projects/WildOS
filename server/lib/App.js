@@ -359,6 +359,7 @@ return;
 		// Called when a new client is connected
 		clientConnected: function(socket, server) {
 			if (this.sharer) {
+				log.method(this, 'clientConnected', 'adding client');
 				client = SharingClient.create(socket).addSharer(this.sharer);
 				this.clients.push(client);
 				server.registerClient(socket, client);

@@ -188,16 +188,6 @@ var WebSocketServer = WebServer.subclass().name('WebSocketServer')
 
 			var self = this;
 
-			// Listener when the client disconnects:
-			// Call `disconnected` and remove listener from table.
-			if (disconnected || token)
-				listeners.disconnected = function() {
-					log.eventEnter(self, 'disconnect', '- token', token);
-					if (disconnected)
-						disconnected(listeners.socket, self, token);
-					log.eventExit(self, 'disconnect');
-				};
-
 			// Listener when a client connects:
 			// Call `connected` and set up disconnect listener.
 			listeners.connected = function(socket) {
@@ -206,9 +196,16 @@ var WebSocketServer = WebServer.subclass().name('WebSocketServer')
 				listeners.socket = socket;
 				if (connected)
 					connected(socket, self, token);
+				if (disconnected) {
+					// Listener when the client disconnects:
+					// Call `disconnected` and remove listener from table.
+					socket.on('disconnect', listeners.disconnected = function() {
+						log.eventEnter(self, 'disconnect', '- token', token);
+						disconnected(socket, self, token);
+						log.eventExit(self, 'disconnect');
+					});
 
-				if (listeners.disconnected)
-					socket.on('disconnect', listeners.disconnected);
+				}
 
 				log.eventExit(self, 'connect');
 			};
