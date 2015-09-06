@@ -29,7 +29,7 @@ var Browser = App.subclass().name('Browser')
 	})
 	.methods({
 		initPlatform: function(platform) {
-			log.warn.method(this, 'initPlatform', platform);
+			log.method(this, 'initPlatform', platform);
 			this.platform = platform;
 
 			// Find out the size of the surface
@@ -45,8 +45,12 @@ var Browser = App.subclass().name('Browser')
 			// The path for `injectJSFile` is relative to the url of the document.
 			// Since we don't control this, we use an absolute path, based on
 			// `this.__dirname`, the absolute path from which the app was loaded.
-			platform.GUI.injectJSFile('file://'+this.__dirname+'/jquery.mousewheel.min.js', 'mousewheelJS');
-			platform.GUI.injectJSFile('file://'+this.__dirname+'/ui.js', 'browserJS');
+			var plugin = 'file://'+this.__dirname+'/jquery.mousewheel.min.js';
+			var ui = 'file://'+this.__dirname+'/ui.js';
+			platform.GUI.injectJSFile(plugin, 'mousewheelJS',
+				// make sure we load the ui after the mousewheel code is loaded
+				function() { platform.GUI.injectJSFile(ui, 'browserJS'); }
+			);
 		},
 
 		// Called when the app is about to be unloaded.

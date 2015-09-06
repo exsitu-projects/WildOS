@@ -247,10 +247,12 @@ var ObjectSharer = ObjectStore.subclass().name('ObjectSharer')
 			this.events.emit('callMethod', message);
 
 			// Store the promise, which will be resolved by callResult below
-			// ***TODO*** we should also set a timeout, especially if 'how' is 'all'			
+			// ***TODO*** we should also set a timeout, especially if 'how' is 'all'
+			// ***TODO*** Can be dramatically simplified if we expect one response!
+			// 			  pendingResults only needs a boolean by id, can callResult is much simpler.
 			log.method(this, 'remoteCallWithResult', 'returning promise');
 			this.pendingResults[id] = {
-				pendingResponses: events.EventEmitter.listenerCount(this.events, 'callMethod'),
+				pendingResponses: 1, // ***FIXME*** assumes one answer, making 'all' vs. 'any' pointless
 				how: how,
 				results: [],
 			};
@@ -299,6 +301,7 @@ var ObjectSharer = ObjectStore.subclass().name('ObjectSharer')
 			}
 
 			if (promise.pendingResponses === 0) {
+				log.method(this, 'callResult', 'reject', promise.how);
 				// reject the promise if `mode` was 'any' and we got no answer
 				// ***TODO*** the promise should also be rejected with the timeout fires
 				if (promise.how !== 'done')

@@ -290,7 +290,7 @@ var ObjectStore = OO.newClass().name('ObjectStore')
 		},
 
 		// Call an object method.
-		// Return true if the object was found and the method was called.
+		// Return a result object if the object was found and the method was called, false otherwise.
 		callMethod: function(oid, method, args) {
 			var obj = this.getObject(oid);
 			if (!obj) log.method(this, 'callMethod', oid+'.'+method, '- object not found');

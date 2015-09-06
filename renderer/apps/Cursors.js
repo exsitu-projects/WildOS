@@ -14,6 +14,13 @@ var Layer = require('../lib/Layer');
 // Use different logger for Cursor class
 var cursorLog = require('Log').logger('Cursor');
 
+// Hotspot offset for our cursor
+//	scaled to display size: 28 = viewbox size, 40 = parent div size
+var hotSpot = {
+	x: Math.round(9.2 * 40 / 28),
+	y: Math.round(7.3 * 40 / 28)
+};
+
 // The Cursor class: a single cursor.
 var Cursor = OO.newClass().name('Cursor')
 	.fields({
@@ -45,23 +52,31 @@ var Cursor = OO.newClass().name('Cursor')
 			// Remove the element if it already exists
 			HTML.remove(win, id);
 
-			var left = this.x - tile.originX -5;
-			var top = this.y - tile.originY -5;
+			var left = this.x - tile.originX - hotSpot.x;
+			var top = this.y - tile.originY - hotSpot.y;
 			var cursor = HTML.element(win, 'div class="Cursor"', {
 					id: id,
 					style: {
 						position: 'fixed',
 						zIndex: '1000',
-						minWidth: '10px',
-						minHeight: '10px',
-						backgroundColor: this.color,
+						minWidth: '40px',
+						minHeight: '40px',
+						backgroundColor: 'transparent',
 						left: left+'px',
 						top: top +'px',
 					}
 				});
 
-			if (this.app && this.app.layer)
+			if (this.app && this.app.layer) {
+				// SVG cursor
+				HTML.add(win, '<svg x="0px" y="0px" viewBox="0 0 28 28">'+
+					'<polygon fill="#FFFFFF" points="8.2,20.9 8.2,4.9 19.8,16.5 13,16.5 12.6,16.6 "/>'+
+					'<polygon fill="#FFFFFF" points="17.3,21.6 13.7,23.1 9,12 12.7,10.5 "/>'+
+					'<rect fill="'+this.color+'" x="12.5" y="13.6" transform="matrix(0.9221 -0.3871 0.3871 0.9221 -5.7605 6.5909)" width="2" height="8"/>'+
+					'<polygon fill="'+this.color+'" points="9.2,7.3 9.2,18.5 12.2,15.6 12.6,15.5 17.4,15.5 "/>'+
+					'</svg>', 'content', cursor);
 				HTML.add(win, cursor, 'end', this.app.layer.id);
+			}
 			else
 				log.warn.method(this, 'createCursor', 'app or layer not available');
 		},
@@ -87,8 +102,8 @@ var Cursor = OO.newClass().name('Cursor')
 			var win = tile.window.window;
 			var cursor = HTML.findElement(win, 'Cursor_'+this.id);
 			if (cursor) {
-				var left = this.x - tile.originX -5;
-				var top = this.y - tile.originY -5;
+				var left = this.x - tile.originX - hotSpot.x;
+				var top = this.y - tile.originY - hotSpot.y;
 				HTML.setStyle(win, cursor, {
 					left: left+'px',
 					top: top+'px',
