@@ -94,6 +94,9 @@
 			// Forward call to move cursor to server
 			moveBy: function(dx, dy) {},
 
+			// Forward call to click cursor to server
+			click: function() {},
+
 			// Called when a cursor is removed: deselect and remove the swatch
 			die: function() {
 				if (! this.id)
@@ -177,6 +180,12 @@
 					this.selected.moveBy(dx, dy);
 			},
 
+			// Click selected cursor, if any
+			clickSelected: function() {
+				if (this.selected)
+					this.selected.click();
+			},
+
 			// Remote calls to add/remove cursor
 			addCursor: function(config) {},
 			removeCursor: function(id) {},
@@ -197,7 +206,7 @@
 	log.spyMethods(Cursors);
 
 	// Add the `Cursor` class to the Cursors sharer
-	Cursors.sharer.slave(Cursor, 'own', ['moveBy']);
+	Cursors.sharer.slave(Cursor, 'own', ['moveBy', 'click']);
 
 	var cursors = Cursors.create();
 
@@ -207,7 +216,8 @@
 
 	// A `Joystick` interactor.
 	function Joystick(options) {
-		this.dragging = 0;
+		this.down = false;
+		this.dragging = false;
 		this.screenX = this.screenY = 0;
 		this.deltaX = this.deltaY = 0;
 		this.delay = 100;
@@ -215,6 +225,7 @@
 
 		this.target = options.target || 'html';
 		this.dragTarget = options.dragTarget || this.target;
+		this.clicked = options.clicked || function() {};
 		this.startedDragging = options.startedDragging || function() {};
 		this.stoppedDragging = options.stoppedDragging || function() {};
 		this.draggedBy = options.draggedBy || function() {};
@@ -226,33 +237,48 @@
 		var self = this;
 		$(self.target)
 			.mousedown(self.mousedown = function(event) {
-				self.dragging = true;
+				self.down = true;
 				self.screenX = event.screenX;
 				self.screenY = event.screenY;
 				self.deltaX = self.deltaY = 0;
-				self.startedDragging(self.dragTarget);
-				if (self.delay)
-					self.timer = window.setInterval(function() {
-						if (self.deltaX && self.deltaY && self.dragging)
-							self.draggedBy(self.dragTarget, self.deltaX, self.deltaY);
-					}, self.delay);
 			});
 
 		$('html')
 			.mousemove(self.mousemove = function(event) {
+				if (!self.down)
+					return;
+
+				self.deltaX = event.screenX - self.screenX;
+				self.deltaY = event.screenY - self.screenY;
+
+				if(! self.dragging && (Math.abs(self.deltaX) > 3 || Math.abs(self.deltaY) > 3)) {
+					self.dragging = true;
+					self.startedDragging(self.dragTarget);
+					if (self.delay)
+						self.timer = window.setInterval(function() {
+							if (self.deltaX && self.deltaY && self.dragging)
+								self.draggedBy(self.dragTarget, self.deltaX, self.deltaY);
+						}, self.delay);
+				}
 				if (self.dragging) {
-					self.deltaX = event.screenX - self.screenX;
-					self.deltaY = event.screenY - self.screenY;
 					self.dragChanged(self.dragTarget, self.deltaX, self.deltaY);
 				}
 			})
 			.mouseup(self.mouseup = function(event) {
-				self.dragging = false;
-				if (self.timer) {
-					window.clearInterval(self.timer);
-					self.timer = null;
+				if (! self.down)
+					return;
+				
+				self.down = false;
+				if (self.dragging) {
+					self.dragging = false;
+					if (self.timer) {
+						window.clearInterval(self.timer);
+						self.timer = null;
+					}
+					self.stoppedDragging(self.dragTarget);					
+				} else {
+					self.clicked(self.dragTarget);
 				}
-				self.stoppedDragging(self.dragTarget);
 			})
 		;
 
@@ -276,6 +302,7 @@
 		target: '#cursorTouchpad',
 		dragTarget: cursors,
 		draggedBy: function(target, dx, dy) { if (target) target.moveSelectedBy(dx, dy); },
+		clicked: function(target) { if (target) target.clickSelected(); },
 	}).start();
 
 // Invoke the main function

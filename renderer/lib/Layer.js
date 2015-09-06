@@ -187,6 +187,7 @@ var Layer = OO.newClass().name('Layer')
 			if (this.overlay) {
 				attrSet.backgroundColor = 'transparent';
 				attrSet.pointerEvents = 'none';
+				attrSet.zIndex = '1000';
 			}
 
 			// Grid mode: ignore tile offset and cover entire tile

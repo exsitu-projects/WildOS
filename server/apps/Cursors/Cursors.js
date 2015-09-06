@@ -153,6 +153,6 @@ var Cursors = App.subclass().name('Cursors')
 log.spyMethods(Cursors);
 
 // Add the `Cursor` class to the Cursors sharer
-Cursors.sharer.master(Cursor, 'own', ['moveBy', 'moveTo']);
+Cursors.sharer.master(Cursor, /*fields: */ 'own', /*allow remote calls: */ ['moveBy', 'moveTo', 'click']);
 
 module.exports = Cursors;

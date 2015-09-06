@@ -13,6 +13,137 @@
 			background-color: #edc;
 		}
 	</style>
+	<script type="text/javascript">
+
+	// getPath and getElement serialize / deserialize a path in the DOM
+
+	// Helper function: return the root document of an element
+	function getDocument(el) {
+		while (el.parentNode)
+			el = el.parentNode;
+		return el;
+	}
+
+	// Return a string encoding the path in the DOM from the root to element `el`.
+	// The path is a sequence of `TAG[i]` where `TAG` is the tagname and `i` the rank
+	// and `#id` where id is the `id` attribute.
+	function getPath(el) {
+		if (!el)
+			return '';
+
+		// See if we are inside a frame
+		if (el.defaultView)
+			return getPath(el.defaultView.frameElement);
+
+		// Ignore non-elements
+		if (el.nodeType != 1) 
+			return getPath(el.parentNode);
+
+		// See if we can identify it by id
+		if (el.hasAttribute('id') && el.id !== '') {
+			var doc = getDocument(el);
+			if (doc.getElementById(el.id) === el) {
+				if (doc === document)
+					return '#'+el.id;
+				// We are in an iframe: prefix with the path to it
+				return getPath(doc.defaultView.frameElement) + ' #'+el.id;
+			}
+		}
+
+		// Get the parent path and add our bit
+		var parent = el.parentNode;
+		var path = getPath(parent);
+		var index = 0;
+		for (var i = 0; i < parent.childNodes.length; i++) {
+			var node = parent.childNodes[i];
+			if (node === el)
+				break;
+			if (node.tagName === el.tagName)
+				index++;
+		}
+		return path + ' '+el.tagName+'['+index+']';
+	}
+
+	// Return the element described by `path`,
+	// which has the format returned by getPath above
+	// `root` default to the root document.
+	function getElement(path, /*opt*/ root) {
+		if (! root)
+			root = document;
+
+		if (root.tagName === 'IFRAME')
+			root = root.contentDocument;
+
+		if (path === '')
+			return root;
+
+		var res = path.match(/^ *#([^ ]*)/);
+		if (res) {
+			var str = res[0];
+			var id = res[1];
+			root = getDocument(root).getElementById(id);
+			if (! root)
+				return null;
+			return getElement(path.substring(str.length), root);
+		}
+
+		res = path.match(/^ *([A-Z]+)\[([0-9]+)\]/);
+		if (!res)
+			return null;
+
+		var str = res[0]; tag = res[1], rank = parseInt(res[2]);
+
+		var index = 0;
+		for (var i = 0; i < root.childNodes.length; i++) {
+			var node = root.childNodes[i];
+			if (node.tagName === tag) {
+				if (index === rank)
+					return getElement(path.substring(str.length), node);
+				index++;
+			}
+		}
+
+		return null; // not found
+	}
+
+	// Return the path to the element at point x,y, 
+	// or null if it can't be found (e.g. if outside the view)
+	function getElementAt(x, y) {
+		var target = document.elementFromPoint(x, y);
+
+		while (target && target instanceof HTMLIFrameElement) {
+			x -= target.offsetLeft;
+			y -= target.offsetTop;
+
+			var matrix = window.getComputedStyle(target, null).transform;
+			if (matrix !== 'none') {
+				matrix = matrix.split('(')[1].split(')')[0].split(',');
+				var scale = matrix[0];	// extract scale. We assume the xform is simply a scale, with origin 0,0
+				x /= scale;
+				y /= scale;
+			}
+
+			target = target.contentDocument.elementFromPoint(x, y);
+		}
+
+		if (! target)
+			return null;	// not found;
+
+		return getPath(target);
+	}
+
+	// Send a click event to the element defined by `targetPath`
+	function deliverClick(targetPath) {
+		console.log('>> click', targetPath);
+		var target = getElement(targetPath);
+
+		if (target)
+			target.dispatchEvent(new MouseEvent('click', {
+				bubbles: true,
+				cancelable: true,
+			}));
+	}
+	</script>
 </head>
 <body>
 	<h2 id="hello">WildOS renderer <span id="renderer"></span></h2>

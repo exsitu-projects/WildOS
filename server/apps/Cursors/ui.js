@@ -1,7 +1,8 @@
 // Code injected in the platform control window for the Cursors app.
 //
 // Show the available cursors and let the user create/delete cursors.
-// Cursors are also displayed in the tiled display representation, and can be moved by dragging them.
+// Cursors are also displayed in the tiled display representation, 
+// and can be clicked by clicking them and moved by dragging them.
 //
 
 // Wrap in a function to protect global space
@@ -32,20 +33,22 @@ function createCursor(cursor) {
 	if ($('#'+swatch).length === 0) {
 		$('#cursors').append('<span id="'+swatch+'" style="margin: 5px; background-color: '+cursor.color+'">'+cursor.id+'</span>');
 
-		// Move cursor by using the swatch as a joystick
+		// Move cursor by using the swatch as a joystick, Click the cursor by clicking it
 		new Joystick({
 			target: '#'+swatch,
 			dragTarget: cursor,
+			clicked: clickCursor,
 			startedDragging: selectCursor,
 			draggedBy: function(cursor, dx, dy) {
 				cursor.moveBy(dx, dy);
 			},
 		}).start();
 
-		// Move cursor by dragging it
-		new Drag({
+		// Click cursor by clicking it, Move cursor by dragging it
+		new ClickOrDrag({
 			target: '#'+id,
 			dragTarget: cursor,
+			clicked: clickCursor,
 			startedDragging: selectCursor,
 			draggedBy: function(cursor, dx, dy) {
 				cursor.moveBy(dx/wall.zoom, dy/wall.zoom);
@@ -79,6 +82,11 @@ function selectCursor(cursor) {
 	if (selectedCursor) {
 		$('#Swatch_'+selectedCursor.id).css('border', 'solid black 1px');
 	}
+}
+
+function clickCursor(cursor) {
+	if (cursor && cursor.id)
+		cursor.click();
 }
 
 // Called at the end of the script.
@@ -128,7 +136,8 @@ function stopCursors() {
 
 // A `Joystick` interactor.
 function Joystick(options) {
-	this.dragging = 0;
+	this.down = false;
+	this.dragging = false;
 	this.screenX = this.screenY = 0;
 	this.deltaX = this.deltaY = 0;
 	this.delay = 100;
@@ -136,6 +145,7 @@ function Joystick(options) {
 
 	this.target = options.target || 'html';
 	this.dragTarget = options.dragTarget || this.target;
+	this.clicked = options.clicked || function() {};
 	this.startedDragging = options.startedDragging || function() {};
 	this.stoppedDragging = options.stoppedDragging || function() {};
 	this.draggedBy = options.draggedBy || function() {};
@@ -147,33 +157,48 @@ Joystick.prototype.start = function() {
 	var self = this;
 	$(self.target)
 		.mousedown(self.mousedown = function(event) {
-			self.dragging = true;
+			self.down = true;
 			self.screenX = event.screenX;
 			self.screenY = event.screenY;
 			self.deltaX = self.deltaY = 0;
-			self.startedDragging(self.dragTarget);
-			if (self.delay)
-				self.timer = window.setInterval(function() {
-					if (self.deltaX && self.deltaY && self.dragging)
-						self.draggedBy(self.dragTarget, self.deltaX, self.deltaY);
-				}, self.delay);
 		});
 
 	$('html')
 		.mousemove(self.mousemove = function(event) {
+			if (!self.down)
+				return;
+
+			self.deltaX = event.screenX - self.screenX;
+			self.deltaY = event.screenY - self.screenY;
+
+			if(! self.dragging && (Math.abs(self.deltaX) > 3 || Math.abs(self.deltaY) > 3)) {
+				self.dragging = true;
+				self.startedDragging(self.dragTarget);
+				if (self.delay)
+					self.timer = window.setInterval(function() {
+						if (self.deltaX && self.deltaY && self.dragging)
+							self.draggedBy(self.dragTarget, self.deltaX, self.deltaY);
+					}, self.delay);
+			}			
 			if (self.dragging) {
-				self.deltaX = event.screenX - self.screenX;
-				self.deltaY = event.screenY - self.screenY;
 				self.dragChanged(self.dragTarget, self.deltaX, self.deltaY);
 			}
 		})
 		.mouseup(self.mouseup = function(event) {
-			self.dragging = false;
-			if (self.timer) {
-				window.clearInterval(self.timer);
-				self.timer = null;
+			if (! self.down)
+				return;
+			
+			self.down = false;
+			if (self.dragging) {
+				self.dragging = false;
+				if (self.timer) {
+					window.clearInterval(self.timer);
+					self.timer = null;
+				}
+				self.stoppedDragging(self.dragTarget);				
+			} else {
+				self.clicked(self.dragTarget);
 			}
-			self.stoppedDragging(self.dragTarget);
 		})
 	;
 
@@ -193,44 +218,57 @@ Joystick.prototype.stop = function() {
 	}
 };
 
-// A `Drag` interactor.
-function Drag(options) {
-	this.dragging = 0;
+// A `Click or Drag` interactor.
+function ClickOrDrag(options) {
+	this.dragging = false;
+	this.move = false;
 	this.screenX = this.screenY = 0;
 	this.deltaX = this.deltaY = 0;
 
 	this.target = options.target || 'html';
 	this.dragTarget = options.dragTarget || this.target;
+	this.clicked = options.clicked || function() {};
 	this.startedDragging = options.startedDragging || function() {};
 	this.stoppedDragging = options.stoppedDragging || function() {};
 	this.draggedBy = options.draggedBy || function() {};
 }
 
 // The `start` method sets the handlers to implement the panzoom interaction.
-Drag.prototype.start = function() {
+ClickOrDrag.prototype.start = function() {
 	var self = this;
 	$(self.target)
 		.mousedown(self.mousedown = function(event) {
-			self.dragging = true;
+			self.down = true;
 			self.screenX = event.screenX;
 			self.screenY = event.screenY;
 			self.deltaX = self.deltaY = 0;
-			self.startedDragging(self.dragTarget);
 		});
 
 	$('html')
 		.mousemove(self.mousemove = function(event) {
+			if (!self.down)
+				return;
+
+			self.deltaX = event.screenX - self.screenX;
+			self.deltaY = event.screenY - self.screenY;
+			if (!self.dragging && (Math.abs(self.deltaX) > 3 || Math.abs(self.deltaY) > 3)) {
+				self.dragging = true;
+				self.startedDragging(self.dragTarget);
+			}
 			if (self.dragging) {
-				self.deltaX = event.screenX - self.screenX;
-				self.deltaY = event.screenY - self.screenY;
 				self.draggedBy(self.dragTarget, self.deltaX, self.deltaY);
 				self.screenX = event.screenX;
 				self.screenY = event.screenY;
 			}
 		})
 		.mouseup(self.mouseup = function(event) {
-			self.dragging = false;
-			self.stoppedDragging(self.dragTarget);
+			self.down = false;
+			if (self.dragging) {
+				self.dragging = false;
+				self.stoppedDragging(self.dragTarget);				
+			} else {
+				self.clicked(self.dragTarget);
+			}
 		})
 	;
 
@@ -238,7 +276,7 @@ Drag.prototype.start = function() {
 };
 
 // The `stop` method removes the listeners.
-Drag.prototype.stop = function() {
+ClickOrDrag.prototype.stop = function() {
 	$(this.target).off('mousedown', this.mousedown);
 	$('html').off('mousemove', this.mousemove).off('mouseup', this.mouseup);
 	delete this.mousedown;

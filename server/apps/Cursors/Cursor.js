@@ -64,6 +64,11 @@ var Cursor = OO.newClass().name('Cursor')
 		moveTo: function(x, y) {
 			this.setPos(x, y);
 		},
+	
+		// Send a click at the position of the cursor
+		click: function() {
+			Cursor.wall.click(this.x, this.y);	// tell the surface to click
+		}
 	})
 ;
 

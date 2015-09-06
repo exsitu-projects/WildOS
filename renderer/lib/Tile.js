@@ -165,6 +165,20 @@ var Tile = OO.newClass().name('Tile')
 			log.method(this, 'callJavascript_after ', fun);
 			this.window.window[fun]();
 		},
+
+		// Called by server to deliver a click
+		deliverClick_after: function(path) {
+			if (this.window)
+				this.window.window.deliverClick(path);
+		},
+
+		// Called by server to get the element at position x, y (in the Tile)
+		elementAtPoint: function(x, y) {
+			if (! this.window)
+				return;
+
+			return this.window.window.getElementAt(x, y) || undefined;
+		}
 	})
 ;
 

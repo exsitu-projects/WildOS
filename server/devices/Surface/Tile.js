@@ -113,6 +113,16 @@ var Tile = Device.subclass().name('Tile')
 			// calling javascript in the background page
 			// let the sharer forward it to the clients
 		},
+
+		// called by surface to deliver the click
+		deliverClick: function(path) {
+			// RPC to client
+		},
+
+		// called by surface to get the element at position x,y
+		elementAtPoint: function(x, y) {
+			// RPC with return value (returns a promise)
+		},
 	})
 ;
 

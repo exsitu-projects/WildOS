@@ -54,7 +54,12 @@ var Surface = Device.subclass().name('Surface')
 		// Create a sharer to share the state of `Surface` and `Tile` objects with clients
 		this.surfaceSharer = ObjectSharer.create().name('surfaceSharer');
 		this.surfaceSharer.master(Surface, 'own', ['callJavascript']);
-		Renderer.sharer.master(Tile, 'own', ['remoteLog'], ['getLog', 'clearLog', 'callJavascript'], 'after');
+		Renderer.sharer.master(Tile, 
+			/*fields*/'own', 
+			/*methods*/['remoteLog'/* not used, 'clickElement'*/], 
+			/*notifyMethods*/['getLog', 'clearLog', 'callJavascript', 'deliverClick'], /*when*/'after',
+			/*remoteMethods*/['elementAtPoint'], /*how*/ 'any'
+		);
 
 		// Catch events to start/stop/restart the clients on the cluster.
 		// The commands are taken from the config file (if they exist)
@@ -346,6 +351,61 @@ var Surface = Device.subclass().name('Surface')
 				tile.callJavascript(fun /* args */);			
 			});
 		},
+
+		// Called by a tile to deliver a click
+		clickElement: function(path) {
+			this.mapDevices(function(tile) {
+				tile.deliverClick(path);
+			});
+		},
+
+		// returns a Promise that will resolve when the first tile responds with an element,
+		// or fail if no tile finds an element.
+		// The result of the promise is the path to the element
+		elementAtPoint: function(x, y) {
+			var resolve = null;
+			var reject = null;
+			var pending = 0;
+			var promise = new Promise(function(res, rej) { resolve = res; reject = rej;});
+
+			this.mapDevices(function(tile) {
+				pending++;
+				tile.elementAtPoint(x - tile.originX, y - tile.originY)
+					.then(function(path) {
+						pending--;
+						if (resolve) {
+							log.message('elementAtPoint promise resolved. tile=', tile.name, 'path=', path);
+							resolve(path);
+							resolve = null;
+						} else
+							log.message('elementAtPoint promise ignored. tile=', tile.name, 'path=', path);
+					}, function(err) {
+						pending--;
+						if (pending === 0 && resolve && reject) {
+							log.message('elementAtPoint promise rejected. tile=', tile.name);
+							reject('no result');
+							resolve = null;
+							reject = null;
+						} else
+							log.message('elementAtPoint promise ignored. tile=', tile.name);
+					});
+			});
+
+			return promise;
+		},
+
+		// click at position x,y in the surface
+		click: function(x, y) {
+			var self = this;
+			this.elementAtPoint(x, y).then(
+				function(path) {
+					log.message('click: elementAtPoint gave', path);
+					self.clickElement(path);
+				},
+				function(err) {
+					log.message('click: elementAtPoint error', err);
+				});
+		}
 	});
 
 log.spyMethods(Surface);
