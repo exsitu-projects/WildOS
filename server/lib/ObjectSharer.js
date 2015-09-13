@@ -29,12 +29,41 @@ var ObjectSharer = ObjectStore.subclass().name('ObjectSharer')
 	.constructor(function(eventEmitter) {
 		// Create an event source if we're not given one.
 		this.events = eventEmitter || new events.EventEmitter();
-
-		this.recordNew = true;	// add oid when recording objects that don't have one.
+		this.observers = new Map();	// store observer for field values
+		this.recordNew = true;		// add oid when recording objects that don't have one.
 		this._super();
 	})
 	.methods({
 		// --- Master ---
+
+		// helper functions to observe the values of object fields
+		observe: function(obj, field) {
+			var sharer = this;
+			function observer(changes) {
+//				log.message('object field observer', obj.oid, field, changes[0].object);
+				if (changes)
+					sharer.notifySet(obj, field, changes[0].object);
+			}
+
+			var value = obj[field];
+			if (value && typeof value === 'object') {
+				Object.observe(value, observer);
+				if (this.observers.get(value))
+					log.warn.method(this, 'observe', obj.oid+'.'+field, 'already observed');
+				this.observers.set(value, observer);
+			}
+		},
+		unobserve: function(obj, field) {
+			var value = obj[field];
+			if (value && typeof value === 'object') {
+				var observer = this.observers.get(value);
+				if (observer) {
+					Object.unobserve(value, observer);
+					this.observers.delete(value);
+				} else
+					log.warn.method(this, 'unobserve', obj.oid+'.'+field, 'no observer');
+			}
+		},
 
 		// Make the objects of a class be the masters of the distributed class.
 		//	- `fields` is a list of field names, or `'all'` for all fields, or `'own'` for own fields.
@@ -61,30 +90,79 @@ var ObjectSharer = ObjectStore.subclass().name('ObjectSharer')
 				constructor: function() {
 					log.method(this, 'MIXIN CONSTRUCTOR');
 					this.oid = sharer.recordObject(this);
+					if (this.oid) {
+						// observe object and array fields
+						var shared = sharer.sharedClasses[cls.className()];
+						if (shared.objectFields)
+							for (var i = 0; i < shared.objectFields.length; i++)
+								sharer.observe(this, shared.objectFields[i]);
+						
+					}
+
 					log.method(this, 'OID=', this.oid);
 					sharer.notifyNew(this);
 				},
 				methods: {
 					die: function() {
 						var oid = sharer.removeObject(this);
-						if (oid)
+						if (oid) {
+							// remove object and array fields observers
+							var shared = sharer.sharedClasses[cls.className()];
+							if (shared.objectFields)
+								for (var i = 0; i < shared.objectFields.length; i++)
+									sharer.unobserve(this, shared.objectFields[i]);
+
 							sharer.notifyDie(oid);
+						}
 					}
 				},
 			});
 
 			// Wrap the object fields to notify when they change value.
-			// `'all'` wraps all the fields (of the object's class _and_ its ancestors),
-			// `'own'` wraps only the fields defined in its class.
-			// Other values must be a list of field names.
+			//`fields` can be:
+			//	`'all'` wraps all the fields (of the object's class _and_ its ancestors),
+			// 	`'own'` wraps only the fields defined in its class.
+			// 	An array of names of fields
+			//	A literal objects with the following fields:
+			//		`fields` (required): `'own'` or `'all'` or a list of field names
+			//		`objects` (optional): list of field names 
+			//		`arrays` (optional): list of field names
 			// *** Maybe we should have a value `'mixin'` to include mixin fields?
+			var objectFields = null;
+			var arrayFields = null;
+
+			if (fields && fields.fields) {
+				// assume literal object format
+				objectFields = fields.objects;
+				arrayFields = fields.arrays;
+				fields = fields.fields;
+			}
+
 			if (fields == 'all')
 				fields = cls.listFields();
 			else if (fields == 'own')
 				fields = cls.listOwnFields();
+			
+			log.method(this, 'master', 
+				'fields:', fields, 'objects:', objectFields, 'arrays:', arrayFields);
+			var j;
+			if (objectFields)
+				for (i = 0; i < objectFields.length; i++) {
+					this.wrapObjectFieldNotify(cls, objectFields[i]);
+				}
+			if (arrayFields)
+				for (i = 0; i < arrayFields.length; i++) {
+					this.wrapArrayFieldNotify(cls, arrayFields[i]);
+				}
 			if (fields)
-				for (i = 0; i < fields.length; i++)
+				for (i = 0; i < fields.length; i++) {
+					var field = fields[i];
+					if (objectFields && objectFields.indexOf(field) >= 0)
+						continue;
+					if (arrayFields && arrayFields.indexOf(field) >= 0)
+						continue;
 					this.wrapFieldNotify(cls, fields[i]);
+				}
 
 			// Listen to method calls to execute them locally
 			// `'all'` and `'own'` are as above, otherwise a list of methods
@@ -130,6 +208,8 @@ var ObjectSharer = ObjectStore.subclass().name('ObjectSharer')
 			this.sharedClasses[cls.className()] = {
 				cls: cls,
 				fields: fields || [],
+				objectFields: objectFields,
+				arrayFields: arrayFields,
 				methods: methods || [],
 				notifyMethods: notifyMethods || [],
 				remoteMethods: remoteMethods || [],
@@ -140,6 +220,31 @@ var ObjectSharer = ObjectStore.subclass().name('ObjectSharer')
 
 		// Helper method to wrap a field with a function that notifies the change.
 		wrapFieldNotify: function(cls, field) {
+			var sharer = this;
+			cls.wrapField(field, null, function(value) {
+				var ret = this._set(value);
+				sharer.notifySet(this, field, value);
+				return ret;
+			});
+		},
+
+		// Same as above for a field that holds a literal object value.
+		wrapObjectFieldNotify: function(cls, field) {
+			var sharer = this;
+
+			cls.wrapField(field, null, function(value) {
+				var oval = this[field];
+				sharer.unobserve(this, field);
+				var ret = this._set(value);
+				sharer.observe(this, field);
+				sharer.notifySet(this, field, value);
+				return ret;
+			});
+		},
+
+		// Same as above for a field that holds an array.
+		// *** TODO ***
+		wrapArrayFieldNotify: function(cls, field) {
 			var sharer = this;
 			cls.wrapField(field, null, function(value) {
 				var ret = this._set(value);

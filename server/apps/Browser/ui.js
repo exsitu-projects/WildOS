@@ -16,9 +16,9 @@ var app = platform.apps.getApp('Browser');
 var wall = {
 	originX: 0,
 	originY: 0,
+	zoom: 1.0,
 	width: 800,
-	height: 600,
-	zoom: 1.0
+	height: 600
 };
 
 // Set the url
@@ -30,11 +30,11 @@ function adjustURL() {
 
 // Adjust the frame showing the page.
 function adjustPanZoom() {
-	var zoom = wall.zoom*app.zoom; // accounts for wallZoom in wild.html
+	var zoom = wall.zoom*app.coords.zoom; // accounts for wallZoom in wild.html
 	var percentZoom = Math.round(zoom*100,2)+'%';
 	$('#browserPage')
-		.css('left', Math.round(app.offsetX/app.zoom)+"px")
-		.css('top',  Math.round(app.offsetY/app.zoom)+"px")
+		.css('left', Math.round(app.coords.x/app.coords.zoom)+"px")
+		.css('top',  Math.round(app.coords.y/app.coords.zoom)+"px")
 		.css('zoom', percentZoom)
 		.contents().find('body').css('zoom', percentZoom);
 }
@@ -82,8 +82,8 @@ function startBrowser() {
 	var size = 'width: ' +wall.width+'px; '
 			 + 'height: '+wall.height+'px; ';
 
-	size = 'left: '  + app.offsetX + 'px; '
-		 + 'top: '   + app.offsetY + 'px; '
+	size = 'left: '  + app.coords.x + 'px; '
+		 + 'top: '   + app.coords.y + 'px; '
 		 + 'width: ' + app.width   + 'px; '
 		 + 'height: '+ app.height  + 'px; ';
 
@@ -115,12 +115,21 @@ function startBrowser() {
 	// Update UI when application state changes
 	app.wrapFields({
 		set url(url) { this._set(url); adjustURL(); },
-		set offsetX(val) { this._set(val); adjustPanZoom(); },
-		set offsetY(val) { this._set(val); adjustPanZoom(); },
-		set zoom(val)    { this._set(val); adjustPanZoom(); },
+		set coords(val)		{ 
+			// We need to track the changes of the object ourselves
+			if (this[val] && typeof this[val] === 'object')
+				Object.unobserve(this[val], adjustPanZoom);
+			this._set(val); 
+			if (val && typeof val === 'object')
+				Object.observe(val, adjustPanZoom);
+			adjustPanZoom(); 
+		},
 		set width(val)   { this._set(val); adjustSize(); },
 		set height(val)  { this._set(val); adjustSize(); },
 	});
+
+	if (app.coords)
+		Object.observe(app.coords, adjustPanZoom);
 }
 
 function stopBrowser() {
@@ -276,6 +285,8 @@ PanZoomResize.prototype.start = function() {
 // The `stop` method removes the listeners.
 PanZoomResize.prototype.stop = function() {
 	$(this.target).off('mousedown mousemove mouseup mousewheel');
+	if (app.coords)
+		Object.unobserve(app.coords, adjustPanZoom);
 };
 
 // Go!

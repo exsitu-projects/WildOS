@@ -16,11 +16,9 @@ var Browser = App.subclass().name('Browser')
 	.fields({
 		// background page + its offset and zoom factor
 		url: null,		// URL of the page to load
-		offsetX: 0,		// Offset of the page from the topleft of the surface
-		offsetY: 0,		
+		coords: {x: 0, y: 0, zoom: 1},
 		width: 800,		// Size of page
 		height: 600,
-		zoom: 1,		// Zoom factor
 	})
 	.constructor(function(config) {
 		// *** It looks like we must define a constructor for the ObjectSharer constructor mixin to work
@@ -36,10 +34,10 @@ var Browser = App.subclass().name('Browser')
 			var surface = platform.findDevice({type: 'Surface'});
 			if (surface && surface.width) {
 					// Guess a reasonable zoom factor
-					this.zoom = surface.width / 1280;
-					this.width = surface.width / this.zoom;
-					this.height = surface.height / this.zoom;
-					this.offsetX = this.offsetY = 0;
+					this.coords.zoom = surface.width / 1280;
+					this.width = surface.width / this.coords.zoom;
+					this.height = surface.height / this.coords.zoom;
+					this.coords.x = this.coords.y = 0;
 			}
 
 			// The path for `injectJSFile` is relative to the url of the document.
@@ -75,16 +73,16 @@ var Browser = App.subclass().name('Browser')
 		// Pan/zoom the page in the display surface
 		panBy: function(dX, dY) {
 			log.method(this, 'panBy', dX, dY);
-			this.offsetX += dX;
-			this.offsetY += dY;
+			this.coords.x += dX;
+			this.coords.y += dY;
 		},
 
 		// Zoom the content of the page (and resize it accordingly)
 		zoomBy: function(dZ, x, y) {
 			log.method(this, 'zoomBy', dZ, x, y);
-			this.offsetX = x + (this.offsetX - x) * dZ;
-			this.offsetY = y + (this.offsetY - y) * dZ;
-			this.zoom *= dZ;
+			this.coords.x = x + (this.coords.x - x) * dZ;
+			this.coords.y = y + (this.coords.y - y) * dZ;
+			this.coords.zoom *= dZ;
 		},
 
 		// Resize the page (without scaling the content)
@@ -112,7 +110,7 @@ var Browser = App.subclass().name('Browser')
 				}
 		}
 	})
-	.shareState('own', 'own', ['remoteExec'], 'after')
+	.shareState({fields: 'own', objects: ['coords']}, 'own', ['remoteExec'], 'after')
 ;
 
 log.spyMethods(Browser);
