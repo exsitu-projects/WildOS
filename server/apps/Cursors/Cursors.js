@@ -147,12 +147,18 @@ var Cursors = App.subclass().name('Cursors')
 		onRemove: function(cb) { return this.on('cursorRemoved', cb); },
 
 	})
-	.shareState(/*fields: */ 'own', /*allow remote calls: */ ['addCursor', 'removeCursor'], /* notify: */ ['cursorCreated', 'cursorRemoved'])
-;
+	.shareState({
+		fields: 'own', 
+		methods: ['addCursor', 'removeCursor'], 
+		notify: ['cursorCreated', 'cursorRemoved']
+	});
 
 log.spyMethods(Cursors);
 
 // Add the `Cursor` class to the Cursors sharer
-Cursors.sharer.master(Cursor, /*fields: */ 'own', /*allow remote calls: */ ['moveBy', 'moveTo', 'click']);
+Cursors.sharer.master(Cursor, {
+	fields: 'own',
+	methods: ['moveBy', 'moveTo', 'click'],
+});
 
 module.exports = Cursors;

@@ -1,6 +1,4 @@
-require=(function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof require=="function"&&require;if(!u&&a)return a(o,!0);if(i)return i(o,!0);throw new Error("Cannot find module '"+o+"'")}var f=n[o]={exports:{}};t[o][0].call(f.exports,function(e){var n=t[o][1][e];return s(n?n:e)},f,f.exports,e,t,n,r)}return n[o].exports}var i=typeof require=="function"&&require;for(var o=0;o<r.length;o++)s(r[o]);return s})({"./ObjectSharer":[function(require,module,exports){
-module.exports=require('kYRwZz');
-},{}],"kYRwZz":[function(require,module,exports){
+require=(function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof require=="function"&&require;if(!u&&a)return a(o,!0);if(i)return i(o,!0);throw new Error("Cannot find module '"+o+"'")}var f=n[o]={exports:{}};t[o][0].call(f.exports,function(e){var n=t[o][1][e];return s(n?n:e)},f,f.exports,e,t,n,r)}return n[o].exports}var i=typeof require=="function"&&require;for(var o=0;o<r.length;o++)s(r[o]);return s})({"kYRwZz":[function(require,module,exports){
 // ObjectSharer - Shares the objects of a set of classes.
 //
 // This is the main building block of the distributed object support.
@@ -34,22 +32,36 @@ var ObjectSharer = ObjectStore.subclass().name('ObjectSharer')
 		//	  If it is a list, each method name can be suffixed by ':sync'. In this case the method call returns a promise 
 		//	  that is resolved when the result is received.
 		//	- `how`, if specified, can be 'sync', in which case it applies to all methods specified by `method`
-		slave: function(cls, fields, methods, how) {
+		//	- `callableMethods` is the set of methods that can be called remotely
+		/*
+			<flist> is a list of fields and can be of the form:
+				'own' | 'all' | ['f1', 'f2', ...] | 'f1 f2 ...'
+				if 'f1' is 'own-' or 'all-' the following fields are removed from the 'own' or 'all' set
+			<mlist> is a list of methods and can be of similar forms
+			all fields are optional
+
+			{
+				fields: <flist>		// list of fields whose values are synced with the master
+				remote: <mlist>		// list of methods whose calls are forwarded to the master and
+				notify: <mlist>		// list of methods whose calls are 
+				methods: <mlist>
+			}
+		*/
+//		slave: function(cls, fields, methods, how, callableMethods) {
+		slave: function(cls, spec) {
 
 			// Record the description of the class.
-			if (fields == 'all')
-				fields = cls.listFields();
-			else if (fields == 'own')
-				fields = cls.listOwnFields();
-
-			if (methods == 'all')
-				methods = cls.listMethods();
-			else if (methods == 'own')
-				methods = cls.listOwnMethods();
-			if (methods)
-				for (i = 0; i < methods.length; i++) {
-					var method = methods[i].split(':');
-					this.wrapRemoteCall(cls, method[0], method[1] || how);
+			var fields = spec.fields && cls.listFields(spec.fields);
+			var methods = spec.methods && cls.listMethods(spec.methods);
+			var notify = spec.notify && cls.listMethods(spec.notify);
+			var remote = spec.remote && cls.listMethods(spec.remote);
+			if (notify)
+				for (i = 0; i < notify.length; i++) {
+					this.wrapNotify(cls, notify[i]);
+				}
+			if (remote)
+				for (i = 0; i < remote.length; i++) {
+					this.wrapRemoteCall(cls, remote[i]);
 				}
 
 			this.sharedClasses[cls.className()] = {
@@ -61,29 +73,31 @@ var ObjectSharer = ObjectStore.subclass().name('ObjectSharer')
 		},
 
 		// Helper method to wrap a method with a function that sends the call to the server.
-		// If `how` is 'sync', return a promise that gets resolved when the result is received.
+		wrapNotify: function(cls, method, how) {
+			var sharer = this;
+
+			cls.wrap(method, function() {
+				var args = [].slice.apply(arguments);
+				sharer.remoteCall(this, method, args);
+
+				// Call local body (most often, it's empty)
+				return this._inner.apply(this, arguments);
+			});			
+		},
+
+		// Same as above, but returns a promise that gets resolved when the result is received.
 		wrapRemoteCall: function(cls, method, how) {
 			var sharer = this;
 
-			if (how === 'sync')
-				cls.wrap(method, function() {
-					var args = [].slice.apply(arguments);
-					// Call local body (most often, it's empty)
-					this._inner.apply(this, arguments);
+			cls.wrap(method, function() {
+				var args = [].slice.apply(arguments);
+				// Call local body (most often, it's empty)
+				this._inner.apply(this, arguments);
 
-					// Here we ignore the return value from the local call
-					// and we return the promise for the value of the RPC
-					return sharer.remoteCallWithResult(this, method, args);
-				});
-			else
-				cls.wrap(method, function() {
-					var args = [].slice.apply(arguments);
-					sharer.remoteCall(this, method, args);
-
-					// Call local body (most often, it's empty)
-					return this._inner.apply(this, arguments);
-				});
-			
+				// Here we ignore the return value from the local call
+				// and we return the promise for the value of the RPC
+				return sharer.remoteCallWithResult(this, method, args);
+			});
 		},
 
 		// --- Send messages to server ---
@@ -134,7 +148,8 @@ var ObjectSharer = ObjectStore.subclass().name('ObjectSharer')
 			var promise = this.pendingResults[id];
 			if (! promise)
 				return false;
-			promise.resolve(result);
+			if (promise.resolve)
+				promise.resolve(result);
 			delete this.pendingResults[id];
 			return true;
 		},
@@ -159,7 +174,9 @@ log.spyMethods(ObjectSharer);
 
 module.exports = ObjectSharer;
 
-},{"Log":"DSCIv8","ObjectStore":11}],"A6o4Gx":[function(require,module,exports){
+},{"Log":"DSCIv8","ObjectStore":11}],"./ObjectSharer":[function(require,module,exports){
+module.exports=require('kYRwZz');
+},{}],"A6o4Gx":[function(require,module,exports){
 (function (process){
 // SharingServer - Sharing objects with a websocket client 
 //
@@ -249,20 +266,30 @@ var SharingServer = SocketIOServer.subclass().name('SharingServer')
 
 			this.on('callMethod', function (call) {
 				log.event(self, 'callMethod', call.oid+'.'+call.method+'(',call.args,')');
-				self.sharers.some(function(sharer) {
-					var result = sharer.callMethod(call.oid, call.method, call.args);
-					if (result !== false) {
-						if (data.returnId) {
-							// we need to return the result
-							result.id = data.returnId;
-							log.event(self, 'callMethod', 'sending result id', data.returnId, 'value', result);
-							self.socket.emit('callResult', sharer.encode(result));
-						}
+				var found = self.sharers.some(function(sharer) {
+					var response = sharer.callMethod(call.oid, call.method, call.args);
+
+					// ignore if method does not exist
+					// or if it exists but returned 'undefined' as result
+					if (response === false || response.result === undefined)
+						return false;
+
+					if (call.returnId) {
+						// we need to return the result
+						response.id = call.returnId;
+						log.event(self, 'callMethod', 'sending result id', call.returnId, 'value', response);
+						self.socket.emit('callResult', sharer.encode(response));
+					} else
 						log.event(self, 'callMethod', 'found');
-						return true;
-					}
-					return false;
+					return true;
 				});
+
+				if (!found && call.returnId) {
+					// we need to notify that we did not get a result
+					response = {id: call.returnId}; // no result field
+					log.event(self, 'callMethod', 'sending not found', call.returnId);
+					self.socket.emit('callResult', response /* no encoding needed */);
+				}
 				log.eventExit(self, 'callMethod');
 			});
 
@@ -328,8 +355,6 @@ module.exports = SharingServer;
 }).call(this,require("/usr/local/lib/node_modules/browserify/node_modules/insert-module-globals/node_modules/process/browser.js"))
 },{"./SocketIOServer":"ie5dLj","/usr/local/lib/node_modules/browserify/node_modules/insert-module-globals/node_modules/process/browser.js":15,"Log":"DSCIv8"}],"./SharingServer":[function(require,module,exports){
 module.exports=require('A6o4Gx');
-},{}],"./SocketIOServer":[function(require,module,exports){
-module.exports=require('ie5dLj');
 },{}],"ie5dLj":[function(require,module,exports){
 // SocketIOServer
 //
@@ -556,7 +581,9 @@ log.spyMethodsExcept(SocketIOServer, ['logEvent']);
 
 module.exports = SocketIOServer;
 
-},{"Log":"DSCIv8","OO":"PEL2Mo","socket.io-client":"UPfOTt"}],"Log":[function(require,module,exports){
+},{"Log":"DSCIv8","OO":"PEL2Mo","socket.io-client":"UPfOTt"}],"./SocketIOServer":[function(require,module,exports){
+module.exports=require('ie5dLj');
+},{}],"Log":[function(require,module,exports){
 module.exports=require('DSCIv8');
 },{}],"DSCIv8":[function(require,module,exports){
 (function (process,global){
@@ -997,7 +1024,7 @@ module.exports = Log;
 module.exports=require('PEL2Mo');
 },{}],"PEL2Mo":[function(require,module,exports){
 // Classy - Yet another Javascript OO-framework (complete)
-// (c) 2011-2013, Michel Beaudouin-Lafon, mbl@lri.fr
+// (c) 2011-2015, Michel Beaudouin-Lafon, mbl@lri.fr
 // Open sourced under the MIT License
 (function(exports) {
 var Metaclass;
@@ -1100,7 +1127,7 @@ var objectMethods = {
 				if (!obj)
 					return this;
 				if (obj.__class) {	
-					var fields = obj.__class.listFields();
+					var fields = obj.__class.listAllFields();
 					for (i = 0; i < fields.length; i++) {
 						name = fields[i];
 						if (this.__class.hasField(name))
@@ -1136,7 +1163,7 @@ var objectMethods = {
 		var i, name;
 		switch (arguments.length) {
 			case 0:
-				fields = this.__class.listFields();
+				fields = this.__class.listAllFields();
 				obj = {};
 				for (i = 0; i < fields.length; i++) {
 					name = fields[i];
@@ -1163,7 +1190,7 @@ var objectMethods = {
 				if (typeof field == 'object') {
 					obj = {};
 					if (field.__class) {	
-						fields = field.__class.listFields();
+						fields = field.__class.listAllFields();
 						for (i = 0; i < fields.length; i++) {
 							name = fields[i];
 							if (this.__class.hasField(name))
@@ -1418,7 +1445,7 @@ Metaclass = {
 		return this.__name;
 	},
 	toString: function() {
-		return 'class '+ (this.__name || '');
+		return 'class '+ (this.__name || "");
 	},
 	inspect: function() {
 		return this.toString();
@@ -1484,7 +1511,7 @@ Metaclass = {
 			result.push(field);
 		return result;
 	},
-	listFields: function() {
+	listAllFields: function() {
 		var cl = this;
 		var result = [];
 		var field;
@@ -1498,6 +1525,32 @@ Metaclass = {
 			cl = cl.__superclass;
 		} while (cl != Object);
 		return result;
+	},
+	listFields: function(spec) {
+		if (!spec || spec === 'all')
+			return this.listAllFields();
+		if (spec === 'own')
+			return this.listOwnFields();
+		if (typeof spec === 'string')
+			spec = spec.split(' ');
+		var res = null;
+		if (spec[0] === 'all-')
+			res = this.listAllFields();
+		else if (spec[0] === 'own-')
+			res = this.listOwnFields();
+		if (res) {
+			for (var i = 1; i < spec.length; i++) {
+				var j = res.indexOf(spec[i]);
+				if (j <= 0)
+					res.splice(j, 1);
+			}
+			return res;			
+		}
+		res = [];
+		for (var i = 0; i < spec.length; i++)
+			if (this.hasField(spec[i]))
+				res.push(spec[i]);
+		return res;
 	},
 	constructor: function(name, fun) {
 		if (! fun && typeof(name) == 'function') {
@@ -1576,7 +1629,7 @@ Metaclass = {
 			result.push(constructor);
 		return result;
 	},
-	listMethods: function() {
+	listAllMethods: function() {
 		var cl = this;
 		var result = [];
 		do {
@@ -1589,6 +1642,32 @@ Metaclass = {
 			cl = cl.__superclass;
 		} while (cl != Object);
 		return result;
+	},
+	listMethods: function(spec) {
+		if (!spec || spec === 'all')
+			return this.listAllMethods();
+		if (spec === 'own')
+			return this.listOwnMethods();
+		if (typeof spec === 'string')
+			spec = spec.split(' ');
+		var res = null;
+		if (spec[0] === 'all-')
+			res = this.listAllMethods();
+		else if (spec[0] === 'own-')
+			res = this.listOwnMethods();
+		if (res) {
+			for (var i = 1; i < spec.length; i++) {
+				var j = res.indexOf(spec[i]);
+				if (j <= 0)
+					res.splice(j, 1);
+			}
+			return res;			
+		}
+		res = [];
+		for (var i = 0; i < spec.length; i++)
+			if (this.hasMethod(spec[i]))
+				res.push(spec[i]);
+		return res;
 	},
 	wrap: function(name, fun) {
 		var forig = this.getOwnMethod(name);
@@ -2006,7 +2085,7 @@ var ObjectStore = OO.newClass().name('ObjectStore')
 		},
 
 		// Call an object method.
-		// Return true if the object was found and the method was called.
+		// Return a result object if the object was found and the method was called, false otherwise.
 		callMethod: function(oid, method, args) {
 			var obj = this.getObject(oid);
 			if (!obj) log.method(this, 'callMethod', oid+'.'+method, '- object not found');
@@ -2015,7 +2094,7 @@ var ObjectStore = OO.newClass().name('ObjectStore')
 			// Check that method belongs to the list of shared methods.
 			var cls = obj.classs();
 			if (this.sharedClasses[cls.className()].methods.indexOf(method) < 0) {
-				log.method(this, 'callMethod', oid+'.'+method, '- method not found');
+				log.method(this, 'callMethod', oid+'.'+method, '- method not found', this.sharedClasses[cls.className()].methods);
 				return false;
 			}
 			var m = cls.getMethod(method);
@@ -2075,7 +2154,9 @@ log.spyMethods(ObjectStore);
 
 module.exports = ObjectStore;
 
-},{"./Log":"DSCIv8","./OO":"PEL2Mo"}],"UPfOTt":[function(require,module,exports){
+},{"./Log":"DSCIv8","./OO":"PEL2Mo"}],"socket.io-client":[function(require,module,exports){
+module.exports=require('UPfOTt');
+},{}],"UPfOTt":[function(require,module,exports){
 /*! Socket.IO.js build:0.9.16, development. Copyright(c) 2011 LearnBoost <dev@learnboost.com> MIT Licensed */
 
 var io = ('undefined' === typeof module ? {} : module.exports);
@@ -5949,8 +6030,6 @@ if (typeof define === "function" && define.amd) {
   define([], function () { return io; });
 }
 })();
-},{}],"socket.io-client":[function(require,module,exports){
-module.exports=require('UPfOTt');
 },{}],14:[function(require,module,exports){
 if (typeof Object.create === 'function') {
   // implementation from standard node.js 'util' module

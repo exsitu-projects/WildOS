@@ -53,13 +53,16 @@ var Surface = Device.subclass().name('Surface')
 
 		// Create a sharer to share the state of `Surface` and `Tile` objects with clients
 		this.surfaceSharer = ObjectSharer.create().name('surfaceSharer');
-		this.surfaceSharer.master(Surface, 'own', ['callJavascript']);
-		Renderer.sharer.master(Tile, 
-			/*fields*/'own', 
-			/*methods*/['remoteLog'/* not used, 'clickElement'*/], 
-			/*notifyMethods*/['getLog', 'clearLog', 'callJavascript', 'deliverClick'], /*when*/'after',
-			/*remoteMethods*/['elementAtPoint'], /*how*/ 'any'
-		);
+		this.surfaceSharer.master(Surface, {
+			fields: 'own',
+			notify: 'callJavascript',
+		});
+		Renderer.sharer.master(Tile, {
+			fields: 'own',
+			methods: 'remoteLog',
+			notify: ['getLog', 'clearLog', 'callJavascript', 'deliverClick'],
+			remote: 'elementAtPoint',
+		});
 
 		// Catch events to start/stop/restart the clients on the cluster.
 		// The commands are taken from the config file (if they exist)

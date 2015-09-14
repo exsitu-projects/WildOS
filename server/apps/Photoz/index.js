@@ -104,7 +104,7 @@ var Photoz = App.subclass().name('Photoz')
 		// These methods are meant to be called by clients to change the state of the app
 
 	})
-	.shareState('own', ['getBatch', 'recyclePhoto'])
+	.shareState({ fields: 'own', methods: ['getBatch', 'recyclePhoto']});
 ;
 
 log.spyMethods(Photoz);

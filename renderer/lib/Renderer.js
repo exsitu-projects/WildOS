@@ -59,7 +59,12 @@ var Renderer = SharingServer.subclass().name('Renderer')
 			if (this.sharer)
 				return;
 
-			this.sharer = ObjectSharer.create().name('renderingSharer').slave(Tile, 'own', ['remoteLog'], 'after', ['elementAtPoint']);
+			this.sharer = ObjectSharer.create().name('renderingSharer')
+									.slave(Tile, {
+										fields: 'own', 
+										notify: ['remoteLog'], 
+										methods: ['elementAtPoint'],
+									});
 			this.addSharer(this.sharer);
 		},
 

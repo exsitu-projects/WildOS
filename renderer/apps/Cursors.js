@@ -222,6 +222,6 @@ var Cursors = App.subclass().name('Cursors')
 log.spyMethods(Cursors);
 
 // Add the `Cursor` class to the Cursors sharer
-Cursors.sharer.slave(Cursor, 'own');
+Cursors.sharer.slave(Cursor, {fields: 'own'});
 
 module.exports = Cursors;

@@ -9,6 +9,30 @@
 // A master class holds the master copy, and changes to it are broadcast to the clients.
 // A slave class holds a copy, and changes are received from the clients.
 // In practice, in a server, classes are generally masters.
+//
+// It is possible to share object fields whose values are:
+//	- simple values (strings, numbers)
+//	- literal objects (including arrays)
+//	- other shared Classy objects
+//
+// To share fields whose value is a literal object, the state of the object is tracked 
+// (with Object.observe) and changes are sent to clients as a fresh object.
+// So a field position: {x: 0, y: 0} can be shared simply by calling 
+//		anObjectSharer.master({fields: 'own', objects: 'position'}, …) 
+//	on the master side. On the client side, just put a wrapper around position. 
+// Changes to position.x and position.y will be sent as changes to the entire position object. 
+// Because Object.observe triggers at the end of microtasks, multiple changes to an object 
+// (e.g. position.x and position.y) are batched as a single change to position, 
+// making synchronization more efficient.
+//
+// For methods, we support:
+//	- remote calls from clients to methods in the master, with or without return value.
+//	  On the client, these return a promise that will resolve will the return value when it is received.
+//	- notification of calls to master methods to clients, before or after the local call (or both)
+//	- remote calls from the master to the clients, with or without return value.
+//	  The result value is a promise that will resolve either when the first response is received,
+//	  or when responses from all the clients are received.
+//
 
 // Node modules
 var events = require('events');
@@ -66,21 +90,33 @@ var ObjectSharer = ObjectStore.subclass().name('ObjectSharer')
 		},
 
 		// Make the objects of a class be the masters of the distributed class.
-		//	- `fields` is a list of field names, or `'all'` for all fields, or `'own'` for own fields.
-		//		These fields are monitored so their changes are notified to the clients.
-		//	- `methods` is a list of methods, or `'all'` for all methods, or `'own'` for own methods.
-		//		Remote calls to these methods can be done by the clients.
-		//	- `notifyMethods` is a list of methods, or `'all'` for all methods, or `'own'` for own methods.
-		//		Each method can be suffixed with `':before'` or `':after'`, overriding the `when` parameter.
-		//		Calls to these methods are notified to the clients.
-		//	- `when` can be omitted, or can be `'before'` or `'after'`,
-		//	  to notify of method calls only before or after (default = both)
-		//	- `remoteMethods` is an array of method names that are called remotely and return a result.
-		//		Each method can be suffixed by `':all'` or `':any'` to specify if the call should return
-		//		when one result is received, or all of them. Default is any, unless `how` is specified
-		//	- `how` can be `'all'` or `'any'` and specifies the default return mode for remote methods
-		master: function(cls, fields, methods, notifyMethods/*opt*/, when/*opt*/, remoteMethods/*opt*/, how /*opt*/) {
-			log.method(this, 'master', cls.className(), fields, methods);
+		//	`spec` is a literal object specifying what to share and how:
+		// 	{
+		// 		fields: <flist>			// fields to share
+		// 		objectFields: <flist>	// fields to share whose value is a literal object
+		// 		arrayFields: <flist>	// fields to share whose value is an array
+		// 		notify: <mlist> | { before: <mlist>, after: <mlist>, both: <mlist>}
+		// 		when: 'before' | 'after' | 'both'
+		//								// methods whose calls are notified to clients either
+		//								// before or after the local call, or both
+		// 		remote: <mlist> | { 'any': <mlist>, 'all': <mlist>}
+		// 		how: 'any' | 'all'
+		//								// methods to call remotely. The call returns a promise 
+		//								// for the return value. `how` specifies whether we return
+		//								// at the first result, or when all results are collected.
+		// 		methods: <mlist>		// methods that can be called remotely by clients
+		// 	}
+		// <flist> is a list of fields and can be of the form:
+		// 		'own' - the classes own fields
+		//		'all' - the classes fields, including those of its superclasses
+		//		['f1', 'f2', ...] - a list of field names
+		//		'f1 f2 ...' - another way to specify a list of field names
+		//		if the first field in the above lists is 'own-' or 'all-',
+		//			the following fields are excluded from the list of own/all fields
+		// <mlist> is a list of methods, of the same form as the list of fields
+		// all fields are optional
+		master: function(cls, spec) {
+			log.method(this, 'master', cls.className(), spec); 
 			var sharer = this;
 			var i;
 
@@ -119,33 +155,10 @@ var ObjectSharer = ObjectStore.subclass().name('ObjectSharer')
 			});
 
 			// Wrap the object fields to notify when they change value.
-			//`fields` can be:
-			//	`'all'` wraps all the fields (of the object's class _and_ its ancestors),
-			// 	`'own'` wraps only the fields defined in its class.
-			// 	An array of names of fields
-			//	A literal objects with the following fields:
-			//		`fields` (required): `'own'` or `'all'` or a list of field names
-			//		`objects` (optional): list of field names 
-			//		`arrays` (optional): list of field names
-			// *** Maybe we should have a value `'mixin'` to include mixin fields?
-			var objectFields = null;
-			var arrayFields = null;
-
-			if (fields && fields.fields) {
-				// assume literal object format
-				objectFields = fields.objects;
-				arrayFields = fields.arrays;
-				fields = fields.fields;
-			}
-
-			if (fields == 'all')
-				fields = cls.listFields();
-			else if (fields == 'own')
-				fields = cls.listOwnFields();
-			
-			log.method(this, 'master', 
-				'fields:', fields, 'objects:', objectFields, 'arrays:', arrayFields);
-			var j;
+			var fields = spec.fields && cls.listFields(spec.fields);
+			var objectFields = spec.objectFields && cls.listFields(spec.objectFields);
+			var arrayFields = spec.arrayFields && cls.listFields(spec.arrayFields);
+			log.method(this, 'master', 'fields:', fields, 'objects:', objectFields, 'arrays:', arrayFields);
 			if (objectFields)
 				for (i = 0; i < objectFields.length; i++) {
 					this.wrapObjectFieldNotify(cls, objectFields[i]);
@@ -163,43 +176,42 @@ var ObjectSharer = ObjectStore.subclass().name('ObjectSharer')
 						continue;
 					this.wrapFieldNotify(cls, fields[i]);
 				}
-
+			
 			// Listen to method calls to execute them locally
-			// `'all'` and `'own'` are as above, otherwise a list of methods
-			// *** Maybe we should have a value `'mixin'` to include mixin methods?
-			if (methods == 'all')
-				methods = cls.listMethods();
-			else if (methods == 'own')
-				methods = cls.listOwnMethods();
+			var methods = spec.methods && cls.listMethods(spec.methods);
 			this.events.on('callMethod', function(data) {
 				return sharer.callMethod(data.oid, data.method, data.args);
 			});
 
-			// Wrap object methods to notify when they are called
-			// `'all'` and `'own'` are as above, otherwise a list of methods
-			// *** Maybe we should have a value `'mixin'` to include mixin methods?
-			if (notifyMethods == 'all')
-				notifyMethods = cls.listMethods();
-			else if (notifyMethods == 'own')
-				notifyMethods = cls.listOwnMethods();
-			if (notifyMethods)
-				for (i = 0; i < notifyMethods.length; i++) {
-					var method = notifyMethods[i].split(':');	// parse 'foo:after'
-					this.wrapCallNotify(cls, method[0], method[1] || when);
+			// Wrap notify methods to notify when they are called
+			var notifyMethods = spec.notify;
+			if (spec.notify && (typeof spec.notify === 'string' || Array.isArray(spec.notify))) {
+				// normalize to the literal object form ({before: ...})
+				notifyMethods = {};
+				notifyMethods[spec.when || 'after'] = spec.notify;
+			}
+			for (var when in notifyMethods) {
+				if (notifyMethods[when]) {
+					var list = cls.listMethods(notifyMethods[when]);
+					for (i = 0; i < list.length; i++)
+						this.wrapCallNotify(cls, list[i], when);
 				}
+			}				
 
 			// Wrap remote methods to notify when they are called
-			// `'all'` and `'own'` are as above, otherwise a list of methods
-			// *** Maybe we should have a value `'mixin'` to include mixin methods?
-			if (remoteMethods === 'all')
-				remoteMethods = cls.listMethods();
-			else if (remoteMethods === 'own')
-				remoteMethods = cls.listOwnMethods();
-			if (remoteMethods)
-				for (i = 0; i < remoteMethods.length; i++) {
-					var method = remoteMethods[i].split(':');	// parse 'foo:any'
-					this.wrapRemoteCall(cls, method[0], method[1] || how);
+			var remoteMethods = spec.remote;
+			if (spec.remote && (typeof spec.remote === 'string' || Array.isArray(spec.remote))) {
+				// normalize to the literal object form ({any: ...})
+				remoteMethods = {};
+				remoteMethods[spec.how || 'any'] = spec.remote;
+			}
+			for (var how in remoteMethods) {
+				if (remoteMethods[how]) {
+					var list = cls.listMethods(remoteMethods[how]);
+					for (i = 0; i < list.length; i++)
+						this.wrapRemoteCall(cls, list[i], how);
 				}
+			}				
 
 			// Store info about the class being shared.
 			// *** Note that this assumes that the class name is unique 
@@ -208,11 +220,11 @@ var ObjectSharer = ObjectStore.subclass().name('ObjectSharer')
 			this.sharedClasses[cls.className()] = {
 				cls: cls,
 				fields: fields || [],
-				objectFields: objectFields,
-				arrayFields: arrayFields,
+				objectFields: objectFields || [],
+				arrayFields: arrayFields || [],
 				methods: methods || [],
-				notifyMethods: notifyMethods || [],
-				remoteMethods: remoteMethods || [],
+				notifyMethods: notifyMethods || {},
+				remoteMethods: remoteMethods || {},
 			};
 
 			return this;
@@ -256,12 +268,15 @@ var ObjectSharer = ObjectStore.subclass().name('ObjectSharer')
 		// Helper method to wrap a method with a function that notifies the call.
 		// `when` notifies when notification takes place: before the call, after or both.
 		wrapCallNotify: function(cls, method, when) {
+			if (method === 'die')	// this is notified automatically
+				return;
 			var sharer = this;
 			var before = true, after = true;
-			if (when == 'after')
+			if (when === 'after')
 				before = false;
-			if (when == 'before')
+			if (when === 'before')
 				after = false;
+
 			cls.wrap(method, function() {
 				var args = [].slice.apply(arguments);
 				if (before)

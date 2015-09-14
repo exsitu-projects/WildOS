@@ -25,63 +25,74 @@ var ObjectSharer = ObjectStore.subclass().name('ObjectSharer')
 	})
 	.methods({
 		// --- Slave ---
-		// Make the objects of a class be the slaves of a distributed class.
-		//	- `fields` is a list of field names that are shared, or `'all'` for all fields, or `'own'` for own fields
-		//	- `methods` is a list of methods that are called remotely, or `'all'` for all methods, or `'own'` for own methods
-		//	  If it is a list, each method name can be suffixed by ':sync'. In this case the method call returns a promise 
-		//	  that is resolved when the result is received.
-		//	- `how`, if specified, can be 'sync', in which case it applies to all methods specified by `method`
-		//	- `callableMethods` is the set of methods that can be called remotely
-		slave: function(cls, fields, methods, how, callableMethods) {
+		
+		// Make the objects of a class be the slaves of the distributed class.
+		//	`spec` is a literal object specifying what to share and how:
+		// 	{
+		// 		fields: <flist>		// fields to share
+		// 		notify: <mlist>		// methods whose call is notified to the server.
+		// 		remote: <mlist>		// methods to call remotely. The call returns a promise for the return value
+		// 		methods: <mlist>	// methods that can be called remotely by the server
+		// 	}
+		// <flist> is a list of fields and can be of the form:
+		// 		'own' - the classes own fields
+		//		'all' - the classes fields, including those of its superclasses
+		//		['f1', 'f2', ...] - a list of field names
+		//		'f1 f2 ...' - another way to specify a list of field names
+		//		if the first field in the above lists is 'own-' or 'all-',
+		//			the following fields are excluded from the list of own/all fields
+		// <mlist> is a list of methods, of the same form as the list of fields
+		// all fields are optional
+		slave: function(cls, spec) {
 
 			// Record the description of the class.
-			if (fields == 'all')
-				fields = cls.listFields();
-			else if (fields == 'own')
-				fields = cls.listOwnFields();
-
-			if (methods == 'all')
-				methods = cls.listMethods();
-			else if (methods == 'own')
-				methods = cls.listOwnMethods();
-			if (methods)
-				for (i = 0; i < methods.length; i++) {
-					var method = methods[i].split(':');
-					this.wrapRemoteCall(cls, method[0], method[1] || how);
+			var fields = spec.fields && cls.listFields(spec.fields);
+			var methods = spec.methods && cls.listMethods(spec.methods);
+			var notify = spec.notify && cls.listMethods(spec.notify);
+			var remote = spec.remote && cls.listMethods(spec.remote);
+			if (notify)
+				for (i = 0; i < notify.length; i++) {
+					this.wrapNotify(cls, notify[i]);
+				}
+			if (remote)
+				for (i = 0; i < remote.length; i++) {
+					this.wrapRemoteCall(cls, remote[i]);
 				}
 
 			this.sharedClasses[cls.className()] = {
 				cls: cls,
 				fields: fields || [],
-				methods: callableMethods || [],
+				methods: methods || [],
 			};
 			return this;
 		},
 
 		// Helper method to wrap a method with a function that sends the call to the server.
-		// If `how` is 'sync', return a promise that gets resolved when the result is received.
+		wrapNotify: function(cls, method, how) {
+			var sharer = this;
+
+			cls.wrap(method, function() {
+				var args = [].slice.apply(arguments);
+				sharer.remoteCall(this, method, args);
+
+				// Call local body (most often, it's empty)
+				return this._inner.apply(this, arguments);
+			});			
+		},
+
+		// Same as above, but returns a promise that gets resolved when the result is received.
 		wrapRemoteCall: function(cls, method, how) {
 			var sharer = this;
 
-			if (how === 'sync')
-				cls.wrap(method, function() {
-					var args = [].slice.apply(arguments);
-					// Call local body (most often, it's empty)
-					this._inner.apply(this, arguments);
+			cls.wrap(method, function() {
+				var args = [].slice.apply(arguments);
+				// Call local body (most often, it's empty)
+				this._inner.apply(this, arguments);
 
-					// Here we ignore the return value from the local call
-					// and we return the promise for the value of the RPC
-					return sharer.remoteCallWithResult(this, method, args);
-				});
-			else
-				cls.wrap(method, function() {
-					var args = [].slice.apply(arguments);
-					sharer.remoteCall(this, method, args);
-
-					// Call local body (most often, it's empty)
-					return this._inner.apply(this, arguments);
-				});
-			
+				// Here we ignore the return value from the local call
+				// and we return the promise for the value of the RPC
+				return sharer.remoteCallWithResult(this, method, args);
+			});
 		},
 
 		// --- Send messages to server ---

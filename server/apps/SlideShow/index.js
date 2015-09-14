@@ -356,8 +356,10 @@ var SlideShow = App.subclass().name('SlideShow')
 		onSlideShowChanged: function(cb) { return this.on('slideShowChanged', cb); },
 
 	})
-	.shareState('own', ['getSlideShowList', 'loadSlideShow', 'nextSlide', 'prevSlide', 'firstSlide', 'lastSlide', 'gotoSlide'])
-;
+	.shareState({
+		fields: 'own', 
+		methods: ['getSlideShowList', 'loadSlideShow', 'nextSlide', 'prevSlide', 'firstSlide', 'lastSlide', 'gotoSlide'],
+	});
 
 log.spyMethods(SlideShow);
 

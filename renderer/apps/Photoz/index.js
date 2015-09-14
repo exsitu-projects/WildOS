@@ -69,7 +69,10 @@ var Photoz = App.subclass().name('Photoz')
 		},
 
 	})
-	.shareState('own', ['getBatch', 'recyclePhoto'])
+	.shareState({
+		fields: 'own', 
+		notify: ['getBatch', 'recyclePhoto']
+	});
 ;
 
 log.spyMethods(Photoz);

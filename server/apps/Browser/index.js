@@ -110,8 +110,13 @@ var Browser = App.subclass().name('Browser')
 				}
 		}
 	})
-	.shareState({fields: 'own', objects: ['coords']}, 'own', ['remoteExec'], 'after')
-;
+	.shareState({
+		fields: 'own', 
+		objectFields: ['coords'], 
+		notify: 'own- initPlatform', 
+		methods: ['remoteExec'],
+	});
+
 
 log.spyMethods(Browser);
 
