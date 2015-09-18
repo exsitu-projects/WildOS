@@ -1,0 +1,92 @@
+<!-- Web controller for the Map app -->
+<h3 class="controller-title">Map</h3>
+<div class="controller-body">
+
+<div id="msg"></div>
+<div id="map"></div>
+
+<script>
+// Wrap in a function to protect global name space
+var ol = null; var mapApp=
+(function() {
+	function delayedLoad() {
+		if (ol)
+			mapApp.loadMap();
+		else
+			setTimeout(delayedLoad, 100);
+	}
+
+	var Map = App.subclass().name('Map')
+		.fields({
+			source: "MapQuest",
+			options: {layer: "sat"},
+			center: [37.41, 8.82],
+			zoom: 1,
+		})
+		.constructor(function(config) {
+			this._super(config);
+
+			this.mainView = null;
+			this.mainMap = null;
+
+			delayedLoad();
+
+			this.wrapFields({
+				set center(c) { this._set(c); this.panned(); },
+				set zoom(z) { this._set(z); this.zoomed(); },
+			});
+		})
+		.methods({
+			loadMap: function() {
+				this.mainView = new ol.View({
+				    center: ol.proj.transform(this.center, 'EPSG:4326', 'EPSG:3857'),
+				    zoom: this.zoom
+				  });
+				this.mainMap = new ol.Map({
+				  target: 'map',
+				  layers: [
+				    new ol.layer.Tile({
+				      source: new ol.source[this.source](this.options), //MapQuest({layer: 'sat'})
+				    })
+				  ],
+				  view: this.mainView,
+				});
+
+				var self = this;
+				this.mainView.on('change:center', function(evt) { self.panTo(self.mainView.getCenter()); });
+				this.mainView.on('change:resolution', function(evt) { self.zoomTo(self.mainView.getZoom()); });
+
+			},
+
+			// reactions to changes in state
+			panned: function() {
+				if (this.mainView)
+					this.mainView.setCenter(this.center);
+			},
+			zoomed: function() {
+				if (this.mainView)
+					this.mainView.setZoom(this.zoom);
+			},
+
+			// remote calls to server
+			panTo: function(center) {document.getElementById('msg').innerHTML = center; },
+			zoomTo: function(zoom) {},
+		})
+		.shareState({
+			fields: 'own',
+			notify: ['panTo', 'zoomTo'],
+		})
+	;
+
+	log.spyMethods(Map);
+
+	var mapApp = Map.create();
+	return mapApp;
+// Invoke the main function
+}) ();
+</script>
+
+<link rel="stylesheet" href="http://openlayers.org/en/v3.9.0/css/ol.css" type="text/css">
+<script src="http://openlayers.org/en/v3.9.0/build/ol.js" type="text/javascript"></script>
+
+</div>
