@@ -201,13 +201,19 @@
 			},
 
 		})
-		.shareState('own', ['addCursor', 'removeCursor'])
+		.shareState({
+			fields: 'own', 
+			notify: ['addCursor', 'removeCursor']
+		})
 	;
 
 	log.spyMethods(Cursors);
 
 	// Add the `Cursor` class to the Cursors sharer
-	Cursors.sharer.slave(Cursor, 'own', ['moveBy', 'click']);
+	Cursors.sharer.slave(Cursor, {
+		fields: 'own',
+		notify: ['moveBy', 'click']
+	});
 
 	var cursors = Cursors.create();
 

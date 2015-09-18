@@ -76,7 +76,10 @@
 			resizeBy: function(dW, dH) {},
 
 		})
-		.shareState('own', ['setURL', 'panBy', 'zoomBy', 'resizeBy'])
+		.shareState({
+			fields: 'own', 
+			notify: ['setURL', 'panBy', 'zoomBy', 'resizeBy'],
+		})
 	;
 
 	log.spyMethods(Browser);

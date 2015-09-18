@@ -26,28 +26,24 @@ var ObjectSharer = ObjectStore.subclass().name('ObjectSharer')
 	})
 	.methods({
 		// --- Slave ---
-		// Make the objects of a class be the slaves of a distributed class.
-		//	- `fields` is a list of field names that are shared, or `'all'` for all fields, or `'own'` for own fields
-		//	- `methods` is a list of methods that are called remotely, or `'all'` for all methods, or `'own'` for own methods
-		//	  If it is a list, each method name can be suffixed by ':sync'. In this case the method call returns a promise 
-		//	  that is resolved when the result is received.
-		//	- `how`, if specified, can be 'sync', in which case it applies to all methods specified by `method`
-		//	- `callableMethods` is the set of methods that can be called remotely
-		/*
-			<flist> is a list of fields and can be of the form:
-				'own' | 'all' | ['f1', 'f2', ...] | 'f1 f2 ...'
-				if 'f1' is 'own-' or 'all-' the following fields are removed from the 'own' or 'all' set
-			<mlist> is a list of methods and can be of similar forms
-			all fields are optional
-
-			{
-				fields: <flist>		// list of fields whose values are synced with the master
-				remote: <mlist>		// list of methods whose calls are forwarded to the master and
-				notify: <mlist>		// list of methods whose calls are 
-				methods: <mlist>
-			}
-		*/
-//		slave: function(cls, fields, methods, how, callableMethods) {
+		
+		// Make the objects of a class be the slaves of the distributed class.
+		//	`spec` is a literal object specifying what to share and how:
+		// 	{
+		// 		fields: <flist>		// fields to share
+		// 		notify: <mlist>		// methods whose call is notified to the server.
+		// 		remote: <mlist>		// methods to call remotely. The call returns a promise for the return value
+		// 		methods: <mlist>	// methods that can be called remotely by the server
+		// 	}
+		// <flist> is a list of fields and can be of the form:
+		// 		'own' - the classes own fields
+		//		'all' - the classes fields, including those of its superclasses
+		//		['f1', 'f2', ...] - a list of field names
+		//		'f1 f2 ...' - another way to specify a list of field names
+		//		if the first field in the above lists is 'own-' or 'all-',
+		//			the following fields are excluded from the list of own/all fields
+		// <mlist> is a list of methods, of the same form as the list of fields
+		// all fields are optional
 		slave: function(cls, spec) {
 
 			// Record the description of the class.

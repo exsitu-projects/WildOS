@@ -85,7 +85,7 @@ var SlideShow = App.subclass().name('SlideShow')
 		nextSlide: function()  {},
 		lastSlide: function()  {},
 		gotoSlide: function(i) {},
-        getSlideShowList: function() {},
+        getSlideShowList: function() {},    // returns a promise for the list
         loadSlideShow: function(n) {},
 
 		// Handlers for changes to the shareState
@@ -97,7 +97,11 @@ var SlideShow = App.subclass().name('SlideShow')
 			this.slideShowChangedListeners.push(cb);
 		},
 	})
-	.shareState('own', ['getSlideShowList:sync', 'loadSlideShow', 'firstSlide', 'prevSlide', 'nextSlide', 'lastSlide', 'gotoSlide'])
+	.shareState({
+        fields: 'own', 
+        notify: ['loadSlideShow', 'firstSlide', 'prevSlide', 'nextSlide', 'lastSlide', 'gotoSlide'],
+        remote: ['getSlideShowList']
+    })
 ;
 
 var slideShowApp = SlideShow.create();

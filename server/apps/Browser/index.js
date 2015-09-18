@@ -55,9 +55,9 @@ var Browser = App.subclass().name('Browser')
 		stop: function() {
 			this._super();
 
-			var win = this.platform.GUI.getUIWindow();
-			if (win)
-				win.browserApp.stop();
+			// var win = this.platform.GUI.getUIWindow();
+			// if (win)
+			// 	win.window.stopBrowser();
 		},
 
 		// These methods are meant to be called by clients to change the state of the app
@@ -113,8 +113,8 @@ var Browser = App.subclass().name('Browser')
 	.shareState({
 		fields: 'own', 
 		objectFields: ['coords'], 
-		notify: 'own- initPlatform', 
-		methods: ['remoteExec'],
+		notify: ['remoteExec'], 
+		methods: ['stop', 'setURL', 'panBy', 'zoomBy', 'resizeBy'],
 	});
 
 
