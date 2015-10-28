@@ -47,6 +47,8 @@
 <div id="browserTouchpad" style="display: none">
 	<div id="browserTouchpadMsg" class="bottom"></div>
 </div>
+<input id="revealPrev" type="button" value="Prev"/>
+<input id="revealNext" type="button" value="Next"/>
 
 <script>
 // Wrap in a function to protect global name space
@@ -74,11 +76,12 @@
 			panBy: function(dX, dY) {},
 			zoomBy: function(dZ, x, y) {},
 			resizeBy: function(dW, dH) {},
+			revealControl: function(op) {},
 
 		})
 		.shareState({
 			fields: 'own', 
-			notify: ['setURL', 'panBy', 'zoomBy', 'resizeBy'],
+			notify: ['setURL', 'panBy', 'zoomBy', 'resizeBy', 'revealControl'],
 		})
 	;
 
@@ -88,6 +91,9 @@
 
 	$('#browserURL').keypress(function(ev) { if (ev.which == 13) $('#browserSetURL').click(); });
 	$('#browserSetURL').click(function() { browser.setURL($('#browserURL').val()); });
+
+	$('#revealPrev').click(function() { browser.revealControl('left'); });
+	$('#revealNext').click(function() { browser.revealControl('right'); });
 
 	var touchAction = null;
 	function touchPadButton(tag, cb) {

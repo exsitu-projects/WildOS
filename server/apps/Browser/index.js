@@ -108,13 +108,19 @@ var Browser = App.subclass().name('Browser')
 				} catch(e) {
 					// ignore errors
 				}
+		},
+
+		// Receive Reveal commands from web controller
+		revealControl: function(op) {
+			this.remoteExec('Reveal', op);
 		}
+
 	})
 	.shareState({
 		fields: 'own', 
 		objectFields: ['coords'], 
 		notify: ['remoteExec'], 
-		methods: ['stop', 'setURL', 'panBy', 'zoomBy', 'resizeBy'],
+		methods: ['stop', 'setURL', 'panBy', 'zoomBy', 'resizeBy', 'revealControl'],
 	});
 
 
