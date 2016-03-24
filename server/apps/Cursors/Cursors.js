@@ -44,17 +44,28 @@ var Cursors = App.subclass().name('Cursors')
 			// *** test ***
 			// Link the first cursor to the 'pointer' WISDevice, if any.
 			var self = this;
+			function movePointer(dev) {
+				log.message('movePointer', change);
+				if (self.cursors.length === 0)
+					return;
+				if (dev.x || dev.y)
+					self.cursors[0].moveTo(dev.x, dev.y);
+				else
+					self.cursors[0].moveBy(dev.dx, dev.dy);
+			}
+
+			// See if we have a pointer in the device tree
+			var wis = platform.findDevice({type: "WildInputServer"});
+			var pointer = wis && wis.findDevice({name: "pointer"});
+			if (pointer)
+				pointer.onWISDeviceChanged(movePointer);
+			else
+				log.method(this, 'initPlatform', 'pointer not found');
+
+			// In case the pointer was not there and shows up later
 			platform.onDeviceAvailable(function(device) {
-				if (device.className() === "WISDevice" && device.name === "pointer") {
-					device.onWISDeviceChanged(function(dev) {
-						if (self.cursors.length === 0)
-							return;
-						if (dev.x || dev.y)
-							self.cursors[0].moveTo(dev.x, dev.y);
-						else
-							self.cursors[0].moveBy(dev.dx, dev.dy);
-					});
-				}
+				if (device.className() === "WISDevice" && device.name === "pointer")
+					device.onWISDeviceChanged(movePointer);
 			});
 		},
 
