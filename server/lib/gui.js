@@ -6,136 +6,152 @@ var fs = require('fs');
 var log = require('Log').logger('gui');
 var Path = require('path');
 
-var gui;
-function getGUI() {
-	if (gui !== undefined)
-		return gui;
+var UIdisabled = false;
 
-	gui = null;
-	try {
-		log.message('getGUI:', 'require nw.gui');
-		gui = window.require('nw.gui');
-		log.message('getGUI:', 'require succeeded');
-		return gui;
-	} catch(e) {
-		log.message('getGUI:', 'require failed');
+function getGUI() {
+	if (UIdisabled)
 		return null;
-	}
+	return nw;
 }
 
 function disable() {
-	gui = null;
+	UIdisabled = true;
 }
 
-var menuBar;
+// Menus
+var menuBar = null;
+var platformMenu = null;
+var appsMenu = null;
+
+// Menu bar
 function getMenuBar() {
-	if (menuBar !== undefined)
-		return menuBar;
-
-	log.message('getMenuBar:', 'creating menus');
-	var win = gui.Window.get();
-	menuBar = win.menu;
-	if (!menuBar) {
-		menuBar = new gui.Menu({ type: 'menubar' });
-		if (menuBar.createMacBuiltin)	// only available since node-webkit v0.10.1
-			menuBar.createMacBuiltin("WildOS server");
-		win.menu = menuBar;
-	}
-
 	return menuBar;
 }
 
-// Create the platform menu
-var platformMenu;
-function getPlatformMenu(platform) {
-	if (platformMenu !== undefined)
-		return platformMenu;
+function createMenuBar(win) {
+	if (menuBar)
+		return menuBar;
 
-	var gui = getGUI();
-	if (!gui) {
-		log.message('getPlatformMenu:', 'no GUI');
-		platformMenu = null;
+	log.enter(null, 'createMenuBar');
+
+	if (UIdisabled || menuBar) {
+		log.exit(null, 'createMenuBar');
+		return menuBar;
+	}
+
+	log.message('creating menus');
+	menuBar = new nw.Menu({ type: 'menubar' });
+	if (menuBar.createMacBuiltin) {	// only available since node-webkit v0.10.1
+		log.message('creating Mac builin menus');
+		menuBar.createMacBuiltin("WildOS server");
+	}
+
+	platformMenu = new nw.Menu();
+	menuBar.insert(new nw.MenuItem({
+		label: 'Platform',
+		submenu: platformMenu,
+	}), process.platform === 'darwin' ? 2 : 0);	// only Mac OS has predefined menus
+
+	appsMenu = new nw.Menu();
+	menuBar.insert(new nw.MenuItem({
+		label: 'Applications',
+		submenu: appsMenu,
+	}), process.platform === 'darwin' ? 3 : 0);	// only Mac OS has predefined menus
+
+	log.message('setting menu bar');
+	win.menu = menuBar;
+
+	log.exit(null, 'createMenuBar');
+	return menuBar;
+}
+
+// Platform menu
+function getPlatformMenu() {
+	return platformMenu;
+}
+
+function createPlatformMenu(platform) {
+	log.enter(null, 'createPlatformMenu');
+
+	if (UIdisabled) {
+		log.exit(null, 'createPlatformMenu');
 		return null;
 	}
 
 	log.message('getPlatformMenu:', 'creating menu');
-	platformMenu = new gui.Menu();
 	var name = platform.name || 'devices';
 
 	// Start/Stop/Restart/Shutdown platform
-	platformMenu.append(new gui.MenuItem({
+	platformMenu.append(new nw.MenuItem({
 		label: 'Start '+ name,
 		click: function() { platform.start(); },
 	}));
-	platformMenu.append(new gui.MenuItem({
+	platformMenu.append(new nw.MenuItem({
 		label: 'Stop '+ name,
 		click: function() { platform.stop(); },
 	}));
-	platformMenu.append(new gui.MenuItem({
+	platformMenu.append(new nw.MenuItem({
 		label: 'Restart '+ name,
 		click: function() { platform.restart(); },
 	}));
-	platformMenu.append(new gui.MenuItem({
+	platformMenu.append(new nw.MenuItem({
 		label: 'Shutdown '+ name,
 		click: function() { platform.shutdown(); },
 	}));
 
 	// Preferences
 	var preferencePanel = null;
-	platformMenu.append(new gui.MenuItem({
+	platformMenu.append(new nw.MenuItem({
 		type: 'separator',
 	}));
-	platformMenu.append(new gui.MenuItem({
+	platformMenu.append(new nw.MenuItem({
 		label: 'Preferences ',
 		click: function() { 
 			if (preferencePanel)
 				preferencePanel.show();
 			else {
-				preferencePanel = gui.Window.open('../content/preferences.html', {
+				nw.Window.open('../content/preferences.html', {
 					width: 400,
 					height: 800,
-					toolbar: platform.program.showToolbar,
-				});
-				preferencePanel.on('close', function() {
-					preferencePanel.close(true);
-					preferencePanel = null;
+				}, function (win) {
+					preferencePanel = win;
+					win.on('close', function() {
+						preferencePanel.close(true);
+						preferencePanel = null;
+					});
 				});
 			}
 		},
 	}));
 
-	getMenuBar().insert(new gui.MenuItem({
-		label: 'Platform',
-		submenu: platformMenu,
-	}), process.platform === 'darwin' ? 2 : 0);	// only Mac OS has predefined menus
-
+	log.exit(null, 'createPlatformMenu');
 	return platformMenu;
 }
 
+// Apps menu
+function getAppsMenu() {
+	return appsMenu;
+}
 
-
-// Create the Apps menu
-var appsMenu;
-function getAppsMenu(appClass) {
-	if (appsMenu !== undefined)
-		return appsMenu;
-
-	// Create Platform menu in UI
-	var gui = getGUI();
-	if (!gui) {
-		log.message('getAppsMenu:', 'no GUI');
-		appsMenu = null;
+function createAppsMenu(appClass) {
+	log.enter(null, 'createAppsMenu');
+	if (UIdisabled) {
+		log.exit(null, 'createAppsMenu');
 		return null;
 	}
 
-	if (! appClass)
-		return;
+	if (! appClass) {
+		log.message('apps not loaded yet');
+		log.exit(null, 'createAppsMenu');
+		return null;
+	}
 
-	log.message('getAppsMenu:', 'creating menu');
+	// Create Platform menu in UI
+	log.message('creating menu');
 
 	// Create a menu item for the Apps menu
 	function makeItem(menu, appName) {
-		menu.append(new gui.MenuItem({
+		menu.append(new nw.MenuItem({
 			label: appName,
 			type: 'checkbox',
 			checked: appClass.instances[appName],
@@ -148,16 +164,11 @@ function getAppsMenu(appClass) {
 		}));
 	}
 
-	appsMenu = new gui.Menu();
 	var apps = appClass.availableApps();
 	for (var i = 0; i < apps.length; i++)
 		makeItem(appsMenu, apps[i]);
 	
-	getMenuBar().insert(new gui.MenuItem({
-		label: 'Applications',
-		submenu: appsMenu,
-	}), process.platform === 'darwin' ? 3 : 0);	// only Mac OS has predefined menus
-
+	log.exit(null, 'createAppsMenu');
 	return appsMenu;
 }
 
@@ -193,84 +204,78 @@ function checkAppsMenuItem(appName, checked) {
 // This property holds at least a `frame` propery (size of the window holding the UI)
 // and an optional `url` property, to be loaded in the new window.
 // *** We could also inject JS/CSS/HTML in the default UI
-/*
-makePlatformUI: function() {
-	if (! this.config.UI)
-		return;
-	var UI = this.config.UI;
-	var win = null;
-	
-	if (UI.frame) {
-		var gui = process.mainModule.exports.gui;
-		var url = '../content/platform.html';	// URL is relative to the lib folder
-		if (UI.url)	// interpret it relative to the config file folder
-			url = 'file://'+Path.resolve(this.dirname(), UI.url);
-		log.method(this, 'makeUI', '- url', url);
-		UI.frame.toolbar = this.program.showToolbar;
-		win = gui.Window.open(url, UI.frame);
-		this.window = win;
+function makePlatformUI(platform) {
+	log.enter(null, 'makePlatformUI');
+
+	var done = function() {};
+	var promise = new Promise(function(fulfill, reject) {
+		done = fulfill;
+	});
+
+	if (UIdisabled) {
+		done();
+		log.exit(null, 'makePlatformUI');
+		return promise;
 	}
 
-	return win;
-}
-*/
-var platformWindow = null;
-function makePlatformUI(platform, showToolbar) {
-	log.message('makePlatformUI');
-	platformWindow = null;
-	
 	var UI = platform.config.UI;
-	if (! UI) {
-		log.message('makePlatformUI: no UI');
-		return null;
+	if (! UI || ! UI.frame) {
+		log.message(UI ? 'no UI frame' : 'no config UI');
+		done();
+		log.exit(null, 'makePlatformUI');
+		return promise;
 	}
 
+	var url = '../content/platform.html';	// URL is relative to the lib folder
+	if (UI.url)	// interpret it relative to the config file folder
+		url = 'file://'+Path.resolve(platform.dirname(), UI.url);
+
+	log.message('opening', url);
+
+	// backward compatibility: rename frame fields: left -> x, top -> y
 	if (UI.frame) {
-		var gui = getGUI();
-		if (!gui) {
-			log.message('makePlatformUI: no GUI');
-			return null;
+		if (UI.frame.left) {
+			UI.frame.x = UI.frame.left;
+			delete UI.frame.left;
 		}
-
-		var url = '../content/platform.html';	// URL is relative to the lib folder
-		if (UI.url)	// interpret it relative to the config file folder
-			url = 'file://'+Path.resolve(platform.dirname(), UI.url);
-
-		log.message('makePlatformUI: opening', url);
-
-		UI.frame.toolbar = showToolbar;
-		platformWindow = gui.Window.open(url, UI.frame);
+		if (UI.frame.top) {
+			UI.frame.y = UI.frame.top;
+			delete UI.frame.top;
+		}
 	}
 
-	return platformWindow;
+	nw.Window.open(url, UI.frame, function(win) {
+		log.message('platform window created', win);
+		platform.window = win;
+		createMenuBar(win);
+
+		win.on('close', function() {
+			global.platform.stop();
+			nw.App.quit();
+		});
+
+		win.window.onload = done;
+	});
+
+	log.exit(null, 'makePlatformUI');
+	return promise;
 }
 
-// Return the window holding the platform UI.
-/*getUIWindow: function() {
-	if (!this.window)
-		return null;
-	return this.window.window;
-},
-*/
 function getUIWindow() {
-	if (!platformWindow)
+	if (!global.platform.window)
 		return null;
-	return platformWindow.window;
+	return global.platform.window.window;
 }
 
 // show main window, show platform window's dev tools
-function showTraceWindow() {
-	var gui = getGUI();
-	if (gui)
-		var win = gui.Window.get().show();
+function showLogWindow() {
+	var win = global.platform.logWindow;
+	if (win)
+		win.show();
 }
 
 function showDevTools() {
- 	var gui = getGUI();
- 	if (! gui)
- 		return;
-
-	var win = gui.Window.get();
+	var win = global.platform.window;
 	if (win)
 		win.showDevTools();
 }
@@ -438,6 +443,8 @@ module.exports = {
 	getGUI: getGUI,
 	disable: disable,
 
+	createPlatformMenu: createPlatformMenu,
+	createAppsMenu: createAppsMenu,
 	getPlatformMenu: getPlatformMenu,
 	getAppsMenu: getAppsMenu,
 	checkAppsMenuItem: checkAppsMenuItem,
@@ -445,7 +452,7 @@ module.exports = {
 	makePlatformUI: makePlatformUI,
 	getUIWindow: getUIWindow,
 
-	showTraceWindow: showTraceWindow,
+	showLogWindow: showLogWindow,
 	showDevTools: showDevTools,
 
 	injectJSText: injectJSText,

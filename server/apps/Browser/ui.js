@@ -11,6 +11,7 @@ var browserApp = (function () {
 var panZoomResizeBrowser = null;
 
 var app = platform.apps.getApp('Browser');
+var Spy = nw.require('spy');
 
 // The miniature wall position and scale factor
 var wall = {
@@ -115,13 +116,13 @@ function startBrowser() {
 	// Update UI when application state changes
 	app.wrapFields({
 		set url(url) { this._set(url); adjustURL(); },
-		set coords(val)		{ 
+		set coords(val)	{ 
 			// We need to track the changes of the object ourselves
 			if (this[val] && typeof this[val] === 'object')
-				Object.unobserve(this[val], adjustPanZoom);
+				Spy.unobserveObject(this[val], adjustPanZoom);
 			this._set(val); 
 			if (val && typeof val === 'object')
-				Object.observe(val, adjustPanZoom);
+				Spy.observeObject(val, adjustPanZoom);
 			adjustPanZoom(); 
 		},
 		set width(val)   { this._set(val); adjustSize(); },
@@ -129,7 +130,7 @@ function startBrowser() {
 	});
 
 	if (app.coords)
-		Object.observe(app.coords, adjustPanZoom);
+		Spy.observeObject(app.coords, adjustPanZoom);
 }
 
 function stopBrowser() {
@@ -286,7 +287,7 @@ PanZoomResize.prototype.start = function() {
 PanZoomResize.prototype.stop = function() {
 	$(this.target).off('mousedown mousemove mouseup mousewheel');
 	if (app.coords)
-		Object.unobserve(app.coords, adjustPanZoom);
+		Spy.unobserveObject(app.coords, adjustPanZoom);
 };
 
 // Go!

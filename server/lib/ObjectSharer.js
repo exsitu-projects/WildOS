@@ -16,13 +16,12 @@
 //	- other shared Classy objects
 //
 // To share fields whose value is a literal object, the state of the object is tracked 
-// (with Object.observe) and changes are sent to clients as a fresh object.
+// and changes are sent to clients as a fresh object.
 // So a field position: {x: 0, y: 0} can be shared simply by calling 
 //		anObjectSharer.master({fields: 'own', objects: 'position'}, …) 
-//	on the master side. On the client side, just put a wrapper around position. 
+// on the master side. On the client side, just put a wrapper around position. 
 // Changes to position.x and position.y will be sent as changes to the entire position object. 
-// Because Object.observe triggers at the end of microtasks, multiple changes to an object 
-// (e.g. position.x and position.y) are batched as a single change to position, 
+// Multiple changes to an object (e.g. position.x and position.y) are batched as a single change, 
 // making synchronization more efficient.
 //
 // For methods, we support:
@@ -38,6 +37,7 @@
 var events = require('events');
 
 // Shared modules
+var Spy = require('spy');
 var ObjectStore = require('ObjectStore');
 var log = require('Log').logger('ObjectSharer');
 
@@ -60,18 +60,18 @@ var ObjectSharer = ObjectStore.subclass().name('ObjectSharer')
 	.methods({
 		// --- Master ---
 
-		// helper functions to observe the values of object fields
+		// helper functions to observe the values of object fields, using the Spy module
 		observe: function(obj, field) {
 			var sharer = this;
-			function observer(changes) {
-//				log.message('object field observer', obj.oid, field, changes[0].object);
-				if (changes)
-					sharer.notifySet(obj, field, changes[0].object);
+			function observer(value, changes) {
+//				log.message('object field observer', obj.oid, field, obj[field]);
+				// changes are not used since we are sending the whole object no matter what
+				sharer.notifySet(obj, field, value);
 			}
 
 			var value = obj[field];
 			if (value && typeof value === 'object') {
-				Object.observe(value, observer);
+				Spy.observeObject(value, observer);
 				if (this.observers.get(value))
 					log.warn.method(this, 'observe', obj.oid+'.'+field, 'already observed');
 				this.observers.set(value, observer);
@@ -82,7 +82,7 @@ var ObjectSharer = ObjectStore.subclass().name('ObjectSharer')
 			if (value && typeof value === 'object') {
 				var observer = this.observers.get(value);
 				if (observer) {
-					Object.unobserve(value, observer);
+					Spy.unobserveObject(value, observer);
 					this.observers.delete(value);
 				} else
 					log.warn.method(this, 'unobserve', obj.oid+'.'+field, 'no observer');
@@ -132,6 +132,9 @@ var ObjectSharer = ObjectStore.subclass().name('ObjectSharer')
 						if (shared.objectFields)
 							for (var i = 0; i < shared.objectFields.length; i++)
 								sharer.observe(this, shared.objectFields[i]);
+						if (shared.arrayFields)
+							for (var i = 0; i < shared.arrayFields.length; i++)
+								sharer.observe(this, shared.arrayFields[i]);
 						
 					}
 
@@ -147,6 +150,9 @@ var ObjectSharer = ObjectStore.subclass().name('ObjectSharer')
 							if (shared.objectFields)
 								for (var i = 0; i < shared.objectFields.length; i++)
 									sharer.unobserve(this, shared.objectFields[i]);
+							if (shared.arrayFields)
+								for (var i = 0; i < shared.arrayFields.length; i++)
+									sharer.unobserve(this, shared.arrayFields[i]);
 
 							sharer.notifyDie(oid);
 						}
@@ -255,14 +261,8 @@ var ObjectSharer = ObjectStore.subclass().name('ObjectSharer')
 		},
 
 		// Same as above for a field that holds an array.
-		// *** TODO ***
 		wrapArrayFieldNotify: function(cls, field) {
-			var sharer = this;
-			cls.wrapField(field, null, function(value) {
-				var ret = this._set(value);
-				sharer.notifySet(this, field, value);
-				return ret;
-			});
+			this.wrapObjectFieldNotify(cls, field);
 		},
 
 		// Helper method to wrap a method with a function that notifies the call.

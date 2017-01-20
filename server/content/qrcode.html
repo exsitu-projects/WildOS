@@ -4,27 +4,32 @@
 	<script src="qrcode.min.js"></script>
 	<script type="text/javascript">
 		function show() {
-			var gui = require('nw.gui');
-			var win = gui.Window.get();
+			var win = nw.Window.get();
 			// *** This line triggers a warning
 			//	WARNING:dispatcher_host.cc(196)] Unknown object: 2 type:Window method:GetSize arguments:[  ]
 			// but it seems to work...
 			win.moveTo(screen.width - win.width - 5, 25);
 			win.show();			
 		}
+		function openExternal(url) {
+			nw.Shell.openExternal(url);
+		}
+		var url = "";
+		function setAddress(hostname, port) {
+			url = 'http://'+hostname+':'+port+'/controller.html';
+			var qrcode = new QRCode(document.getElementById("qrcode"), {
+				width : 170,
+				height : 170
+			});
+			qrcode.makeCode(url);
+			document.getElementById("url").innerHTML = url;
+			show();
+		}
 	</script>
 </head>
-<body onload="show()">
-	<div id="qrcode" style="width:170px; height:170px; margin:10px;"></div>
+<body>
+	<div id="qrcode" style="width:170px; height:170px; margin:10px; cursor:hand" onclick="openExternal(url)"></div>
+	<p style="color:grey; font-size: 10pt">Click to open in local browser</p>
 	<p id="url"></p>
-	<script type="text/javascript">
-		var url = 'http://'+window.location.hash.substring(1)+'/controller.html';
-		var qrcode = new QRCode(document.getElementById("qrcode"), {
-			width : 170,
-			height : 170
-		});
-		qrcode.makeCode(url);
-		document.getElementById("url").innerHTML = url;
-	</script>
 </body>
 </html>

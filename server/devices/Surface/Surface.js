@@ -259,6 +259,7 @@ var Surface = Device.subclass().name('Surface')
 					debug = '--debug '+program.debug+' --remote-debugging-port='+tile.debugPort;
 
 				ctxByClient[clientName] = {
+					USERDATADIR: '/tmp/nwjsUserData',
 					HOST: tile.host + domain,
 					INSTANCE: tile.instanceName,
 					PORT: platform.serverPort,
@@ -270,7 +271,6 @@ var Surface = Device.subclass().name('Surface')
 
 			// Now we can run the command for each instance.
 			// If delay is > 0 run them at delay interval
-			var self = this;
 			function delayedRun(cmd, ctx, delay) {
 				setTimeout(function() {
 					self.spawn(cmd, ctx);
@@ -299,6 +299,7 @@ var Surface = Device.subclass().name('Surface')
 			var program = platform.program;
 
 			var ctx = {
+				USERDATADIR: '/tmp/nwjsUserData',
 				HOST: tile.host + domain,
 				INSTANCE: tile.instanceName,
 				PORT: platform.serverPort,

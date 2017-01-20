@@ -7,13 +7,15 @@
 
 # adjust to local install
 NWAPP=/Applications/node-webkit.app
+NWAPP=/Users/mbl/Dev/Tools/Web\ browsers/Node-WebKit/nwjs-sdk-v0.17.0-osx-x64/nwjs.app
 # alternative if you have multiple versions:
 #VERSION=0.9.2
 #NWDIR=/Users/mbl/Dev/Tools/Web\ browsers/Node-WebKit
 #NWAPP=$NWDIR/node-webkit-v$VERSION/node-webkit.app
 
 # do not change below this
-NW=$NWAPP/Contents/MacOS/node-webkit
+#NW=$NWAPP/Contents/MacOS/node-webkit
+NW=$NWAPP/Contents/MacOS/nwjs
 
 # if the first argument is -X, run NW instead of open NWAPP
 # (useful, e.g. to catch errors that occur at startup)

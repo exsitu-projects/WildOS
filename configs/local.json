@@ -4,8 +4,8 @@
 	"serverPort": 8088,
 	"UI": {
 		"frame": {
-			"left": 100,
-			"top": 500,
+			"x": 100,
+			"y": 500,
 			"width": 1200,
 			"height": 300
 		},
@@ -28,7 +28,7 @@
 			"BL": { "left": 10, "top": 191},
 			"BR": { "left": 286, "top": 191}
 		},
-		"start": "nw ../renderer --local --port %PORT% --instance %INSTANCE% %DEBUG% %LOG%",
+		"start": "nw ../renderer --user-data-dir=%USERDATADIR%/WildOS-Renderer-%INSTANCE% --local --port %PORT% --instance %INSTANCE% %DEBUG% %LOG%",
 		"stop": "wildos stop"
 	},
 	"controllers": {
@@ -37,7 +37,7 @@
 	"WIS": {
 		"type": "WildInputServer",
 		"devices": {
-			"pointer": {"fields": {"dx": 0, "dy": 0}}
+			"pointer": {"fields": {"x": 0, "y": 0}}
 		}
 	}
 }

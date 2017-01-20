@@ -3,11 +3,8 @@
 	"version": "0.2.2",
 	"main": "content/server.html",
 	"node-main": "WildOS.js",
-	"single-instance": false,
 	"window": {
 		"title": "The WildOS Server",
-		"frame": true,
-		"toolbar": true,
 		"show": false
 	},
 	"dependencies": {

@@ -45,7 +45,7 @@
 </style>
 <script src="jquery-mbl-1.8.3.min.js"></script>
 <script type="text/javascript">
-	var gui = require('nw.gui');
+	var gui = nw; //require('nw.gui');
 	var platform = global.platform;
 
 	// Enable drag-and-drop on an element.
@@ -100,9 +100,9 @@
 <body>
 	<div id="top">
 		<button onmousedown='rollDown(platform.GUI.getPlatformMenu(), this, event)'>Platform</button>
-		<button onmousedown='rollDown(platform.GUI.getAppsMenu(platform.App), this, event)'>Apps</button>
+		<button onmousedown='rollDown(platform.GUI.getAppsMenu(), this, event)'>Apps</button>
 		<span style="color:grey">(Right click tiles for renderer menu)</span>
-		<button style="float: right" onclick='platform.GUI.showTraceWindow()'>Open log</button>
+		<button style="float: right" onclick='platform.GUI.showLogWindow()'>Open log</button>
 		<button style="float: right" onclick='platform.GUI.showDevTools()'>Dev tools</button>
 	</div>
 	<div id="platform">

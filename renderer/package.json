@@ -1,14 +1,11 @@
 {
-	"name": "Renderer",
+	"name": "WildOS-renderer",
 	"version": "0.2.2",
 	"main": "content/renderer.html",
 	"node-main": "renderer.js",
-	"single-instance": false,
 	"window": {
 		"title": "WildOS Renderer",
-		"frame": true,
-		"toolbar": true,
-		"show": false
+		"show": true
 	},
 	"dependencies": {
 		"socket.io-client": "0.9.16",

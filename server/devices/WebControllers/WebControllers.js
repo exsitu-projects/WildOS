@@ -34,7 +34,7 @@ var WebControllers = Device.subclass().name('WebControllers')
 			this.deviceAvailable();
 
 			// Create the window showing the QR code
-			this.window = this.createUI();
+			/*this.window = */this.createUI();
 		},
 
 		// Callback when a new client has successfully connected.
@@ -51,21 +51,32 @@ var WebControllers = Device.subclass().name('WebControllers')
 
 		//
 		createUI: function() {
+			log.enter(this, 'createUI');
 			var platform = this.findAncestor({type: 'Platform'});
 			var gui = platform.GUI.getGUI();
 			if (! gui)
 				return null;
 
+			var url = '../content/qrcode.html'; // relative to the lib folder
 			var hostname = this.config.hostname || os.hostname();
-			var url = '../content/qrcode.html#'+hostname+':'+platform.serverPort;	// URL is relative to the lib folder
-			// We can't set the position here so we hide the window and it positions and shows itself
-			var win = gui.Window.open(url, {
-				show: false,
+			var port = platform.serverPort;
+			var self = this;
+
+			log.message('opening window', url, hostname, port);
+			var win = gui.Window.open(url, { 
+				show: false,		// We can't set the position here so we hide the window and it positions and shows itself
 				width: 210,
-				height: 260,
-				toolbar: false,
+				height: 290,
 				resizable: false,				
+			}, function (win) { 
+				log.message('QRcode window created', url); 
+				self.window = win;
+				win.window.onload = function() {
+					log.message('QRcode window loaded', hostname, port); 
+					win.window.setAddress(hostname, port);
+				};
 			});
+			log.exit(this, 'createUI');
 			return win;
 		},
 	});

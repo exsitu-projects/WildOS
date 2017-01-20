@@ -15,10 +15,8 @@ program
 	.option('-i, --instance <name>', 'Instance name (required)')
 	.option('-d, --debug [level]', 'Enable debugging')
 	.option('--log file', 'Log config file')
+	.option('--user-data-dir', 'user data dir for nw.js')
 ;
-
-// Node-Webkit module
-var gui;
 
 // Shared modules
 var Log = require('Log');
@@ -43,7 +41,6 @@ function processLogDebugOptions(program) {
 	// - 3: trace all, show titlebars, log to console
 	Log.logToConsole = (program.debug >= 3);
 	program.showWindows = (program.debug >= 2) && !Log.logToConsole;
-	program.showToolbar = (program.debug >= 1);
 
 	// Load load config file if debugging is enabled
 	if (program.debug) {
@@ -66,8 +63,8 @@ function processLogDebugOptions(program) {
 
 // Quit the application.
 exports.quit = function() {
-	if (gui)
-		gui.App.quit();
+	if (nw)
+		nw.App.quit();
 	else
 		process.exit(0);
 };
@@ -75,20 +72,17 @@ exports.quit = function() {
 // The main function, called from the window created when node-webkit starts.
 // This is so that we have access to that window during start-up (e.g., for logging).
 //
-exports.init = function () {
-	gui = exports.gui = window.require('nw.gui');
-
+exports.init = function (win) {
 	// Process arguments: need to prepend 2 arguments for commander to work
 	var args = ['nw', 'renderer'];
-	for (var i = 0; i < gui.App.argv.length; i++)
-		args.push(gui.App.argv[i]);
+	for (var i = 0; i < nw.App.argv.length; i++)
+		args.push(nw.App.argv[i]);
 	program.parse(args);
 
 	// Process logging and debugging options
 	processLogDebugOptions(program);
 
 	// Hide trace window when not debugging
-	var win = gui.Window.get();
 	if (program.showWindows)
 		win.show();
 
@@ -98,7 +92,6 @@ exports.init = function () {
 
 	if (! program.instance)
 		program.instance = 'default';
-
 	// Create and start the client.
 	var renderer = App.server = Renderer.create(program).connect();
 
@@ -110,6 +103,8 @@ exports.init = function () {
 
 	// Set log window title
 	win.window.setTitle(renderer.host+'_'+program.instance);
+	global.renderer = renderer;
+	global.logWindow = win;
 
 	return renderer;
 };

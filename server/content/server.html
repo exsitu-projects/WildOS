@@ -123,10 +123,6 @@ p { margin: 5px; padding: 0;}
 	}
 
 	$(document).ready(function() {
-		//var gui = require('nw.gui');
-		//var w = gui.Window.get();
-		//w.showDevTools();
-
 		// Collapse/Expand log by clicking
 		$('#log').on("click", ".Indent", function(e) {
 			$(this).toggleClass('closed');
@@ -136,7 +132,7 @@ p { margin: 5px; padding: 0;}
 			e.stopPropagation();
 		});
 
-		global.platform = process.mainModule.exports.init();
+		process.mainModule.exports.init(nw.Window.get());
 	});
 </script>
 </head>

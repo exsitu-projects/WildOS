@@ -83,7 +83,6 @@ var Tile = OO.newClass().name('Tile')
 				width: this.width,
 				height: this.height,
 				frame: false,
-				toolbar: false,
 //				resizable: false,
 				fullscreen: true,
 			};
@@ -94,34 +93,34 @@ var Tile = OO.newClass().name('Tile')
 			if (this.left !== 0 && this.top !== 0) {
 				// Assume we're testing and add frame & toolbar so we can get to the developer tools
 				tile.frame = true;
-				tile.toolbar = true;
 				tile.resizable = true;
 				tile.fullscreen = false;
 			}
 
 			// Open the tile page
-			var gui = process.mainModule.exports.gui;
-			var win = gui.Window.open('tile.html', tile);
-
-			this.window = win;
+			var self = this;
 			this.ready = false;
+			this.window = null;
+
+			nw.Window.open('content/tile.html', tile, function(win) {
+				self.window = win;
+
+				// Wait for the page to be loaded signaling that we are ready.
+				win.once('loaded', function() {
+					self.ready = true;
+					log.event(self, 'loaded', self.oid);
+					var id = win.window.document.getElementById('renderer');
+					if (id)
+						id.innerHTML = self.tileName + ' debugPort=' + self.debugPort;
+
+					// Tell the layers and apps that the tile is ready.
+					Layer.tileReady(self);
+					App.tileReady(self);
+				});
+			});
 
 			// Record in our list
 			Tile.tiles.push(this);
-
-			// Wait for the page to be loaded signaling that we are ready.
-			var self = this;
-			win.once('loaded', function() {
-				self.ready = true;
-				log.event(self, 'loaded', self.oid);
-				var id = win.window.document.getElementById('renderer');
-				if (id)
-					id.innerHTML = self.tileName + ' debugPort=' + self.debugPort;
-
-				// Tell the layers and apps that the tile is ready.
-				Layer.tileReady(self);
-				App.tileReady(self);
-			});
 		},
 
 		// Reset the content of the tile to the default page

@@ -12,7 +12,7 @@
 // This is only called when running under node.js
 process.on('SIGINT', function() {
 	console.log('Interrupt - quitting');
-	//gui.App.quit();
+	//nw.App.quit();
 	if (global.platform)
 		global.platform.shutdown();
 	process.exit(1);
@@ -67,13 +67,12 @@ function processLogDebugOptions(program) {
 		program.debug = 1;
 
 	// Interpretation of debug level:
-	// - 0: no trace, no titlebars (i.e. no access to debugger), trace windows hidden
-	// - 1: trace all, show titlebars, hide trace windows
-	// - 2: trace all, show titlebars, show trace windows
-	// - 3: trace all, show titlebars, log to console
+	// - 0: no trace, trace windows hidden
+	// - 1: trace all, hide trace windows
+	// - 2: trace all, show trace windows
+	// - 3: trace all, log to console
 	Log.logToConsole = (program.debug >= 3);
 	program.showWindows = (program.debug >= 2) && !Log.logToConsole;
-	program.showToolbar = (program.debug >= 1);
 
 	// Load load config file if debugging is enabled
 	if (program.debug) {
@@ -148,14 +147,13 @@ function loadPlatform(name, cb) {
 	// Create the platform UI, if any, start the platform and notify the apps.
 	// If there is a UI, we only start the platform and notify the apps once the UI is loaded,
 	// so that both the platform and the apps have access to it.
-	var init = function() {
+	GUI.makePlatformUI(platform).then(function() {
 		platform.addDevices();
-		GUI.getPlatformMenu(platform);		
+		GUI.createPlatformMenu(platform);		
 		if (cb)
 			cb(platform);
-	};
-
-	var win = GUI.makePlatformUI(platform, program.showToolbar);
+	});
+/*
 	if (win) {
 		log.message('loadPlatform', name, '- will start when window ready');
 		win.once('loaded', init);
@@ -164,13 +162,13 @@ function loadPlatform(name, cb) {
 		win.on('close', function() {
 			if (program.clients)
 				platform.stop();
-			exports.gui.App.quit();
+			nw.App.quit();
 		});
 	} else {
 		// Start the platform after the init sequence is finished.
 		setImmediate(init);
 	}
-
+*/
 	log.exit(null, 'loadPlatform', name);
 	return platform;
 }
@@ -184,7 +182,7 @@ function startServerAndApps(platform) {
 	server.start();
 
 	// Create the Applications menu
-	GUI.getAppsMenu(App);
+	GUI.createAppsMenu(App);
 
 	// Run the apps (specified as the remaining arguments on the command line)
 	var appNames = program.args;
@@ -215,14 +213,11 @@ setTimeout(function() {
 // Main initialization function.
 // It is called by the webkit side when it is ready,
 // to make sure the UI is available
-exports.init = function() {
-	var gui = exports.gui = window.require('nw.gui');
-	var win = gui.Window.get();
-
+exports.init = function(win) {
 	// Process arguments: need to prepend 2 arguments for commander to work
 	var args = ['nw', 'server'];
-	for (var i = 0; i < gui.App.argv.length; i++)
-		args.push(gui.App.argv[i]);
+	for (var i = 0; i < nw.App.argv.length; i++)
+		args.push(nw.App.argv[i]);
 	program.parse(args);
 
 	// Use preferences if called without any argument
@@ -260,11 +255,12 @@ exports.init = function() {
 
 	// Create the platform
 	// When the platform is ready, start the server and the apps
-	var platform = loadPlatform(platformName, startServerAndApps);
+	global.platform = loadPlatform(platformName, startServerAndApps);
+	global.platform.logWindow = win;
 
 	// Return the platform, which is also an event emitter,
 	// so that the UI can register listeners, etc. 
-	return platform;
+	return global.platform;
 };
 
 // Launch with node.js instead of webkit.
