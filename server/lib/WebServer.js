@@ -58,7 +58,7 @@ var WebServer = OO.newClass().name('WebServer')
 			if (! this.app)
 				this.app = express();
 			if (! this.http)
-				this.http = http.createServer(this.app);
+				this.http = http.Server(this.app);
 
 			// Configure Express app with routes.
 			if (this.routes) {

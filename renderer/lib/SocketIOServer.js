@@ -29,8 +29,10 @@ var SocketIOServer = OO.newClass().name('SocketIOServer')
 		this.path = path || '';
 
 		if (this.hostname)
-			this.url = this.hostname+':'+this.port+this.path;
+			this.url = 'http://'+this.hostname+':'+this.port+this.path;
 		else
+			// *** not sure when this is used. 
+			// *** Should we check that it is prefixed with http:// ??
 			this.url = this.path || null;
 		
 		this.connectionUp = false;	// Whether the connection is actually live
@@ -50,11 +52,12 @@ var SocketIOServer = OO.newClass().name('SocketIOServer')
 			// This will in general return a non-null value, but we won't know
 			// until a `connect` event that the connection went through.
 			this.socket = io.connect(this.url, {
-				'force new connection': true,	// critical to retry on initial connect
-				'reconnect': true,
-				'reconnection delay': 5000,
-				'reconnection limit': 5000,		// to avoid exponential backoff
-				'max reconnection attempts': 1000,
+				transports: ['websocket'],
+				forceNew: true,
+				reconnection: true,
+				reconnectionDelay: 5000,
+				reconnectionDelayMax: 5000,
+				randomizationFactor: 0.01,	// 0 is not allowed
 			});
 
 			if (! this.socket) {

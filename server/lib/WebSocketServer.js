@@ -48,13 +48,14 @@ var WebSocketServer = WebServer.subclass().name('WebSocketServer')
 				return;
 
 			// Start listening
-			this.io = socketio.listen(this.http);
-			this.io.set('log level', 1);	// 0-error, 1-warning, 2-info, 3-debug (default)
-			this.io.set('transports', ['websocket']);
+			this.io = socketio(this.http, {
+				transports: ['websocket'],
+			});
+			// this.http.listen(this.port);	// *** we have already called listen in WebServer::start !!!
 
 			// Set the connection handler
 			var self = this;
-			this.io.sockets.on('connection', function(socket) {
+			this.io.on('connection', function(socket) {
 				log.eventEnter(self, 'connection');
 
 				// Get a client object and register it (even if null)
@@ -71,7 +72,7 @@ var WebSocketServer = WebServer.subclass().name('WebSocketServer')
 			// Set up existing listeners since they could not be created before the server was started
 			this.listeners.forEach(function(listener) {
 				log.method(self, 'startSocketIO', 'enabling listeners for token', listener.token);
-				self.io.sockets.on('connection', listener.connected);
+				self.io.on('connection', listener.connected);
 			});
 		},
 		
@@ -220,7 +221,7 @@ var WebSocketServer = WebServer.subclass().name('WebSocketServer')
 			// If server is not running yet and `token` was not null,
 			// the listeners will be established when the server starts (see `startSocketIO`).
 			if (this.io)
-				this.io.sockets.on('connection', listeners.connected);
+				this.io.on('connection', listeners.connected);
 		},
 
 		// Remove the listeners for client connections associated with `token`,
@@ -230,7 +231,7 @@ var WebSocketServer = WebServer.subclass().name('WebSocketServer')
 				// remove all listeners
 				this.listeners = [];
 				if (this.io)
-					this.io.sockets.off('connection');
+					this.io.off('connection');
 				log.method(this, 'offNewClient', 'removed all listeners');
 				return;
 			}
@@ -246,7 +247,7 @@ var WebSocketServer = WebServer.subclass().name('WebSocketServer')
 			if (listeners) {
 				log.method(this, 'offNewClient', 'found listener for token', token);
 				if (this.io)
-					this.io.sockets.removeListener('connection', listeners.connected);
+					this.io.removeListener('connection', listeners.connected);
 				if (listeners.socket)
 					listeners.socket.removeListener('disconnect', listeners.disconnected);
 				this.listeners.splice(i, 1);
@@ -257,7 +258,7 @@ var WebSocketServer = WebServer.subclass().name('WebSocketServer')
 		// Send message to all connected clients
 		emit: function(msg, data) {
 			if (this.io)
-				this.io.sockets.emit(msg, data);
+				this.io.emit(msg, data);
 		},
 	});
 
