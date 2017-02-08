@@ -385,9 +385,7 @@ var SocketIOServer = OO.newClass().name('SocketIOServer')
 		if (this.hostname)
 			this.url = 'http://'+this.hostname+':'+this.port+this.path;
 		else
-			// *** not sure when this is used. 
-			// *** Should we check that it is prefixed with http:// ??
-			this.url = this.path || null;
+			this.url = this.path || '/';
 		
 		this.connectionUp = false;	// Whether the connection is actually live
 		this.retryPending = false;	// As it says...
