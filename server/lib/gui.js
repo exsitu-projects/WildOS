@@ -41,7 +41,7 @@ function createMenuBar(win) {
 
 	log.message('creating menus');
 	menuBar = new nw.Menu({ type: 'menubar' });
-	if (menuBar.createMacBuiltin) {	// only available since node-webkit v0.10.1
+	if (process.platform === 'darwin' && menuBar.createMacBuiltin) {	// only available since node-webkit v0.10.1
 		log.message('creating Mac builin menus');
 		menuBar.createMacBuiltin("WildOS server");
 	}
