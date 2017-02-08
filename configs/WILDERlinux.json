@@ -1,0 +1,40 @@
+{
+	"type": "Platform",
+	"name": "WILDER room",
+	"UI": {
+		"frame": {
+			"left": 100,
+			"top": 300,
+			"width": 1200,
+			"height": 500
+		},
+		"wallZoom": 0.1
+	},
+	"wall": {		
+		"type": "Surface",
+		"name": "WILDER",
+		"tileSize": {"width": 7680, "height": 960},
+		"bezelSize": {"width": 0, "height": 0},
+		"crop": {"top": 0, "left": 0, "bottom": 0, "right": 960},
+		"numTiles": {"columns": 2, "rows": 5},
+		"tiles": [
+            [["a1", "C"],["b1", "C"]],
+            [["a2", "C"],["b2", "C"]],
+            [["a3", "C"],["b3", "C"]],
+            [["a4", "C"],["b4", "C"]],
+            [["a5", "C"],["b5", "C"]]
+		],
+		"renderer": "perTile",
+		"domain": ".wilder.inria.fr",
+		"env": {
+			"C": "DISPLAY=:0.0"
+		},
+		"startDelay": 50,
+		"start": "ssh %HOST% PATH=\\$PATH:/usr/local/bin %ENV% nw ~/WildOS/renderer -p %PORT% -i %INSTANCE% %DEBUG% %LOG%",
+		"stop": "ssh %HOST% killall nw"
+	},
+	"controllers": {
+		"type": "WebControllers",
+		"hostname": "frontal-2.wilder.inria.fr"
+	}
+}
