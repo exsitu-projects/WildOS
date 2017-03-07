@@ -2,6 +2,9 @@
 #walldo=tools/walldo -l mbl
 walldo=tools/walldo
 
+suffix=latest
+clientdir=WildOS/$(suffix)
+
 what:
 	@echo "make start: start server and rendering clients"
 	@echo "make stop: kill server and rendering clients"
@@ -23,18 +26,18 @@ server: shared/OO.js shared/Log.js shared/ObjectStore.js renderer/lib/ObjectShar
 
 install:
 	# install WildOS on clients
-	$(walldo) mkdir WildOS
-	$(walldo) rsync . WildOS
-	$(walldo) -d WildOS/renderer npm install
+	$(walldo) mkdir -p $(clientdir)
+	$(walldo) rsync . $(clientdir)
+	$(walldo) -d $(clientdir)/renderer npm install
 
 sync:
 	# update WildOS on clients
-	$(walldo) rsync . WildOS
+	$(walldo) rsync . $(clientdir)
 
 update: sync
 	# sync reinstall node modules
-	$(walldo) -d WildOS/renderer rm -rf node_modules
-	$(walldo) -d WildOS/renderer npm install
+	$(walldo) -d $(clientdir)/renderer rm -rf node_modules
+	$(walldo) -d $(clientdir)/renderer npm install
 
 ReadMe.html: ReadMe.md
 	tools/mmdoc -a doc/assets -t doc/src/template.html ReadMe.md

@@ -11,7 +11,9 @@
 		"express": "3.8.1",
 		"socket.io": "1.7.2",
 		"ws": "0.4.31",
-		"commander": "2.2.0"
+		"commander": "2.2.0",
+	    "nw": "0.18.5-sdk"
+
 	},
 	"scripts": {
 		"postinstall": "cp ../shared/*.js node_modules",

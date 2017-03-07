@@ -9,7 +9,8 @@
 	},
 	"dependencies": {
 		"socket.io-client": "1.7.2",
-		"commander": "2.2.0"
+		"commander": "2.2.0",
+	    "nw": "0.18.5-sdk"
 	},
 	"scripts": {
 		"postinstall": "cp ../shared/*.js node_modules",

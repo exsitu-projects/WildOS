@@ -13,12 +13,7 @@ esac
 
 MACHINE=`uname`
 
-if [ $MACHINE == 'Linux' ]; then 
-	NW=nw
-else
-	# Mac OS X
-	NW=$DIR/nw
-fi
+NW=$DIR/../server/node_modules/nw/nwjs/nw
 
 if [ $# -eq 0 ]; then
 	set start
