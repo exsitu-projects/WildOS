@@ -20,6 +20,7 @@ echo-version:
 	@echo $(version)
 
 set-as-latest:
+	$(walldo) rm -rf $(WildOSRoot)/latest 
 	$(walldo) ln -s $(version) $(WildOSRoot)/latest
 
 start:
