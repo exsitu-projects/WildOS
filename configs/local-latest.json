@@ -1,0 +1,43 @@
+{
+	"type": "Platform",
+	"name": "WILD home",
+	"serverPort": 8088,
+	"UI": {
+		"frame": {
+			"x": 100,
+			"y": 500,
+			"width": 1200,
+			"height": 300
+		},
+		"wallZoom": 0.5
+	},
+	"wall": {		
+		"type": "Surface",
+		"name": "HomeWILD",
+		"tileSize": {"width": 256, "height": 160},
+		"bezelSize": {"width": 20, "height": 23},
+		"numTiles": {"columns": 2, "rows": 2},
+		"tiles": [
+			[["localhost", "TL"], ["localhost", "TR"]],
+			[["localhost", "BL"], ["localhost", "BR"]]
+		],
+		"renderer": "perTile",
+		"layout": {
+			"TL": { "left": 10, "top": 20},
+			"TR": { "left": 286, "top": 20},
+			"BL": { "left": 10, "top": 191},
+			"BR": { "left": 286, "top": 191}
+		},
+		"start": "../renderer/node_modules/nw/nwjs/nw ../renderer --user-data-dir=%USERDATADIR%/WildOS-Renderer-%INSTANCE% --local --port %PORT% --instance %INSTANCE% %DEBUG% %LOG%",
+		"stop": "wildos stop"
+	},
+	"controllers": {
+		"type": "WebControllers"
+	},
+	"WIS": {
+		"type": "WildInputServer",
+		"devices": {
+			"pointer": {"fields": {"x": 0, "y": 0}}
+		}
+	}
+}
