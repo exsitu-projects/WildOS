@@ -2,8 +2,8 @@
 #walldo=tools/walldo -l mbl
 walldo=tools/walldo
 
-suffix=latest
-clientdir=WildOS/$(suffix)
+version?=`node -e "console.log(require('./renderer/package.json').version)"`
+clientdir=WildOS/$(version)
 
 what:
 	@echo "make start: start server and rendering clients"
@@ -14,6 +14,9 @@ what:
 	@echo "make sync: update files on rendering clients"
 	@echo "make update: sync rendering clients and reinstall node modules"
 	@echo "make docs: generate the HTML documentation"
+
+echo-version:
+	@echo $(version)
 
 start:
 	tools/wildos
