@@ -3,7 +3,8 @@
 walldo=tools/walldo
 
 version?=`node -e "console.log(require('./renderer/package.json').version)"`
-clientdir=WildOS/$(version)
+WildOSRoot=WildOS
+clientdir=$(WildOSRoot)/$(version)
 
 what:
 	@echo "make start: start server and rendering clients"
@@ -17,6 +18,9 @@ what:
 
 echo-version:
 	@echo $(version)
+
+set-as-latest:
+	$(walldo) ln -s $(version) $(WildOSRoot)/latest
 
 start:
 	tools/wildos
