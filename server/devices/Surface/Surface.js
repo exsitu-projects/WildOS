@@ -34,6 +34,7 @@ var ObjectSharer = require('../../lib/ObjectSharer');
 // Internal modules
 var Renderer = require('./Renderer');	// represents a connection to a rendering client
 var Tile = require('./Tile');
+const version = require('../../../renderer/package.json').version;
 
 // *** To be tested:
 // *** It's not clear that we could manage multiple surfaces from one server ***
@@ -266,6 +267,7 @@ var Surface = Device.subclass().name('Surface')
 					ENV: env[tile.instanceName],
 					DEBUG: debug,
 					LOG: program.log ? ("--log "+program.log) : "",
+				        VERSION: version
 				};
 			});
 
