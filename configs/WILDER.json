@@ -13,27 +13,28 @@
 	"wall": {		
 		"type": "Surface",
 		"name": "WILDER",
-		"tileSize": {"width": 3920, "height": 980},
-		"bezelSize": {"width": 50, "height": 50},
-		"numTiles": {"columns": 4, "rows": 5},
+		"tileSize": {"width": 7680, "height": 960},
+		"bezelSize": {"width": 0, "height": 0},
+		"crop": {"top": 0, "left": 0, "bottom": 0, "right": 960},
+		"numTiles": {"columns": 2, "rows": 5},
 		"tiles": [
-			[["a1", "L", 0], ["a1", "L", 1], ["a1", "L", 2], ["a1", "L", 3], ["a1", "R", 0], ["a1", "R", 1], ["a1", "R", 2], ["a1", "R", 3], ["b1", "L", 0], ["b1", "L", 1], ["b1", "L", 2], ["b1", "L", 3], ["b1", "R", 0] ["b1", "R", 1], ["b1", "R", 2] ["b1", "R", 3]], 
-			[["a2", "L", 0], ["a2", "L", 1], ["a2", "L", 2], ["a2", "L", 3], ["a2", "R", 0], ["a2", "R", 1], ["a2", "R", 2], ["a2", "R", 3], ["b2", "L", 0], ["b2", "L", 1], ["b2", "L", 2], ["b2", "L", 3], ["b2", "R", 0] ["b2", "R", 1], ["b2", "R", 2] ["b2", "R", 3]], 
-			[["a3", "L", 0], ["a3", "L", 1], ["a3", "L", 2], ["a3", "L", 3], ["a3", "R", 0], ["a3", "R", 1], ["a3", "R", 2], ["a3", "R", 3], ["b3", "L", 0], ["b3", "L", 1], ["b3", "L", 2], ["b3", "L", 3], ["b3", "R", 0] ["b3", "R", 1], ["b3", "R", 2] ["b3", "R", 3]], 
-			[["a4", "L", 0], ["a4", "L", 1], ["a4", "L", 2], ["a4", "L", 3], ["a4", "R", 0], ["a4", "R", 1], ["a4", "R", 2], ["a4", "R", 3], ["b4", "L", 0], ["b4", "L", 1], ["b4", "L", 2], ["b4", "L", 3], ["b4", "R", 0] ["b4", "R", 1], ["b4", "R", 2] ["b4", "R", 3]],
-			[["a5", "L", 0], ["a5", "L", 1], ["a5", "L", 2], ["a5", "L", 3], ["a5", "R", 0], ["a5", "R", 1], ["a5", "R", 2], ["a5", "R", 3], ["b5", "L", 0], ["b5", "L", 1], ["b5", "L", 2], ["b5", "L", 3], ["b5", "R", 0] ["b5", "R", 1], ["b5", "R", 2] ["b5", "R", 3]]
+            [["a1", "C"],["b1", "C"]],
+            [["a2", "C"],["b2", "C"]],
+            [["a3", "C"],["b3", "C"]],
+            [["a4", "C"],["b4", "C"]],
+            [["a5", "C"],["b5", "C"]]
 		],
 		"renderer": "perTile",
-		"domain": ".wilder.lri.fr",
+		"domain": ".wilder.inria.fr",
 		"env": {
-			"L": "DISPLAY=:0.0",
-			"R": "DISPLAY=:0.1"
+			"C": "DISPLAY=:0.0"
 		},
 		"startDelay": 50,
-		"start": "ssh %HOST% PATH=\\$PATH:/usr/local/bin %ENV% nw ~/WildOS/renderer -p %PORT% -i %INSTANCE% %DEBUG% %LOG%",
+		"start": "ssh %HOST% %ENV% ~/WildOS/%VERSION%/renderer/node_modules/nw/nwjs/nw ~/WildOS/%VERSION%/renderer -p %PORT% -i %INSTANCE% %DEBUG% %LOG%",
 		"stop": "ssh %HOST% killall nw"
 	},
 	"controllers": {
-		"type": "WebControllers"
+		"type": "WebControllers",
+		"hostname": "frontal-2.wilder.inria.fr"
 	}
 }
