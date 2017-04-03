@@ -308,6 +308,7 @@ var Surface = Device.subclass().name('Surface')
 				ENV: env[tile.instanceName],
 				DEBUG: program.debug ? ('--debug '+program.debug+' --remote-debugging-port='+tile.debugPort) : '',
 				LOG: program.log ? ('--log '+program.log) : '',
+			        VERSION: version
 			};
 
 			this.spawn(cmd, ctx);
