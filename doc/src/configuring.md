@@ -68,6 +68,8 @@ The `wall` property defines the geometry of the tiled display:
 	- `%ENV%` is replaced by the content of the `env` property for the instance, 
 	- `%DEBUG%` is replaced by the debugging option of the server + the option `--remote-debugging-port=9222` to enable remote debugging of the clients (connect to `http://<client>:922` on a Chrome browser to access the debugging tools of the client),
 	- `%LOG%` is replaced by the logging file option of the server,
+	- `%VERSION%` is replaced by the version string of the renderer (as specified in the
+npm package),
 	- Process environment variables, e.g. `$PATH`, are replaced by their value,
 	- The `%` and `$` signs can be protected by a backslash (which is specified as two backslashes in a JSON file);
 - The optional `restart` property is a shell command to kill then start all the clients. If absent, it is replaced by calling `stop` then `start`;
