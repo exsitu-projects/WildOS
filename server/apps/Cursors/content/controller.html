@@ -20,6 +20,8 @@
 <span id="cursors"></span>
 <input id="removeCursor" type="button" value="Remove selected"/>
 <input id="cursorTouchpadMode" type="checkbox"/>Joystick mode<br/>
+<input id="cursorZoomIn" type="button" value="Zoom +"/>
+<input id="cursorZoomOut" type="button" value="Zoom -"/>
 <div id="cursorTouchpad"></div>
 
 <script>
@@ -31,6 +33,7 @@
 			x: 100,
 			y: 100,
 			color: 'yellow',
+			zoomLevel: 1
 		})
 		.constructor(function(config) {
 			if (config)
@@ -97,6 +100,12 @@
 
 			// Forward call to click cursor to server
 			click: function() {},
+			
+			// Forward call to zoom in cursor to server
+			zoomIn: function() {},
+
+			// Forward call to zoom out cursor to server
+			zoomOut: function() {},
 
 			// Called when a cursor is removed: deselect and remove the swatch
 			die: function() {
@@ -187,6 +196,18 @@
 					this.selected.click();
 			},
 
+		  zoomInSelected: function() {
+		  	if (this.selected) {
+			  this.selected.zoomIn();
+			}
+		  },
+
+		  zoomOutSelected: function() {
+		    if (this.selected) {
+		      this.selected.zoomOut();
+		    }
+		  },
+
 			// Remote calls to add/remove cursor
 			addCursor: function(config) {},
 			removeCursor: function(id) {},
@@ -212,13 +233,15 @@
 	// Add the `Cursor` class to the Cursors sharer
 	Cursors.sharer.slave(Cursor, {
 		fields: 'own',
-		notify: ['moveBy', 'click']
+		notify: ['moveBy', 'click', 'zoomIn', 'zoomOut']
 	});
 
 	var cursors = Cursors.create();
 
 	$('#newCursor').click(function() { cursors.addCursor(); });
 	$('#removeCursor').click(function() { cursors.removeSelected(); });
+	$('#cursorZoomIn').click(function() { cursors.zoomInSelected(); });
+	$('#cursorZoomOut').click(function() { cursors.zoomOutSelected(); });
 
 	var joystickMode = false;
 	var timer = null, dx = 0, dy = 0;
