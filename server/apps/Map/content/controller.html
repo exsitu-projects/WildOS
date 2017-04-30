@@ -3,25 +3,31 @@
 <div class="controller-body">
 
 <div id="msg"></div>
+
 <div id="map"></div>
 
 <script>
+
 // Wrap in a function to protect global name space
 var ol = null; var mapApp=
 (function() {
 	function delayedLoad() {
-		if (ol)
+		if (ol) {
+			// setInteractions(ol);
 			mapApp.loadMap();
-		else
+		} else
 			setTimeout(delayedLoad, 100);
 	}
 
 	var Map = App.subclass().name('Map')
 		.fields({
-			source: "MapQuest",
+			source: "OSM", //"MapQuest",
 			options: {layer: "sat"},
-			center: [37.41, 8.82],
-			zoom: 1,
+			center: [37.41, 8.82],	// LonLat coordinates of the center of the map
+			mapCenter: {x:960, y:540}, 				// pixel coordinates of the center of the display (from topleft)
+			mapSize: {width:1920, height:1080},	// pixel size of the map
+			resolution: undefined,
+			rotation: 0,
 		})
 		.constructor(function(config) {
 			this._super(config);
@@ -29,18 +35,34 @@ var ol = null; var mapApp=
 			this.mainView = null;
 			this.mainMap = null;
 
+			// Wait until OpenLayers is ready to create the map
 			delayedLoad();
 
 			this.wrapFields({
-				set center(c) { this._set(c); this.panned(); },
-				set zoom(z) { this._set(z); this.zoomed(); },
+				set center(c) 		{ this._set(c); this.panned(); },
+				set resolution(r)	{ this._set(r); this.zoomed(); },
+				set mapCenter(c) 	{ this._set(c); this.panned(); },
+				set rotation(r)		{ this._set(r); this.rotated();},
 			});
 		})
 		.methods({
+			// Whether we are currently interacting with the map.
+			// During interaction, incoming changes to the map state are ignored
+			// to avoid an infinite notification loop.
+			interacting: function() {
+				// *** we're supposed to use this.mainView.isAnimating(), 
+				// *** but there is no this.mainView.isInteracting()...
+				// *** The code below requires ol-debug.js to be loaded instead of ol.js
+	    	    var hints = this.mainView.getHints();
+				return hints[ol.ViewHint.INTERACTING] > 0 
+					|| hints[ol.ViewHint.ANIMATING] > 0;
+			},
+
 			loadMap: function() {
+				this.resolution = 40075016.68557849 / $('#map').width();
 				this.mainView = new ol.View({
 				    center: ol.proj.transform(this.center, 'EPSG:4326', 'EPSG:3857'),
-				    zoom: this.zoom
+				    resolution: this.resolution,
 				  });
 				this.mainMap = new ol.Map({
 				  target: 'map',
@@ -50,31 +72,53 @@ var ol = null; var mapApp=
 				    })
 				  ],
 				  view: this.mainView,
+				  // *** Disable rotate interactions
+				  interactions: ol.interaction.defaults({altShiftDragRotate:false, pinchRotate:false}),
 				});
 
-				var self = this;
-				this.mainView.on('change:center', function(evt) { self.panTo(self.mainView.getCenter()); });
-				this.mainView.on('change:resolution', function(evt) { self.zoomTo(self.mainView.getZoom()); });
+				// compute the scale between our resolution and that of the wall
+				scale = this.resolution / this.mainView.getResolution();
 
+				// send changes to server when the map is changed - but only if we're interacting
+				var self = this;
+				this.mainView.on('change:center', function(evt) {
+					if (self.interacting())
+						self.panTo(self.mainView.getCenter()); 
+				});
+				this.mainView.on('change:resolution', function(evt) {
+					if (self.interacting())
+						self.zoomTo(self.mainView.getResolution()*scale); 
+				});
+				// *** Ignore rotations because they do not work yet on the tiled display
+				// this.mainView.on('change:rotation', function(evt) {
+				// 	if (self.interacting())
+				// 		self.rotateTo(self.mainView.getRotation()); 
+				// });
 			},
 
 			// reactions to changes in state
 			panned: function() {
-				if (this.mainView)
-					this.mainView.setCenter(this.center);
+				if (this.mainView && !this.interacting())
+					this.mainView.setCenter([this.center[0], this.center[1]]); 
+					// can't use setCenter(this.center) because this.center is not a real array...
 			},
 			zoomed: function() {
-				if (this.mainView)
-					this.mainView.setZoom(this.zoom);
+				if (this.mainView && !this.interacting())
+					this.mainView.setResolution(this.resolution);
+			},
+			rotated: function() {
+				if (this.mainView && !this.interacting())
+					this.mainView.setRotation(this.rotation);
 			},
 
 			// remote calls to server
-			panTo: function(center) {document.getElementById('msg').innerHTML = center; },
-			zoomTo: function(zoom) {},
+			panTo: function(center) {},
+			zoomTo: function(resolution) {},
+			rotateTo: function(rotation) {},
 		})
 		.shareState({
 			fields: 'own',
-			notify: ['panTo', 'zoomTo'],
+			notify: ['panTo', 'zoomTo', 'rotateTo'],
 		})
 	;
 
@@ -86,7 +130,8 @@ var ol = null; var mapApp=
 }) ();
 </script>
 
-<link rel="stylesheet" href="http://openlayers.org/en/v3.9.0/css/ol.css" type="text/css">
-<script src="http://openlayers.org/en/v3.9.0/build/ol.js" type="text/javascript"></script>
+<link rel="stylesheet" href="http://openlayers.org/en/v4.1.0/css/ol.css" type="text/css">
+<!-- We need the debug version otherwise ol.ViewHint and mainView.getHints() are undefined!! -->
+<script src="http://openlayers.org/en/v4.1.0/build/ol-debug.js" type="text/javascript"></script>
 
 </div>

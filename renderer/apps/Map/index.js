@@ -17,10 +17,12 @@ var contentRoot = Path.join(__dirname, "content/");
 // The `Map` class.
 var Map = App.subclass().name('Map')
 	.fields({
-		source: "MapQuest",
+		source: "OSM", //"MapQuest",
 		options: {layer: "sat"},
-		center: [37.41, 8.82],
-		zoom: 1,
+		center: [37.41, 8.82],		// LonLat coordinates of the center of the map
+		mapCenter: {x:960, y:540}, 	// pixel coordinates of the center of the display (from topleft)
+		resolution: undefined,
+		rotation: 0,
 	})
 	.constructor(function(config) {
 		this._super(config);
@@ -31,11 +33,11 @@ var Map = App.subclass().name('Map')
 		});
 
 		this.wrapFields({
-			set center(c)   { this._set(c); this.panned(); },
-			set zoom(z)		{ this._set(z); this.zoomed(); },
+			set center(c)   	{ this._set(c); this.panned(); },
+			set resolution(r)	{ this._set(r); this.zoomed(); },
+			set mapCenter(c)	{ this._set(c); this.panned(); },
+			set rotation(r)		{ this._set(r); this.rotated();},
 		});
-
-
 	})
 	.methods({
 		tileReady: function(tile) {
@@ -51,8 +53,8 @@ var Map = App.subclass().name('Map')
 			var self = this;
 			var layerId = this.layer.id;
 			HTML.replace(win, layerId, '');
-			HTML.addCSS_URL(win, "http://openlayers.org/en/v3.9.0/css/ol.css", 'end', layerId);
-			HTML.addJS_URL(win, "http://openlayers.org/en/v3.9.0/build/ol.js", {onload: function() {
+			HTML.addCSS_URL(win, "http://openlayers.org/en/v4.1.0/css/ol.css", 'end', layerId);
+			HTML.addJS_URL(win, "http://openlayers.org/en/v4.1.0/build/ol-debug.js", {onload: function() {
 				HTML.addJSFile(win, Path.join(contentRoot, "map.js"), 'end', layerId);
 				win.loadMap(layerId, self, tile);
 			}}, 'end', layerId);
@@ -72,7 +74,15 @@ var Map = App.subclass().name('Map')
 			this.mapReadyTiles(function(tile) {
 				var win = tile.window.window;
 				if (win.zoomed)
-					win.zoomed(self.zoom);
+					win.zoomed(self.resolution);
+			});	
+		},
+		rotated: function() {
+			var self = this;
+			this.mapReadyTiles(function(tile) {
+				var win = tile.window.window;
+				if (win.rotated)
+					win.rotated(self.rotation);
 			});	
 		},
 

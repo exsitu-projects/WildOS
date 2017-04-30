@@ -1,5 +1,11 @@
 
-var mainView, mainMap, mapApp, tileOrigin;
+var mainView, mainMap, mapApp, tileCenter;
+
+function tileCoords(coords) {
+	var res = mainView.getResolution();
+	return [coords[0] + (tileCenter.x - mapApp.mapCenter.x)*res, 
+			coords[1] - (tileCenter.y - mapApp.mapCenter.y)*res];
+}
 
 // Load the map in the browser
 function loadMap(element, app, tile) {
@@ -9,13 +15,11 @@ function loadMap(element, app, tile) {
 
     mainView = new ol.View({
         center: ol.proj.transform(app.center, 'EPSG:4326', 'EPSG:3857'),
-        zoom: app.zoom
+        resolution: app.resolution,
       });
 
-    tileOrigin = [tile.originX, tile.originY];
-    var res = mainView.getResolution();
-	var center = [app.center[0] + tile.originX*res, app.center[1] - tile.originY*res];
-   	mainView.setCenter(center);
+    tileCenter = {x: tile.originX + tile.width/2, y: tile.originY + tile.height/2};
+   	mainView.setCenter(tileCoords(mapApp.center));
 
     mainMap = new ol.Map({
       target: element,
@@ -25,6 +29,7 @@ function loadMap(element, app, tile) {
       layers: [
         new ol.layer.Tile({
           source: new ol.source[app.source](app.options),
+          preload: 10, // wild guess... what would be an appropriate level?
         })
       ],
       view: mainView,
@@ -34,16 +39,17 @@ function loadMap(element, app, tile) {
 function panned(center) {
 	if (!mainView)
 		return;
-	var res = mainView.getResolution();
-	center = [center[0] + tileOrigin[0]*res, center[1] - tileOrigin[1]*res];
-	mainView.setCenter(center);
+	mainView.setCenter(tileCoords(center));
 }
 
-function zoomed(zoom) {
+function zoomed(resolution) {
 	if (!mainView)
 		return;
-	mainView.setZoom(zoom);
-	var res = mainView.getResolution();
-	center = [mapApp.center[0] + tileOrigin[0]*res, mapApp.center[1] - tileOrigin[1]*res];
-	mainView.setCenter(center);
+	mainView.setResolution(resolution);
+}
+
+function rotated(rotation) {
+  if (!mainView)
+    return;
+  mainView.rotate(rotation, mapApp.center);
 }

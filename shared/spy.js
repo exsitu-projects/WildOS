@@ -570,7 +570,7 @@ var arrayWrappers = {
 function wrapArrayMethod(arr, method) {
 	var prevMethod = arr[method];
 	// do not wrap non-functions
-	if (typeof pref !== 'function')
+	if (typeof prevMethod !== 'function')
 		return;
 	// wrap the previous definition and tag it so we can unwrap
 	var newMethod = function(...args) {
@@ -594,7 +594,7 @@ function wrapArrayMethods(arr) {
 			} else {
 				// same as arr[method] = arrayWrappers[method]
 				// but we make the method property non-enumerable
-				Object.defineProperty(arr, prop, {
+				Object.defineProperty(arr, method, {
 					value: arrayWrappers[method],
 					enumerable: false,
 					configurable: true,

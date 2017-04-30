@@ -15,10 +15,13 @@ var App = require('../../lib/App');
 // The `Map` class.
 var Map = App.subclass().name('Map')
 	.fields({
-		source: "MapQuest",
+		source: "OSM", //"MapQuest",
 		options: {layer: "sat"},
-		center: [37.41, 8.82],
-		zoom: 1,
+		center: [37.41, 8.82],	// LonLat coordinates of the center of the map
+		mapCenter: {x:960, y:540}, 				// pixel coordinates of the center of the display (from topleft)
+		mapSize: {width:1920, height:1080},	// pixel size of the map
+		resolution: undefined,
+		rotation: 0,
 	})
 	.constructor(function(config) {
 		// *** It looks like we must define a constructor for the ObjectSharer constructor mixin to work
@@ -33,6 +36,13 @@ var Map = App.subclass().name('Map')
 			// Make the app an emitter to signal state changes to the local UI.
 			// this.uievents = new events.EventEmitter();
 
+			var wall = platform.findDevice({type: 'Surface'});
+			this.mapCenter = {x: Math.round(wall.width/2), y: Math.round(wall.height/2)};
+			this.mapSize = {width: wall.width, height: wall.height};
+
+			// compute resolution so world map fits the wall
+			this.resolution = 40075016.68557849 / wall.width;
+
 			// Create server-side window+UI
 			var gui = platform.GUI.getGUI();
 			if (gui) {
@@ -40,7 +50,7 @@ var Map = App.subclass().name('Map')
 				this.mapWindow = gui.Window.open(url, {
 					width: 1200,
 					height: 800,
-					toolbar: platform.program.showToolbar,
+					// toolbar: platform.program.showToolbar,
 				});				
 			}
 		},
@@ -57,15 +67,19 @@ var Map = App.subclass().name('Map')
 		panTo: function(center) {
 			this.center = center;
 		},
-		zoomTo: function(zoom) {
-			this.zoom = zoom;
-		}
+		zoomTo: function(resolution) {
+			this.resolution = resolution;
+		},
+		rotateTo: function(rotation) {
+			this.rotation = rotation;
+		},
 
 	})
 	.shareState({
 		fields: 'own', 
-		objectFields: ['center', 'options'], 
-		methods: ['panTo', 'zoomTo'],
+		arrayFields: ['center'],
+		objectFields: ['mapCenter', 'mapSize', 'options'], 
+		methods: ['panTo', 'zoomTo', 'rotateTo'],
 	});
 
 
