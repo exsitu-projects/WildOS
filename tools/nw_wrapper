@@ -1,46 +1,26 @@
 #!/bin/sh
 #
-# Run node-webkit from the command line on a Mac
+# Run node-webkit from the command line on a Mac or Linux.
+# Use the local nwjs if there is one in the package's node_modules,
+# otherwise run the global nwjs
 #
 # If the first argument is -X, run the executable directly,
 # which is useful to see error messages.
 
-# adjust to local install
-NWAPP=/Applications/node-webkit.app
-NWAPP=/Users/mbl/Dev/Tools/Web\ browsers/Node-WebKit/nwjs-sdk-v0.17.0-osx-x64/nwjs.app
-# alternative if you have multiple versions:
-#VERSION=0.9.2
+# location of nwjs app on MacOS:
+NWAPP=/Applications/nwjs.app
+# alternative if you have multiple versions in a directory:
+#VERSION=0.22.0
 #NWDIR=/Users/mbl/Dev/Tools/Web\ browsers/Node-WebKit
-#NWAPP=$NWDIR/node-webkit-v$VERSION/node-webkit.app
+#NWAPP=$NWDIR/nwjs-sdk-v$VERSION-osx-x64/nwjs.app
 
-# do not change below this
-#NW=$NWAPP/Contents/MacOS/node-webkit
-NW=$NWAPP/Contents/MacOS/nwjs
-
-# if the first argument is -X, run NW instead of open NWAPP
+# if the first argument is -X, run (instead of open) the app on Mac (ignore -X on Linux)
 # (useful, e.g. to catch errors that occur at startup)
 if [ $# -ge 1 -a "$1" = "-X" ]
 then
         shift
-        echo "running $NW"
-
-        if [ $# -ge 1 -a -d "$1" -a -f "$1/package.json" ]
-        then
-                # node-webkit wants a full path for the package
-#               case $1 in
-#                       /*) PACKAGE=$1 ;;
-#                       *) PACKAGE=`pwd`/$1 ;;
-#               esac
-# Do this instead because otherwise the app protocol does not seem to work!
-                cd $1
-                PACKAGE=.
-###
-                shift
-                "$NW" "$PACKAGE" $*
-        else
-                "$NW" `pwd` $*
-        fi
-        exit 0
+        echo "running in direct mode"
+        DIRECT=1
 fi
 
 # if there are arguments, look at the first one.
@@ -48,17 +28,31 @@ fi
 # if not, or if there is no argument, prepend `pwd` to the arguments
 if [ $# -ge 1 -a -d "$1" -a -f "$1/package.json" ]
 then
-        # node-webkit wants a full path for the package
-#       case $1 in
-#               /*) PACKAGE=$1 ;;
-#               *) PACKAGE=`pwd`/$1 ;;
-#       esac
-# Do this instead because otherwise the app protocol does not seem to work!
         cd $1
         PACKAGE=`pwd`
-###
         shift
-        open -n "$NWAPP" --args "$PACKAGE" $*
 else
-        open -n "$NWAPP" --args `pwd` $*
+        PACKAGE=`pwd`
 fi
+
+# see if we have an npm-installed nwjs package
+NWJS=$PACKAGE/node_modules/nw/nwjs
+if [ -d "$NWJS" ]; then
+        # for Mac
+        NWAPP=$NWJS/nwjs.app
+        # for Linux
+        NW=$NWJS/nw
+fi
+
+# finally, run nwjs !
+if [ -r "$NWAPP" ]; then
+        # on a Mac: open the app, unless we are in direct mode, in which case we run the binary directly
+        if [ -z "$DIRECT" ]; then
+                open -n "$NWAPP" --args "$PACKAGE" $*
+        else
+                "$NWAPP/Contents/MacOS/nwjs" "$PACKAGE" $*
+        fi
+else
+        # on Linux: run nw
+        "$NW" "$PACKAGE" $*
+fi                

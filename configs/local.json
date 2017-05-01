@@ -28,7 +28,7 @@
 			"BL": { "left": 10, "top": 191},
 			"BR": { "left": 286, "top": 191}
 		},
-		"start": "nw ../renderer --user-data-dir=%USERDATADIR%/WildOS-Renderer-%INSTANCE% --local --port %PORT% --instance %INSTANCE% %DEBUG% %LOG%",
+		"start": "../tools/nw_wrapper ../renderer --user-data-dir=%USERDATADIR%/WildOS-Renderer-%INSTANCE% --local --port %PORT% --instance %INSTANCE% %DEBUG% %LOG%",
 		"stop": "wildos stop"
 	},
 	"controllers": {

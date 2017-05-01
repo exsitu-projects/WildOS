@@ -11,9 +11,7 @@ case $DIR in
 	*) DIR=`pwd`/$DIR ;;
 esac
 
-MACHINE=`uname`
-
-NW=$DIR/../server/node_modules/nw/nwjs/nw
+NW=$DIR/nw_wrapper
 
 if [ $# -eq 0 ]; then
 	set start
@@ -22,16 +20,16 @@ fi
 # clean up
 case $1 in
 	stop)
-		# avoid killall node-webkit on local machine as it will kill the server too!
+		# avoid killall nwjs on local machine as it will kill the server too!
 		if [ $MACHINE == 'Linux' ]; then 
 			ps aux | fgrep /nw | fgrep -v server | fgrep -v -- --type= | awk '{print $2}' | xargs kill || true
 		else
 			# Mac OS X
-			kill `ps -e | grep renderer.js | awk '{print $1}'` || true
+			kill `ps -e | grep nwjs | grep instance | awk '{print $1}'` || true
 		fi
 
 		if [ "$WALL" != 'local' ]; then
-			$DIR/walldo killall nw node-webkit
+			$DIR/walldo killall nw
 		fi
 	;;
 	start)
