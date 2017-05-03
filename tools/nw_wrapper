@@ -13,6 +13,7 @@ NWAPP=/Applications/nwjs.app
 #VERSION=0.22.0
 #NWDIR=/Users/mbl/Dev/Tools/Web\ browsers/Node-WebKit
 #NWAPP=$NWDIR/nwjs-sdk-v$VERSION-osx-x64/nwjs.app
+NW=nw
 
 # if the first argument is -X, run (instead of open) the app on Mac (ignore -X on Linux)
 # (useful, e.g. to catch errors that occur at startup)
@@ -37,6 +38,7 @@ fi
 
 # see if we have an npm-installed nwjs package
 NWJS=$PACKAGE/node_modules/nw/nwjs
+
 if [ -d "$NWJS" ]; then
         # for Mac
         NWAPP=$NWJS/nwjs.app

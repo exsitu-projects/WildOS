@@ -33,6 +33,8 @@ server: shared/OO.js shared/Log.js shared/ObjectStore.js renderer/lib/ObjectShar
 	cd renderer/lib; browserify -r OO -r Log -r ./ObjectSharer -r ./SharingServer -r ./SocketIOServer -r socket.io-client > ../../server/content/wildos.js
 
 install:
+	# install WildOS on server
+	npm install --prefix server
 	# install WildOS on clients
 	$(walldo) mkdir -p $(clientdir)
 	$(walldo) rsync . $(clientdir)
