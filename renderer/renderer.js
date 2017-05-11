@@ -4,9 +4,10 @@
 
 // Command line options
 var program = require('commander');
+const version = require('./package.json').version;
 
 program
-	.version('0.2.2')
+	.version(version)
 	.usage('[options] [app ...]')
 	.option('-l, --local', 'Run locally: server is on localhost')
 	.option('-s, --server <name[:port]>', 'Server to connect to (defaults to $SSH_CLIENT)')
