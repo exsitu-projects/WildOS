@@ -366,6 +366,13 @@ var Surface = Device.subclass().name('Surface')
 			});
 		},
 
+		// Called by a tile to deliver a double click
+		dblclickElement: function(path) {
+			this.mapDevices(function(tile) {
+				tile.deliverDblclick(path);
+			});
+		},
+
 		// returns a Promise that will resolve when the first tile responds with an element,
 		// or fail if no tile finds an element.
 		// The result of the promise is the path to the element
@@ -412,7 +419,19 @@ var Surface = Device.subclass().name('Surface')
 				function(err) {
 					log.message('click: elementAtPoint error', err);
 				});
-		}
+		},
+		// double click at position x,y in the surface
+		dblclick: function(x, y) {
+			var self = this;
+			this.elementAtPoint(x, y).then(
+				function(path) {
+					self.dblclickElement(path);
+				},
+				function(err) {
+					log.message('dblclick: elementAtPoint error', err);
+				});
+		},
+
 	});
 
 log.spyMethods(Surface);

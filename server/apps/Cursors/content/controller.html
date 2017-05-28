@@ -100,7 +100,10 @@
 
 			// Forward call to click cursor to server
 			click: function() {},
-			
+
+			// Forward call to dblclick cursor to server
+			dblclick: function() {},
+
 			// Forward call to zoom in cursor to server
 			zoomIn: function() {},
 
@@ -196,6 +199,12 @@
 					this.selected.click();
 			},
 
+			// Dblclick selected cursor, if any
+			dblclickSelected: function() {
+				if (this.selected)
+					this.selected.dblclick();
+			},
+
 		  zoomInSelected: function() {
 		  	if (this.selected) {
 			  this.selected.zoomIn();
@@ -233,7 +242,7 @@
 	// Add the `Cursor` class to the Cursors sharer
 	Cursors.sharer.slave(Cursor, {
 		fields: 'own',
-		notify: ['moveBy', 'click', 'zoomIn', 'zoomOut']
+		notify: ['moveBy', 'click', 'dblclick', 'zoomIn', 'zoomOut']
 	});
 
 	var cursors = Cursors.create();
@@ -247,6 +256,7 @@
 	var timer = null, dx = 0, dy = 0;
 	var interactable = interact('#cursorTouchpad');
 	interactable.on('tap', function(event) { cursors.clickSelected(); });
+	interactable.on('doubletap', function(event) { cursors.dblclickSelected(); });
 
 	var touchpadOptions = {
 			inertia: true,

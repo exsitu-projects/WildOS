@@ -96,7 +96,12 @@ var Cursor = OO.newClass().name('Cursor')
 		// Send a click at the position of the cursor
 		click: function() {
 			Cursor.wall.click(this.x, this.y);	// tell the surface to click
-		}
+		},
+
+	        // Send a dblclick at the position of the cursor
+		dblclick: function() {
+			Cursor.wall.dblclick(this.x, this.y);	// tell the surface to dblclick
+		},
 	})
 ;
 

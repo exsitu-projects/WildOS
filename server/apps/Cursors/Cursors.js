@@ -169,7 +169,7 @@ log.spyMethods(Cursors);
 // Add the `Cursor` class to the Cursors sharer
 Cursors.sharer.master(Cursor, {
 	fields: 'own',
-	methods: ['moveBy', 'moveTo', 'click', 'zoomIn', 'zoomOut'],
+	methods: ['moveBy', 'moveTo', 'click', 'dblclick', 'zoomIn', 'zoomOut'],
 });
 
 module.exports = Cursors;

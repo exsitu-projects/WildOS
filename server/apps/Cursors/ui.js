@@ -38,6 +38,7 @@ function createCursor(cursor) {
 			target: '#'+swatch,
 			dragTarget: cursor,
 			clicked: clickCursor,
+			dblclicked: dblclickCursor,
 			startedDragging: selectCursor,
 			draggedBy: function(cursor, dx, dy) {
 				cursor.moveBy(dx, dy);
@@ -49,6 +50,7 @@ function createCursor(cursor) {
 			target: '#'+id,
 			dragTarget: cursor,
 			clicked: clickCursor,
+			dblclicked: dblclickCursor,
 			startedDragging: selectCursor,
 			draggedBy: function(cursor, dx, dy) {
 				cursor.moveBy(dx/wall.zoom, dy/wall.zoom);
@@ -87,6 +89,12 @@ function selectCursor(cursor) {
 function clickCursor(cursor) {
 	if (cursor && cursor.id)
 		cursor.click();
+}
+
+function dblclickCursor(cursor) {
+	if (cursor && cursor.id)
+		cursor.dblclick();
+	
 }
 
 // Called at the end of the script.
@@ -147,6 +155,7 @@ function Joystick(options) {
 	this.target = options.target || 'html';
 	this.dragTarget = options.dragTarget || this.target;
 	this.clicked = options.clicked || function() {};
+	this.dblclicked = options.dblclicked || function() {};
 	this.startedDragging = options.startedDragging || function() {};
 	this.stoppedDragging = options.stoppedDragging || function() {};
 	this.draggedBy = options.draggedBy || function() {};
@@ -199,7 +208,11 @@ Joystick.prototype.start = function() {
 				}
 				self.stoppedDragging(self.dragTarget);				
 			} else {
-				self.clicked(self.dragTarget);
+				if(event.button == 2){
+					self.dblclicked(self.dragTarget);
+				} else {
+					self.clicked(self.dragTarget);
+				}
 			}
 		})
 	;
@@ -230,6 +243,7 @@ function ClickOrDrag(options) {
 	this.target = options.target || 'html';
 	this.dragTarget = options.dragTarget || this.target;
 	this.clicked = options.clicked || function() {};
+	this.dblclicked = options.dblclicked || function() {};
 	this.startedDragging = options.startedDragging || function() {};
 	this.stoppedDragging = options.stoppedDragging || function() {};
 	this.draggedBy = options.draggedBy || function() {};
@@ -269,7 +283,11 @@ ClickOrDrag.prototype.start = function() {
 				self.dragging = false;
 				self.stoppedDragging(self.dragTarget);				
 			} else {
-				self.clicked(self.dragTarget);
+				if(event.button === 2){
+					self.dblclicked(self.dragTarget);
+				} else {
+					self.clicked(self.dragTarget);
+				}
 			}
 		})
 	;
