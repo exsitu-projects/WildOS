@@ -61,7 +61,7 @@ var Surface = Device.subclass().name('Surface')
 		Renderer.sharer.master(Tile, {
 			fields: 'own',
 			methods: 'remoteLog',
-			notify: ['getLog', 'clearLog', 'callJavascript', 'deliverClick'],
+			notify: ['getLog', 'clearLog', 'callJavascript', 'deliverClick', 'deliverDblclick'],
 			remote: 'elementAtPoint',
 		});
 

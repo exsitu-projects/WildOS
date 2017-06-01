@@ -92,8 +92,9 @@ function clickCursor(cursor) {
 }
 
 function dblclickCursor(cursor) {
-	if (cursor && cursor.id)
+	if (cursor && cursor.id){
 		cursor.dblclick();
+	}
 	
 }
 
@@ -253,6 +254,9 @@ function ClickOrDrag(options) {
 ClickOrDrag.prototype.start = function() {
 	var self = this;
 	$(self.target)
+  		.dblclick(() => {
+		  self.dblclicked(self.dragTarget);
+		})
 		.mousedown(self.mousedown = function(event) {
 			self.down = true;
 			self.screenX = event.screenX;
