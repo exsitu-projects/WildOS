@@ -47,10 +47,13 @@ var Map = App.subclass().name('Map')
 			var gui = platform.GUI.getGUI();
 			if (gui) {
 				var url = '../apps/Map/content/serverMap.html';	// URL is relative to the lib folder
-				this.mapWindow = gui.Window.open(url, {
+				var self = this;
+				gui.Window.open(url, {
 					width: 1200,
 					height: 800,
 					// toolbar: platform.program.showToolbar,
+				}, function(win) {
+					self.mapWindow = win;
 				});				
 			}
 		},

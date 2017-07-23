@@ -34,7 +34,7 @@ var WebControllers = Device.subclass().name('WebControllers')
 			this.deviceAvailable();
 
 			// Create the window showing the QR code
-			/*this.window = */this.createUI();
+			this.createUI();
 		},
 
 		// Callback when a new client has successfully connected.
@@ -63,7 +63,7 @@ var WebControllers = Device.subclass().name('WebControllers')
 			var self = this;
 
 			log.message('opening window', url, hostname, port);
-			var win = gui.Window.open(url, { 
+			gui.Window.open(url, { 
 				show: false,		// We can't set the position here so we hide the window and it positions and shows itself
 				width: 210,
 				height: 290,
@@ -77,7 +77,6 @@ var WebControllers = Device.subclass().name('WebControllers')
 				};
 			});
 			log.exit(this, 'createUI');
-			return win;
 		},
 	});
 

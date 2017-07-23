@@ -30,7 +30,7 @@ function createWall(device) {
 }
 
 function tileMenu(tile) {
-	var gui = require('nw.gui');
+	var gui = nw; //require('nw.gui');
 	var menu = new gui.Menu();
 
 	menu.append(new gui.MenuItem({label: 'Tile', enabled: false}));
@@ -59,16 +59,19 @@ function tileMenu(tile) {
 				tile.clearLog();
 			} else {
 				// create window
-				var win = tile.logWindow = gui.Window.open('log.html');
-				// get log once it has loaded
-				win.on('loaded', function() {
-					this.window.setTile(tile);
-					tile.getLog();
-					tile.clearLog();
-				});
-				// hide on close
-				win.on('close', function() {
-					this.hide();
+				gui.Window.open('content/log.html', function (win) {
+					tile.logWindow = win;
+
+					// get log once it has loaded
+					win.on('loaded', function() {
+						win.window.setTile(tile);
+						win.getLog();
+						win.clearLog();
+					});
+					// hide on close
+					win.on('close', function() {
+						win.hide();
+					});
 				});
 			}
 		},

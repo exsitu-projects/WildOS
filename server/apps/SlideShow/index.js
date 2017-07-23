@@ -65,10 +65,13 @@ var SlideShow = App.subclass().name('SlideShow')
 			var gui = platform.GUI.getGUI();
 			if (gui) {
 				var url = '../apps/SlideShow/content/serverBrowser.html';	// URL is relative to the lib folder
-				this.browserWindow = gui.Window.open(url, {
+				var self = this;
+				gui.Window.open(url, {
 					width: 1200,
 					height: 800,
 					// toolbar: platform.program.showToolbar,
+				}, function(win) {
+					self.browserWindow = win;
 				});				
 			}
 		},
