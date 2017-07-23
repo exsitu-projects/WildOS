@@ -72,9 +72,8 @@
 
     </style>
 
-    <link rel="stylesheet" href="https://openlayers.org/en/v4.1.0/css/ol.css" type="text/css">
-    <!-- We need the debug version otherwise ol.ViewHint and mainView.getHints() are undefined!! -->
-    <script src="http://openlayers.org/en/v4.1.0/build/ol-debug.js" type="text/javascript"></script>
+    <link rel="stylesheet" href="https://openlayers.org/en/v4.2.0/css/ol.css" type="text/css">
+    <script src="http://openlayers.org/en/v4.2.0/build/ol.js" type="text/javascript"></script>
 
 </head>
 <body>
@@ -103,9 +102,7 @@
     // Get the slideshow app
     var app = global.platform.apps.getApp('Map');
 
-    // Navigate with arrow keys + space bar + launch gallery with return
-    // Note that we hijack the bindings from the gallery by setting our
-    // handler first and by stopping propagation.
+    // Keyboard input *** not implemented for now ***
     $(document).on('keydown', function(event) {
             switch (event.which || event.keyCode) {
             case 13: // Return
@@ -148,15 +145,11 @@
     var mainView, mainMap, scale = 1;
 
     // Whether we are currently interacting with the map.
-    // During interaction, incoming changes to the map state are ignored
+    // During interaction (and animation), incoming changes to the map state are ignored
     // to avoid an infinite notification loop.
     function interacting() {
-        // *** we're supposed to use this.mainView.isAnimating(), 
-        // *** but there is no this.mainView.isInteracting()...
-        // *** The code below requires ol-debug.js to be loaded instead of ol.js
-        var hints = this.mainView.getHints();
-        return hints[ol.ViewHint.INTERACTING] > 0 
-            || hints[ol.ViewHint.ANIMATING] > 0;
+        return this.mainView.getInteracting()
+            || this.mainView.getAnimating();
     }
 
     // Update map view when app state changes

@@ -9,7 +9,7 @@ function tileCoords(coords) {
 
 // Load the map in the browser
 function loadMap(element, app, tile) {
-	console.log(element, app, tile);
+	// console.log(element, app, tile);
 
 	mapApp = app;
 

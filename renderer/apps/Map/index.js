@@ -53,12 +53,14 @@ var Map = App.subclass().name('Map')
 			var self = this;
 			var layerId = this.layer.id;
 			HTML.replace(win, layerId, '');
-			HTML.addCSS_URL(win, "http://openlayers.org/en/v4.1.0/css/ol.css", 'end', layerId);
-			HTML.addJS_URL(win, "http://openlayers.org/en/v4.1.0/build/ol-debug.js", {onload: function() {
-				HTML.addJSFile(win, Path.join(contentRoot, "map.js"), 'end', layerId);
-				win.loadMap(layerId, self, tile);
-			}}, 'end', layerId);
-			
+			HTML.addCSS_URL(win, "http://openlayers.org/en/v4.2.0/css/ol.css", {onload: function() {
+				HTML.addJS_URL(win, "http://openlayers.org/en/v4.2.0/build/ol.js", {onload: function() {
+					HTML.addJSFile(win, Path.join(contentRoot, "map.js"), 'end', layerId);
+					// setTimeout(function() { 
+						win.loadMap(layerId, self, tile); 
+					// }, 1000);
+				}}, 'end', layerId);
+			}},'end', layerId);
 		},
 
 		panned: function() {
