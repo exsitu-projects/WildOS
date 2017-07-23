@@ -7,6 +7,7 @@ var log = require('Log').logger('Cursor');
 
 // Cursor colors
 var colors = ['yellow', 'green', 'red', 'blue', 'orange', 'purple', 'lightgrey', 'darkgrey'];
+var zoomLevels = [1, 2, 4, 6];
 
 var Cursor = OO.newClass().name('Cursor')
 	.classFields({
@@ -17,6 +18,7 @@ var Cursor = OO.newClass().name('Cursor')
 		x: 100,
 		y: 100,
 		color: 'yellow',
+		zoomLevel: 1
 	})
 	.constructor(function(config) {
 		this.color = colors[Cursor.nextId % colors.length];
@@ -64,11 +66,42 @@ var Cursor = OO.newClass().name('Cursor')
 		moveTo: function(x, y) {
 			this.setPos(x, y);
 		},
+
+	  zoomIn: function(){
+	    let idx = zoomLevels.indexOf(this.zoomLevel);
+	    if(idx == -1){
+	      console.info("zoom index out of range")
+	      idx = 0;
+	    }
+	    if(idx < zoomLevels.length - 1){
+	      this.zoomLevel = zoomLevels[idx+1];
+	      if (this.app)
+		this.app.cursorUpdated(this);
+	    }
+	  },
+
+	  zoomOut: function(){
+	    let idx = zoomLevels.indexOf(this.zoomLevel);
+	    if(idx == -1){
+	      console.info("zoom index out of range")
+	      idx = 0;
+	    }
+	    if(idx > 0){
+	      this.zoomLevel = zoomLevels[idx-1];
+	      if (this.app)
+		this.app.cursorUpdated(this);
+	    }
+	  },
 	
 		// Send a click at the position of the cursor
 		click: function() {
 			Cursor.wall.click(this.x, this.y);	// tell the surface to click
-		}
+		},
+
+	        // Send a dblclick at the position of the cursor
+		dblclick: function() {
+			Cursor.wall.dblclick(this.x, this.y);	// tell the surface to dblclick
+		},
 	})
 ;
 

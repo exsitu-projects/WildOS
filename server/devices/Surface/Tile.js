@@ -119,6 +119,11 @@ var Tile = Device.subclass().name('Tile')
 			// RPC to client
 		},
 
+		// called by surface to deliver the double click
+		deliverDblclick: function(path) {
+			// RPC to client
+		},
+
 		// called by surface to get the element at position x,y
 		elementAtPoint: function(x, y) {
 			// RPC with return value (returns a promise)

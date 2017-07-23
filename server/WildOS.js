@@ -31,9 +31,10 @@ function checkVersion() {
 
 // Command line options
 var program = require('commander');
+const version = require('./package.json').version;
 
 program
-	.version('0.2.2')
+	.version(version)
 	.usage('[options] [app ...]')
 	.option('-w, --wall <config>', 'Platform name (defaults to $WALL)')
 	.option('-c, --config <dir>', 'Config path (defaults to ./configs)')

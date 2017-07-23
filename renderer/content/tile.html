@@ -143,6 +143,19 @@
 				cancelable: true,
 			}));
 	}
+
+	// Send a double click event to the element defined by `targetPath`
+	function deliverDblclick(targetPath) {
+		console.log('>> dblclick', targetPath);
+		var target = getElement(targetPath);
+
+		if (target)
+			target.dispatchEvent(new MouseEvent('dblclick', {
+				bubbles: true,
+				cancelable: true,
+			}));
+	
+	}
 	</script>
 </head>
 <body>

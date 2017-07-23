@@ -1,6 +1,6 @@
 {
 	"name": "WildOS-renderer",
-	"version": "0.2.2",
+	"version": "0.2.3",
 	"main": "content/renderer.html",
 	"node-main": "renderer.js",
 	"window": {

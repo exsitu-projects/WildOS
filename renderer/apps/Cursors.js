@@ -19,7 +19,7 @@ var cursorLog = require('Log').logger('Cursor');
 var hotSpot = {
 	x: Math.round(9.2 * 40 / 28),
 	y: Math.round(7.3 * 40 / 28)
-};
+}
 
 // The Cursor class: a single cursor.
 var Cursor = OO.newClass().name('Cursor')
@@ -28,6 +28,7 @@ var Cursor = OO.newClass().name('Cursor')
 		x: 100,
 		y: 100,
 		color: 'yellow',
+		zoomLevel: 1
 	})
 	.constructor(function(config) {
 		if (config)
@@ -36,6 +37,7 @@ var Cursor = OO.newClass().name('Cursor')
 		this.wrapFields({
 			set x(x) { this._set(x); this.updateCursor(); },
 			set y(y) { this._set(y); this.updateCursor(); },
+			set zoomLevel(zoomLevel) { this._set(zoomLevel); this.updateCursor(); }
 		});
 	})
 	.methods({
@@ -64,6 +66,8 @@ var Cursor = OO.newClass().name('Cursor')
 						backgroundColor: 'transparent',
 						left: left+'px',
 						top: top +'px',
+						transform: 'scale(' + this.zoomLevel + ')',
+					  	transformOrigin: '' + hotSpot.x + 'px ' + hotSpot.y + 'px'
 					}
 				});
 
@@ -107,6 +111,7 @@ var Cursor = OO.newClass().name('Cursor')
 				HTML.setStyle(win, cursor, {
 					left: left+'px',
 					top: top+'px',
+				  	transform: 'scale(' + this.zoomLevel + ')'
 				});
 			} else
 				this.createCursor(tile);
