@@ -11,9 +11,9 @@ In the platform window, you can pan the page by dragging the miniature image of 
 These functions are also available on the web controller: tap one of the three buttons `Zoom`, `Move` or `Resize`;
 a trackpad appears; dragging in the trackpad controls the corresponding function.
 
-![Screendump of the browser app](img/browser.png)
+![Screendump of the browser app](../img/browser.png)
 
-![Screendump of the browser web controller](img/browser-controller.png)
+![Screendump of the browser web controller](../img/browser-controller.png)
 
 ### The SlideShow application ###
 
@@ -34,15 +34,15 @@ Once slides are loaded, they are displayed in the SlideShow window, and the curr
 
 The web controller has a similar interface.
 
-![SlideShow application on server](img/slideshow.png )
+![SlideShow application on server](../img/slideshow.png )
 
-![SlideShow control panel in light table mode](img/slideshow-help.png)
+![SlideShow control panel in light table mode](../img/slideshow-help.png)
 
-![SlideShow control panel in gallery mode](img/slideshow-gallery.png)
+![SlideShow control panel in gallery mode](../img/slideshow-gallery.png)
 
-![SlideShow application web controller in light table mode](img/slideshow-controller.png)
+![SlideShow application web controller in light table mode](../img/slideshow-controller.png)
 
-![SlideShow application web controller in gallery mode](img/slideshow-controller-gallery.png)
+![SlideShow application web controller in gallery mode](../img/slideshow-controller-gallery.png)
 
 
 ### The Cursors application ###
@@ -51,7 +51,7 @@ The Cursors application lets users create and move several cursors on the wall d
 
 The controller interface on both the server and on the web clients lets you create new cursors, select them by clicking their swatch, and delete the selected cursor. On the server, you can move a cursor either by dragging it directly in the miniature image of the wall, or by using the swatch as a joystick. On the web client, when you select a cursor swatch, the large area below turns the same color and you can drag the mouse (or finger on a touch screen) in it to move the cursor with a joystick-like interaction.
 
-![Cursors application on server](img/cursors.png)
+![Cursors application on server](../img/cursors.png)
 
-![Cursors application web controller](img/cursors-controller.png)
+![Cursors application web controller](../img/cursors-controller.png)
 

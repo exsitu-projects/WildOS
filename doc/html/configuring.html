@@ -5,15 +5,15 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Configuring WildOS</title>
 
-    <link href="assets/css/bootstrap.min.css" rel="stylesheet">
+    <link href="../assets/css/bootstrap.min.css" rel="stylesheet">
     <!-- HTML5 Shim and Respond.js IE8 support of HTML5 elements and media queries -->
     <!-- WARNING: Respond.js doesn't work if you view the page via file:// -->
     <!--[if lt IE 9]>
       <script src="https://oss.maxcdn.com/libs/html5shiv/3.7.0/html5shiv.js"></script>
       <script src="https://oss.maxcdn.com/libs/respond.js/1.4.2/respond.min.js"></script>
     <![endif]-->
-    <link href="assets/css/highlight-docco.css" rel="stylesheet">
-    <link href="assets/css/custom.css" rel="stylesheet">
+    <link href="../assets/css/highlight-docco.css" rel="stylesheet">
+    <link href="../assets/css/custom.css" rel="stylesheet">
   </head>
   <body>
     <nav class="navbar navbar-inverse navbar-fixed-top" role="navigation">
@@ -136,6 +136,8 @@ Each object has a mandatory property: <code>type</code>. The root object must be
 <li><code>%ENV%</code> is replaced by the content of the <code>env</code> property for the instance,</li>
 <li><code>%DEBUG%</code> is replaced by the debugging option of the server + the option <code>--remote-debugging-port=9222</code> to enable remote debugging of the clients (connect to <code>http://&lt;client&gt;:922</code> on a Chrome browser to access the debugging tools of the client),</li>
 <li><code>%LOG%</code> is replaced by the logging file option of the server,</li>
+<li><code>%VERSION%</code> is replaced by the version string of the renderer (as specified in the
+npm package),</li>
 <li>Process environment variables, e.g. <code>$PATH</code>, are replaced by their value,</li>
 <li>The <code>%</code> and <code>$</code> signs can be protected by a backslash (which is specified as two backslashes in a JSON file);</li>
 </ul></li>
@@ -157,15 +159,15 @@ Each object has a mandatory property: <code>type</code>. The root object must be
 
 <p>The first setup corresponds to this configuration:</p>
 
-<pre><code>    &quot;numTiles&quot;: {&quot;columns&quot;: 2, &quot;rows&quot;: 2},
-    &quot;tiles&quot;: [
-        [[&quot;a1&quot;, &quot;Left&quot;], [&quot;a1&quot;, &quot;Right&quot;], [&quot;b1&quot;, &quot;Left&quot;], [&quot;b1&quot;, &quot;Right&quot;]],
-        [[&quot;a2&quot;, &quot;Left&quot;], [&quot;a2&quot;, &quot;Right&quot;], [&quot;b2&quot;, &quot;Left&quot;], [&quot;b2&quot;, &quot;Right&quot;]],
-    ],
-    &quot;env&quot;: {
-        &quot;Left&quot;: &quot;DISPLAY=:0.0&quot;,
-        &quot;Right&quot;: &quot;DISPLAY=:0.1&quot;
-    },
+<pre><code>	&quot;numTiles&quot;: {&quot;columns&quot;: 2, &quot;rows&quot;: 2},
+	&quot;tiles&quot;: [
+		[[&quot;a1&quot;, &quot;Left&quot;], [&quot;a1&quot;, &quot;Right&quot;], [&quot;b1&quot;, &quot;Left&quot;], [&quot;b1&quot;, &quot;Right&quot;]],
+		[[&quot;a2&quot;, &quot;Left&quot;], [&quot;a2&quot;, &quot;Right&quot;], [&quot;b2&quot;, &quot;Left&quot;], [&quot;b2&quot;, &quot;Right&quot;]],
+	],
+	&quot;env&quot;: {
+		&quot;Left&quot;: &quot;DISPLAY=:0.0&quot;,
+		&quot;Right&quot;: &quot;DISPLAY=:0.1&quot;
+	},
 
 </code></pre>
 
@@ -173,14 +175,14 @@ Each object has a mandatory property: <code>type</code>. The root object must be
 
 <p>The second setup corresponds to this configuration:</p>
 
-<pre><code>    &quot;numTiles&quot;: {&quot;columns&quot;: 2, &quot;rows&quot;: 2},
-    &quot;tiles&quot;: [
-        [[&quot;a1&quot;, &quot;Main&quot;, 0], [&quot;a1&quot;, &quot;Main&quot;, 1], [&quot;b1&quot;, &quot;Main&quot;, 0], [&quot;b1&quot;, &quot;Main&quot;, 1],
-         [&quot;a2&quot;, &quot;Main&quot;, 0], [&quot;a2&quot;, &quot;Main&quot;, 1], [&quot;b2&quot;, &quot;Main&quot;, 0], [&quot;b2&quot;, &quot;Main&quot;, 1]]
-    ],
-    &quot;env&quot;: {
-        &quot;Main&quot;: &quot;DISPLAY=:0.0&quot;,
-    },
+<pre><code>	&quot;numTiles&quot;: {&quot;columns&quot;: 2, &quot;rows&quot;: 2},
+	&quot;tiles&quot;: [
+		[[&quot;a1&quot;, &quot;Main&quot;, 0], [&quot;a1&quot;, &quot;Main&quot;, 1], [&quot;b1&quot;, &quot;Main&quot;, 0], [&quot;b1&quot;, &quot;Main&quot;, 1],
+		 [&quot;a2&quot;, &quot;Main&quot;, 0], [&quot;a2&quot;, &quot;Main&quot;, 1], [&quot;b2&quot;, &quot;Main&quot;, 0], [&quot;b2&quot;, &quot;Main&quot;, 1]]
+	],
+	&quot;env&quot;: {
+		&quot;Main&quot;: &quot;DISPLAY=:0.0&quot;,
+	},
 </code></pre>
 
 <p>It is even possible to have multiple clients per host, and multiple windows per client. Some tiled displays have multiple physical screens chained together and connected with a single DVI cable to the computer so that they are seen as a single display by the host. In order to account for the bezels of these screens, you would need to use multiple windows. If a host is running two or more such chained displays, you may need several instances. An example can be found in the <code>WILDER.json</code> config file.</p>
@@ -190,9 +192,9 @@ This property is used to map the names of the tiles to the position of their cor
 When this property is not present, which is the normal case, each tile is run full-screen.</p>
 
     </div>
-    <script type="text/javascript" src="assets/js/jquery-1.11.0.min.js"></script>
-    <script type="text/javascript" src="assets/js/bootstrap.min.js"></script>
-    <script type="text/javascript" src="assets/js/highlight.custom.js"></script>
+    <script type="text/javascript" src="../assets/js/jquery-1.11.0.min.js"></script>
+    <script type="text/javascript" src="../assets/js/bootstrap.min.js"></script>
+    <script type="text/javascript" src="../assets/js/highlight.custom.js"></script>
     <script type="text/javascript">hljs.initHighlightingOnLoad();</script>
     <script type="text/javascript">
       $(document).ready(function() {

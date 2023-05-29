@@ -5,15 +5,15 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Creating Devices for WildOS</title>
 
-    <link href="assets/css/bootstrap.min.css" rel="stylesheet">
+    <link href="../assets/css/bootstrap.min.css" rel="stylesheet">
     <!-- HTML5 Shim and Respond.js IE8 support of HTML5 elements and media queries -->
     <!-- WARNING: Respond.js doesn't work if you view the page via file:// -->
     <!--[if lt IE 9]>
       <script src="https://oss.maxcdn.com/libs/html5shiv/3.7.0/html5shiv.js"></script>
       <script src="https://oss.maxcdn.com/libs/respond.js/1.4.2/respond.min.js"></script>
     <![endif]-->
-    <link href="assets/css/highlight-docco.css" rel="stylesheet">
-    <link href="assets/css/custom.css" rel="stylesheet">
+    <link href="../assets/css/highlight-docco.css" rel="stylesheet">
+    <link href="../assets/css/custom.css" rel="stylesheet">
   </head>
   <body>
     <nav class="navbar navbar-inverse navbar-fixed-top" role="navigation">
@@ -124,30 +124,30 @@ This lets WildOS load the devices dynamically as needed by the platform.</p>
 <p>To create a new device class, say <code>MyDev</code>, you inherit from class <code>Device</code> or from an existing subclass. You typically redefine the constructor and the <code>added</code> method, which gets called when the device is actually added to its parent:</p>
 
 <pre><code>var MyDev = Device.subclass().name('MyDev')
-    .fields({
-        // device-specific fields
-    })
-    .constructor(function(config, options, events) {
-        this._super(config, options, events);
-        if (options)
-            this.set(options);
+	.fields({
+		// device-specific fields
+	})
+	.constructor(function(config, options, events) {
+		this._super(config, options, events);
+		if (options)
+			this.set(options);
 
-        // Other initializations
-        // ...
+		// Other initializations
+		// ...
 
-        // Notify of creation
-        this.deviceCreated();
-    })
-    .methods({
-        // Called when the device is added to the tree.
-        added: function() {
-            // Additional initialization 
-            // ...
+		// Notify of creation
+		this.deviceCreated();
+	})
+	.methods({
+		// Called when the device is added to the tree.
+		added: function() {
+			// Additional initialization 
+			// ...
 
-            // Notify availability
-            this.deviceAvailable();
-        },
-    });
+			// Notify availability
+			this.deviceAvailable();
+		},
+	});
 </code></pre>
 
 <p>You can also redefine the method <code>removed</code>, which is called before the device is removed from the device tree, to clean up.
@@ -174,35 +174,35 @@ platform.injectHTMLText(text, elementId, how);
 platform.injectHTMLFile(path, elementId, how);
 </code></pre>
 
-<p>The parameters are: </p>
+<p>The parameters are:</p>
 
 <ul>
 <li>The <code>text</code> or the <code>path</code> to the file to be injected; note that the path is relative to the <code>server/devices/MyDev/content</code> folder, i.e. a device-specific folder that you must create;</li>
 <li>For Javascript and CSS injection, the <code>id</code> (in the sense of the DOM) of the element to be created; make sure to use a unique id, e.g. by prefixing it with the name of the device, so that you can easily remove the element when the device is removed;</li>
 <li>For Javascript and CSS injection, an optional callback <code>cb</code> to be called once the element is fully loaded; this is especially useful for Javascript injection if you need to perform other actions after the code has been executed;</li>
 <li>For HTML injection, <code>elementId</code> specifies in which element to inject the HTML tree and <code>how</code> specifies where:</li>
-<li><code>replace</code> to replace the existing content of the element (if it exists)</li>
-<li><code>beforebegin</code> to insert before the element</li>
-<li><code>afterbegin</code> to insert at the beginning of the element</li>
-<li><code>beforeend</code> to insert at the end of the element (default)</li>
-<li><code>afterend</code> to insert after the element
- Note that <code>elementId</code> defaults to <code>platform</code>, i.e. the part of the platform UI that is designed to be extended.
- Note also that HTML code inserted this way will not run any embedded scripts. Use <code>injectJSText/File</code> for that.</li>
+<li> <code>replace</code> to replace the existing content of the element (if it exists)</li>
+<li> <code>beforebegin</code> to insert before the element</li>
+<li> <code>afterbegin</code> to insert at the beginning of the element</li>
+<li> <code>beforeend</code> to insert at the end of the element (default)</li>
+<li> <code>afterend</code> to insert after the element
+Note that <code>elementId</code> defaults to <code>platform</code>, i.e. the part of the platform UI that is designed to be extended.
+Note also that HTML code inserted this way will not run any embedded scripts. Use <code>injectJSText/File</code> for that.</li>
 </ul>
 
 <p>If you need to create a separate window to host the user interface of your device, use a method like this and call it from the constructor or the <code>added</code> method:</p>
 
-<pre><code>    createUI: function() {
-        var gui = process.mainModule.exports.gui;
-        var url = '../devices/MyDev/content/mydevUI.html';  // URL is relative to the server/lib folder
-        // See node-webkit documentation for available options
-        var win = gui.Window.open(url, {
-            width: 800,
-            height: 600,
-            toolbar: false,     
-        });
-        return win;
-    },
+<pre><code>	createUI: function() {
+		var gui = process.mainModule.exports.gui;
+		var url = '../devices/MyDev/content/mydevUI.html';	// URL is relative to the server/lib folder
+		// See node-webkit documentation for available options
+		var win = gui.Window.open(url, {
+			width: 800,
+			height: 600,
+			toolbar: false,		
+		});
+		return win;
+	},
 </code></pre>
 
 <h2 id="remotedevices">Remote devices</h2>
@@ -230,17 +230,17 @@ You can manage the connection with the client in one of two ways:</p>
 
 <p>To summarize, the server side of the device only need to implement the method <code>clientConnected</code>:</p>
 
-<pre><code>    clientConnected: function(socket, server, clientInfo) {
-        // Communicate with the client using `socket`, created by `server`.
-        // Use information transmitted by the client in `clientInfo`
-    },
+<pre><code>	clientConnected: function(socket, server, clientInfo) {
+		// Communicate with the client using `socket`, created by `server`.
+		// Use information transmitted by the client in `clientInfo`
+	},
 </code></pre>
 
 <p>If multiple clients may connect to the server for the same device, you will probably want to dynamically create children devices for each connected client. For example :</p>
 
-<pre><code>    clientConnected: function(socket, server, clientInfo) {
-        this.addDevice(MyRemoteDev.create(socket, server, clientInfo));
-    },
+<pre><code>	clientConnected: function(socket, server, clientInfo) {
+		this.addDevice(MyRemoteDev.create(socket, server, clientInfo));
+	},
 </code></pre>
 
 <p>Also, you will probably want to share some state between the client and server, using the <a href="sharing.html">sharing</a> facilities of WildOS.For example, you can create a sharer in the constructor of the device and set it up as a master of the device class. This way, the state of the device will be shared with the connected clients.</p>
@@ -269,9 +269,9 @@ In the <code>created</code> method, which is called when the connection is estab
 <p>While the above description is targeted at clients implemented with node-webkit, it is also possible to create a device client within a regular web browser. For this to work, your client code must use the <code>wildos.js</code> script in <code>server/content</code>. This script contains all the necessary classes (including those described above in this section) to write client code that communicates with the server over websockets and that can share state with the server. The <code>WebSockets</code> device shows an example of how to use it.</p>
 
     </div>
-    <script type="text/javascript" src="assets/js/jquery-1.11.0.min.js"></script>
-    <script type="text/javascript" src="assets/js/bootstrap.min.js"></script>
-    <script type="text/javascript" src="assets/js/highlight.custom.js"></script>
+    <script type="text/javascript" src="../assets/js/jquery-1.11.0.min.js"></script>
+    <script type="text/javascript" src="../assets/js/bootstrap.min.js"></script>
+    <script type="text/javascript" src="../assets/js/highlight.custom.js"></script>
     <script type="text/javascript">hljs.initHighlightingOnLoad();</script>
     <script type="text/javascript">
       $(document).ready(function() {

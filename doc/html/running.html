@@ -5,15 +5,15 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Running WildOS</title>
 
-    <link href="assets/css/bootstrap.min.css" rel="stylesheet">
+    <link href="../assets/css/bootstrap.min.css" rel="stylesheet">
     <!-- HTML5 Shim and Respond.js IE8 support of HTML5 elements and media queries -->
     <!-- WARNING: Respond.js doesn't work if you view the page via file:// -->
     <!--[if lt IE 9]>
       <script src="https://oss.maxcdn.com/libs/html5shiv/3.7.0/html5shiv.js"></script>
       <script src="https://oss.maxcdn.com/libs/respond.js/1.4.2/respond.min.js"></script>
     <![endif]-->
-    <link href="assets/css/highlight-docco.css" rel="stylesheet">
-    <link href="assets/css/custom.css" rel="stylesheet">
+    <link href="../assets/css/highlight-docco.css" rel="stylesheet">
+    <link href="../assets/css/custom.css" rel="stylesheet">
   </head>
   <body>
     <nav class="navbar navbar-inverse navbar-fixed-top" role="navigation">
@@ -95,8 +95,8 @@ The <code>Shutdown</code> button sends a message to the clients to quit them gra
 
 <p>The general format of the <code>wildos</code> command is as follows:</p>
 
-<pre><code>    % wildos [start] [-n|--no-clients] [-w|--wall config] [-c|--config path] [-p|--port number] [-d|--debug [0|1|2]] [-l|--log file] [--no-GUI] [app ...]
-    % wildos stop
+<pre><code>	% wildos [start] [-n|--no-clients] [-w|--wall config] [-c|--config path] [-p|--port number] [-d|--debug [0|1|2]] [-l|--log file] [--no-GUI] [app ...]
+	% wildos stop
 </code></pre>
 
 <p>The first form runs the server and takes the following arguments:</p>
@@ -126,7 +126,7 @@ The <code>Shutdown</code> button sends a message to the clients to quit them gra
 <p>When running <code>wildos</code> without any arguments, the settings recorded in the Preferences of the application are used. These settings are accessible through the <code>Preferences</code> item of the <code>Platform</code> menu in the platform UI window. They let you specify the same options as the <code>wildos</code> command-line arguments described above, except that they persist from one run to the next.</p>
 
 <figure>
-<img src="img/preference-panel.png" alt="Preference panel of WildOS" />
+<img src="../img/preference-panel.png" alt="Preference panel of WildOS" />
 <figcaption>Preference panel of WildOS</figcaption>
 </figure>
 
@@ -140,7 +140,7 @@ The <code>Shutdown</code> button sends a message to the clients to quit them gra
 <p>This should open an empty page (except for the title &#8220;WILD controller&#8221;) then, assuming the Browser application is still running, it should display a text entry field to change the URL displayed in the browser of the tiled display:</p>
 
 <figure>
-<img src="img/browser-controller.png" alt="Screendump of the browser web controller" />
+<img src="../img/browser-controller.png" alt="Screendump of the browser web controller" />
 <figcaption>Screendump of the browser web controller</figcaption>
 </figure>
 
@@ -161,7 +161,7 @@ The <code>Shutdown</code> button sends a message to the clients to quit them gra
 
 <p>If you need to run the renderers by hand, run node-webkit on the client machine with the , e.g.:</p>
 
-<pre><code>    % nw ~/WildOS/renderer &lt;instancename&gt;
+<pre><code>	% nw ~/WildOS/renderer &lt;instancename&gt;
 </code></pre>
 
 <p>The only required option is the name of the instance, as specified in the platform config file.
@@ -174,7 +174,7 @@ The full list of options is as follows:</p>
 <li><code>-h, --hostname &lt;name&gt;</code> specifies the host name to send to the server (defaults to the hostname returned by node.js);</li>
 <li><code>-i, --instance &lt;name&gt;</code> specifies the instance name (required);</li>
 <li><code>-d, --debug [level]</code> enables debugging (same as for the server above);</li>
-<li><code>--log file</code> &#8217;Log config file;</li>
+<li><code>--log file</code> 'Log config file;</li>
 </ul>
 
 <p>Note that additional options are processed by node-webkit.
@@ -202,9 +202,9 @@ The applications also cannot save such state.
 <p>To quit a faceless server, simply type control-C.</p>
 
     </div>
-    <script type="text/javascript" src="assets/js/jquery-1.11.0.min.js"></script>
-    <script type="text/javascript" src="assets/js/bootstrap.min.js"></script>
-    <script type="text/javascript" src="assets/js/highlight.custom.js"></script>
+    <script type="text/javascript" src="../assets/js/jquery-1.11.0.min.js"></script>
+    <script type="text/javascript" src="../assets/js/bootstrap.min.js"></script>
+    <script type="text/javascript" src="../assets/js/highlight.custom.js"></script>
     <script type="text/javascript">hljs.initHighlightingOnLoad();</script>
     <script type="text/javascript">
       $(document).ready(function() {

@@ -50,10 +50,10 @@ update: sync
 	$(walldo) -d $(clientdir)/renderer npm install
 
 ReadMe.html: ReadMe.md
-	tools/mmdoc -a doc/assets -t doc/src/template.html ReadMe.md
+	tools/mmdoc -a doc/assets -t doc/template.html ReadMe.md
 
 docs: ReadMe.html
-	tools/mmdoc -i doc/src -o doc
+	tools/mmdoc -a ../assets -t doc/template.html -i doc/md -o doc/html
 
 # SlideShow app
 tilecutter=tools/tilecutter

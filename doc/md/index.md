@@ -38,7 +38,7 @@ In addition to this basic, fairly standard object-oriented model, Classy feature
 WildOS uses Classy and its advanced features extensively. One use is for logging, to automatically trace method calls and access to fields. Another one is for sharing objects between server and clients.
 
 See the [Classy Documentation](https://github.com/mblinsitu/Classy) for more details on the framework.  
-See the [Logging in WildOS](logging.html) page for details about logging.
+See the [Logging in WildOS](logging.md) page for details about logging.
 
 ### Shared Objects Model ###
 
@@ -46,7 +46,7 @@ The `ObjectSharer` class is designed to monitor a collection of objects of a set
 
 In order to communicate the changes between server and clients, WildOS uses networking objects: a `SharingClient` object on the server for each connected client, and a `SharingServer` object on each client. Both use web sockets to communicate. Each such networking object holds a set of object sharers describing which classes and objects are shared and how. Distributed programming in WildOS therefore amounts mostly to creating classes, registering them with object sharers and attaching these object sharers to networking objects. Once this "piping" is established, object states synchronize automagically between server and clients, even when they go down and come back up.
 
-See [Creating Devices for WildOS](createdev.html) for more details.
+See [Creating Devices for WildOS](createdev.md) for more details.
 
 ### Platform and Devices ###
 
@@ -58,7 +58,7 @@ Devices have access to the platform user interface controller, which runs on the
 
 Devices can run application code when an applications is started (see below). This makes it possible to run a distributed application between the server and the clients running the devices. For example, an application that needs to display content on the tile display can run the rendering part in the clients that manage the tiles.
 
-See [Sharing Objects with WildOS](sharing.html) for more details.
+See [Sharing Objects with WildOS](sharing.md) for more details.
 
 ### Applications ###
 
@@ -68,7 +68,7 @@ Applications will typically use the shared object model to share their state bet
 
 Since an application can be loaded and unloaded at any time, it must clean up after itself when unloaded. This is actually quite tricky because Javascript does not let you "kill" objects: all references to them must be removed for them to be eventually garbage-collected. A future version of Classy will support object destructors and tracking of class instances to facilitate this process. (Object destructors will not actually destroy objects, but will make essentially mark them as such and disable them, so that references to them can be more easily tracked and removed).
 
-See [Creating an Application for WildOS](createapp.html) for more details.
+See [Creating an Application for WildOS](createapp.md) for more details.
 
 ### Directory Structure ###
 
@@ -77,9 +77,10 @@ The WildOS distribution is organized as follows:
 * `configs/` - Platform configuration files
     * `content` - Optional platform-specific HTML5 content
 * `doc/` - Documentation
-    * `assets/` - CSS, Javascript and font files for rendering the documentation
+    * `html/` - HTML version
+        * `assets/` - CSS, Javascript and font files for rendering the documentation
     * `img/` - Images included in the documentation
-    * `src/` - Source files of the document (in Markdown format)
+    * `md/` - Source files of the document (in Markdown format)
 * `Makefile` - Type `make` to see the relevant targets
 * `ReadMe.html` - Instructions to install and run WildOS (HTML)
 * `ReadMe.md` - Instructions to install and run WildOS (MarkDown)

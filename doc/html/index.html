@@ -5,15 +5,15 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>WildOS - Overview</title>
 
-    <link href="assets/css/bootstrap.min.css" rel="stylesheet">
+    <link href="../assets/css/bootstrap.min.css" rel="stylesheet">
     <!-- HTML5 Shim and Respond.js IE8 support of HTML5 elements and media queries -->
     <!-- WARNING: Respond.js doesn't work if you view the page via file:// -->
     <!--[if lt IE 9]>
       <script src="https://oss.maxcdn.com/libs/html5shiv/3.7.0/html5shiv.js"></script>
       <script src="https://oss.maxcdn.com/libs/respond.js/1.4.2/respond.min.js"></script>
     <![endif]-->
-    <link href="assets/css/highlight-docco.css" rel="stylesheet">
-    <link href="assets/css/custom.css" rel="stylesheet">
+    <link href="../assets/css/highlight-docco.css" rel="stylesheet">
+    <link href="../assets/css/custom.css" rel="stylesheet">
   </head>
   <body>
     <nav class="navbar navbar-inverse navbar-fixed-top" role="navigation">
@@ -63,7 +63,7 @@
 
     <div class="container-fluid">
       <!DOCTYPE html>
-<html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en">
 <head>
 	<meta charset="utf-8"/>
 	<title>Overview</title>
@@ -76,7 +76,7 @@
 
 <h3 id="aboutnode-webkit">About node-webkit</h3>
 
-<p>WildOS is programmed entirely in Javascript using <a href="https://github.com/rogerwang/node-webkit">node-webkit</a>. Node-webkit is an open-source project developed at Intel to support the development of desktop applications using web technologies. Concretely, it is a merge of <a href="http://nodejs.org">node.js</a>, which is popular to write back-end software, including web servers, and <a href="http://www.chromium.org/">Chromium</a>, the core part of the Chrome web browser. </p>
+<p>WildOS is programmed entirely in Javascript using <a href="https://github.com/rogerwang/node-webkit">node-webkit</a>. Node-webkit is an open-source project developed at Intel to support the development of desktop applications using web technologies. Concretely, it is a merge of <a href="http://nodejs.org">node.js</a>, which is popular to write back-end software, including web servers, and <a href="http://www.chromium.org/">Chromium</a>, the core part of the Chrome web browser.</p>
 
 <p>On the one hand, the node.js part of node-webkit gives access to an efficient reactive engine and a large collection of modules, including for accessing the file system and other operating system resources that web browsers do not have access to. On the other hand, Chromium provides an efficient and cutting-edge rendering engine of web content without all the security overhead of a complete web browser. Finally, by &#8220;welding&#8221; together node.js and Chromium in a single process, we avoid the typical overhead of web applications where the server and client are on different machines or in different processes and communicate over HTTP network connections. In fact, even though node-webkit runs node.js code and Chromium code in separate virtual machines, each has direct access to the other. In practice, objects and functions created on one side can be used on the other with no overhead (see however the <a href="https://github.com/rogerwang/node-webkit/wiki/Transfer-objects-between-window-and-node">node-webkit documentation</a> for a few pitfalls). One immediate benefit is that one can use <code>require</code> to import any node.js module in Javascript code running inside a Chromium web page (many web developers would love to do that in their web applications!).</p>
 
@@ -94,22 +94,22 @@
 
 <h3 id="objectmodel">Object Model</h3>
 
-<p>Javascript is not an object-oriented programming language. Unlike languages such as Java, C++ or Objective-C, Javascript does <em>not</em> support classes. Rather than the class-instance paradigm of traditional object-oriented languages, Javascript is based on the notion of <strong>prototype</strong>. Each object has a collection of <strong>properties</strong>, each property can hold a primitive value (such as an integer), a reference to an object, or a function (which is, in fact, a particular type of object). Each object also has a <strong>prototype</strong>: a special link to another object so that when referencing property <code>p</code> of object <code>o</code>, as in <code>o.p</code>, if the property does not exist in <code>o</code>, it is looked up in its prototype, and so on up the prototype chain (which eventually stops at the <code>Object</code> prototype). So unlike object-oriented languages where classes hold methods and objects hold state and a link to their class to look up their methods, a prototype-based language such as Javascript only has objects, each of which can have state as well as methods (i.e., functions)<a href="#fn:1" id="fnref:1" title="see footnote" class="footnote">[1]</a>.</p>
+<p>Javascript is not an object-oriented programming language. Unlike languages such as Java, C++ or Objective-C, Javascript does <em>not</em> support classes. Rather than the class-instance paradigm of traditional object-oriented languages, Javascript is based on the notion of <strong>prototype</strong>. Each object has a collection of <strong>properties</strong>, each property can hold a primitive value (such as an integer), a reference to an object, or a function (which is, in fact, a particular type of object). Each object also has a <strong>prototype</strong>: a special link to another object so that when referencing property <code>p</code> of object <code>o</code>, as in <code>o.p</code>, if the property does not exist in <code>o</code>, it is looked up in its prototype, and so on up the prototype chain (which eventually stops at the <code>Object</code> prototype). So unlike object-oriented languages where classes hold methods and objects hold state and a link to their class to look up their methods, a prototype-based language such as Javascript only has objects, each of which can have state as well as methods (i.e., functions)<a href="#fn:1" id="fnref:1" title="see footnote" class="footnote"><sup>1</sup></a>.</p>
 
 <p>While this provides tremendous flexibility, most programmers are used to the traditional object-oriented model where classes are clearly distinct from objects and where classes can inherit from each other. There are many object-oriented frameworks for Javascript (and indeed a future version of the language will feature <a href="http://wiki.ecmascript.org/doku.php?id=strawman:maximally_minimal_classes">native classes</a> - in fact the word <code>class</code> is already a reserved keyword). WildOS uses <a href="https://github.com/mblinsitu/Classy">Classy</a>, a framework that I have developed because none of the ones I looked at provided the feature set I needed.</p>
 
 <p>In short, Classy lets you define <strong>classes</strong> with a set of <strong>fields</strong> (we purposefully do not call them properties to differentiate them from Javascript properties, even though they are in fact Javascript properties) and a set of <strong>methods</strong>. Classes can also have <strong>class fields</strong> and <strong>class methods</strong>. Classes can <strong>inherit</strong> from other classes. Classes can also have one or more <strong>constructors</strong>. When a class inherits from another class, its constructors and methods can &#8220;call to super&#8221;, i.e. can call the same constructor or method in the parent class with the construct <code>this._super(args)</code>.</p>
 
-<p>In addition to this basic, fairly standard object-oriented model, Classy features more funky capabilities: field wrappers, method wrappers and mixins. <strong>Field wrappers</strong> let you capture any access to a field so as to affect the way it is read/written, and/or generate side effect. <strong>Method wrappers</strong> are similar for method calls, letting you add code executed when a method is called. Finally, <strong>mixins</strong> add capabilities (fields, methods and wrappers) to an existing class without creating a new class that inherits from it. Mixins are more powerful than multiple inheritance (which Classy does <em>not</em> feature). </p>
+<p>In addition to this basic, fairly standard object-oriented model, Classy features more funky capabilities: field wrappers, method wrappers and mixins. <strong>Field wrappers</strong> let you capture any access to a field so as to affect the way it is read/written, and/or generate side effect. <strong>Method wrappers</strong> are similar for method calls, letting you add code executed when a method is called. Finally, <strong>mixins</strong> add capabilities (fields, methods and wrappers) to an existing class without creating a new class that inherits from it. Mixins are more powerful than multiple inheritance (which Classy does <em>not</em> feature).</p>
 
 <p>WildOS uses Classy and its advanced features extensively. One use is for logging, to automatically trace method calls and access to fields. Another one is for sharing objects between server and clients.</p>
 
-<p>See the <a href="https://github.com/mblinsitu/Classy">Classy Documentation</a> for more details on the framework.<br/>
+<p>See the <a href="https://github.com/mblinsitu/Classy">Classy Documentation</a> for more details on the framework.<br />
 See the <a href="logging.html">Logging in WildOS</a> page for details about logging.</p>
 
 <h3 id="sharedobjectsmodel">Shared Objects Model</h3>
 
-<p>The <code>ObjectSharer</code> class is designed to monitor a collection of objects of a set of classes, to notify this activity by sending events (typically to one or more remote clients), and to listen to such events (typically on a client) to synchronize local copies of the objects. <code>ObjectSharer</code> adds a mixin to the monitored class to achieve this behavior, so any class can be monitored without it doing anything special. An <code>ObjectSharer</code> can manage all the objects of a given class or just a subset ofthem. It can monitor and synchronize all of the objects&#8217; fields or a subset of them, and all of its method calls or just a subset of them. This gives great flexibility to adjust the amount of sharing.</p>
+<p>The <code>ObjectSharer</code> class is designed to monitor a collection of objects of a set of classes, to notify this activity by sending events (typically to one or more remote clients), and to listen to such events (typically on a client) to synchronize local copies of the objects. <code>ObjectSharer</code> adds a mixin to the monitored class to achieve this behavior, so any class can be monitored without it doing anything special. An <code>ObjectSharer</code> can manage all the objects of a given class or just a subset ofthem. It can monitor and synchronize all of the objects' fields or a subset of them, and all of its method calls or just a subset of them. This gives great flexibility to adjust the amount of sharing.</p>
 
 <p>In order to communicate the changes between server and clients, WildOS uses networking objects: a <code>SharingClient</code> object on the server for each connected client, and a <code>SharingServer</code> object on each client. Both use web sockets to communicate. Each such networking object holds a set of object sharers describing which classes and objects are shared and how. Distributed programming in WildOS therefore amounts mostly to creating classes, registering them with object sharers and attaching these object sharers to networking objects. Once this &#8220;piping&#8221; is established, object states synchronize automagically between server and clients, even when they go down and come back up.</p>
 
@@ -129,7 +129,7 @@ See the <a href="logging.html">Logging in WildOS</a> page for details about logg
 
 <h3 id="applications">Applications</h3>
 
-<p>Applications are loaded dynamically when the server starts up (if specified on the command line) or later when loaded by the user through the platform controller. Each application is the single instance of its class (a.k.a. a singleton class). Most applications have their core running in the server and their input and display run in clients associated to the platform&#8217;s devices. </p>
+<p>Applications are loaded dynamically when the server starts up (if specified on the command line) or later when loaded by the user through the platform controller. Each application is the single instance of its class (a.k.a. a singleton class). Most applications have their core running in the server and their input and display run in clients associated to the platform&#8217;s devices.</p>
 
 <p>Applications will typically use the shared object model to share their state between the server and these clients. This makes it easy, among other things, to create multi-user applications: each user holds a device running a client, and their states are synchronized. Since the architecture is centralized, solving conflicts, e.g. when two users want to modify the same object. is easy: clients do not change state locally, they use remote procedure calls or separate objects to notify the server, which arbitrates the conflict.</p>
 
@@ -150,9 +150,13 @@ See the <a href="logging.html">Logging in WildOS</a> page for details about logg
 <li><code>doc/</code> - Documentation
 
 <ul>
+<li><code>html/</code> - HTML version
+
+<ul>
 <li><code>assets/</code> - CSS, Javascript and font files for rendering the documentation</li>
+</ul></li>
 <li><code>img/</code> - Images included in the documentation</li>
-<li><code>src/</code> - Source files of the document (in Markdown format)</li>
+<li><code>md/</code> - Source files of the document (in Markdown format)</li>
 </ul></li>
 <li><code>Makefile</code> - Type <code>make</code> to see the relevant targets</li>
 <li><code>ReadMe.html</code> - Instructions to install and run WildOS (HTML)</li>
@@ -202,20 +206,20 @@ See the <a href="logging.html">Logging in WildOS</a> page for details about logg
 <ol>
 
 <li id="fn:1">
-<p>For more information on prototype-based languages, see the seminal work on the <a href="http://selflanguage.org/">Self programming language</a>. <a href="#fnref:1" title="return to article" class="reversefootnote">&#160;&#8617;</a></p>
+<p>For more information on prototype&#8211;based languages, see the seminal work on the <a href="http://selflanguage.org/">Self programming language</a>. <a href="#fnref:1" title="return to body" class="reversefootnote">&#160;&#8617;&#xfe0e;</a></p>
 </li>
 
 </ol>
 </div>
 
-
 </body>
 </html>
 
+
     </div>
-    <script type="text/javascript" src="assets/js/jquery-1.11.0.min.js"></script>
-    <script type="text/javascript" src="assets/js/bootstrap.min.js"></script>
-    <script type="text/javascript" src="assets/js/highlight.custom.js"></script>
+    <script type="text/javascript" src="../assets/js/jquery-1.11.0.min.js"></script>
+    <script type="text/javascript" src="../assets/js/bootstrap.min.js"></script>
+    <script type="text/javascript" src="../assets/js/highlight.custom.js"></script>
     <script type="text/javascript">hljs.initHighlightingOnLoad();</script>
     <script type="text/javascript">
       $(document).ready(function() {

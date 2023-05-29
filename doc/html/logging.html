@@ -5,15 +5,15 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Logging in WildOS</title>
 
-    <link href="assets/css/bootstrap.min.css" rel="stylesheet">
+    <link href="../assets/css/bootstrap.min.css" rel="stylesheet">
     <!-- HTML5 Shim and Respond.js IE8 support of HTML5 elements and media queries -->
     <!-- WARNING: Respond.js doesn't work if you view the page via file:// -->
     <!--[if lt IE 9]>
       <script src="https://oss.maxcdn.com/libs/html5shiv/3.7.0/html5shiv.js"></script>
       <script src="https://oss.maxcdn.com/libs/respond.js/1.4.2/respond.min.js"></script>
     <![endif]-->
-    <link href="assets/css/highlight-docco.css" rel="stylesheet">
-    <link href="assets/css/custom.css" rel="stylesheet">
+    <link href="../assets/css/highlight-docco.css" rel="stylesheet">
+    <link href="../assets/css/custom.css" rel="stylesheet">
   </head>
   <body>
     <nav class="navbar navbar-inverse navbar-fixed-top" role="navigation">
@@ -102,22 +102,22 @@ A domain is a class, or in some cases a file name; an entry is a method, functio
 
 <p>The example below illustrates the various possibilities:</p>
 
-<pre><code>    module.exports = {
-        display: 'closed',      // by default, log in 'closed' modes (uses less space)
-        domains: {
-            MyClass: 'skip',    // do not log MyClass
-            MyOtherClass: {     // log MyOtherClass with some special cases
-                display: 'show',    // log in 'open' mode
-                entries: {          // except these entries:
-                    myMethod: 'skip',   // skip myMethod
-                    _object: 'closed',  // special entry for log.newObject
-                    _message: 'closed', // special entry for log.message
-                    ...
-                }
-            }
-            ...
-        }
-    }
+<pre><code>	module.exports = {
+		display: 'closed',		// by default, log in 'closed' modes (uses less space)
+		domains: {
+			MyClass: 'skip',	// do not log MyClass
+			MyOtherClass: {		// log MyOtherClass with some special cases
+				display: 'show',	// log in 'open' mode
+				entries: {			// except these entries:
+					myMethod: 'skip',	// skip myMethod
+					_object: 'closed',	// special entry for log.newObject
+					_message: 'closed',	// special entry for log.message
+					...
+				}
+			}
+			...
+		}
+	}
 </code></pre>
 
 <p>At present, the colors associated with each domain cannot be easily modified:
@@ -137,7 +137,7 @@ If needed, you can sprinkle your code with additional traces where needed.</p>
 
 <p>The most common way to access logging is to create a logger at the beginning of each of your scripts:</p>
 
-<pre><code>    var log = require('Log').logger('myDomain');
+<pre><code>	var log = require('Log').logger('myDomain');
 </code></pre>
 
 <p><code>'myDomain'</code> is typically the name of the class defined in the file, but it can be anything.
@@ -147,20 +147,20 @@ It is used by the logging configuration (see below) to control which messages ar
 but in general using one logger per file, or per class, should be sufficient.
 You can also use a shared logger, with no attached domain:</p>
 
-<pre><code>    var log = require('Log').shared();
+<pre><code>	var log = require('Log').shared();
 </code></pre>
 
 <h3 id="usingalogger">Using a logger</h3>
 
 <p>Most logging methods take a variable number of arguments holding arbitrary values.
-These are printed according to their type: </p>
+These are printed according to their type:</p>
 
 <ul>
 <li>numbers and strings are printed as expected;</li>
 <li>Classy objects are printed simply by printing their name.
- If they don&#8217;t have a name, they are automatically assigned a unique name composed
- of the name of their class and a number;</li>
-<li>Arrays and non-classy objects are printed using node.js&#8217; <code>util.insect</code>.</li>
+If they don&#8217;t have a name, they are automatically assigned a unique name composed
+of the name of their class and a number;</li>
+<li>Arrays and non-classy objects are printed using node.js' <code>util.insect</code>.</li>
 </ul>
 
 <p>WildOS redirects logging output as soon as possible to an HTML window.
@@ -222,9 +222,9 @@ For example:</p>
 In addition, fatal errors cause the program to quit immediately.</p>
 
     </div>
-    <script type="text/javascript" src="assets/js/jquery-1.11.0.min.js"></script>
-    <script type="text/javascript" src="assets/js/bootstrap.min.js"></script>
-    <script type="text/javascript" src="assets/js/highlight.custom.js"></script>
+    <script type="text/javascript" src="../assets/js/jquery-1.11.0.min.js"></script>
+    <script type="text/javascript" src="../assets/js/bootstrap.min.js"></script>
+    <script type="text/javascript" src="../assets/js/highlight.custom.js"></script>
     <script type="text/javascript">hljs.initHighlightingOnLoad();</script>
     <script type="text/javascript">
       $(document).ready(function() {

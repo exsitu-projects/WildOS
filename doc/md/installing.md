@@ -6,7 +6,7 @@ It should also run on Windows since it uses only portable technologies but this 
 
 Before installing WildOS
 --------
-First you need to have [node.js](http://nodejs.org) and [node-webkit](https://github.com/rogerwang/node-webkit) installed both on the machine where you will be running the WildOS server and on the machines where you will be running clients, such as the display cluster. (You do not need to install anything on those machines where the WildOS clients will run in a regular browser, such as tablets and smartphones). 
+First you need to have [node.js](http://nodejs.org) and [node-webkit](https://github.com/rogerwang/node-webkit) (also known as `nwjs`) installed both on the machine where you will be running the WildOS server and on the machines where you will be running clients, such as the display cluster. (You do not need to install anything on those machines where the WildOS clients will run in a regular browser, such as tablets and smartphones). 
 
 ### Installing node.js and npm ###
 
@@ -26,7 +26,6 @@ WildOS requires version 0.9.2 or later of node-webkit.
 
 On Linux, node-webkit is an executable called `nw` and should be accessible in the `PATH`.
 The simplest way to install is to create a symbolic link to `nw` in `/usr/local/bin`.
-To install in `/opt` and support multiple versions, follow the instructions in [this web page](http://www.exponential.io/blog/install-node-webkit-on-ubuntu-linux).
 
 On Mac OS X, node-webkit is an application and should be copied to the standard `Applications` folder.
 If it is installed elsewhere, edit the `tools/nw` script so that `NWAPP` points to it. 
@@ -34,7 +33,7 @@ This `nw` script is designed to be used on the command line in the same way as o
 
 Installing the WildOS server
 --------
-After you have checked out WildOS from the [git repository](https://bitbucket.org/mblinsitu/wildos), the [SVN repository](https://www.lri.fr/svn/in-situ/code/WILD/WildOS) or extracted it from the archive, you need to finalize the installation as follows:
+After you have checked out WildOS from the [GitHub repository](https://github.com/exsitu-projects/WildOS) or the [BitBucket repository](https://bitbucket.org/mblinsitu/wildos), you need to finalize the installation as follows:
 
 	% cd WildOS/server
 	% npm install  
@@ -55,7 +54,7 @@ To test the server run the following command:
 The server will create two windows: one with lots of traces, the other depicting the wall display with the buttons `Restart` and `Shutdown` at the top, similar to the image below. 
 Enter a URL in the text box: It should load 
 
-![Screendump of the browser application when no rendering clients are running](img/browser-noclients.png)
+![Screendump of the browser application when no rendering clients are running](../img/browser-noclients.png)
 
 If the server does not work correctly, look at error messages in the terminal and in the window with all the traces: errors are displayed in orange or red.
 If you are on Mac OS X, try also the following command (from the `WildOS` directory):
@@ -78,7 +77,7 @@ This will run the server as before, plus four rendering clients. Each rendering 
 
 The content windows should display the URL specified in the server window, tiled in a consistent way so that the page appears to cross the windows. Moreover, the tiles in the server window should become transparent, to show that the server has establised connections with the clients, as in the picture below.
 
-![Screendump of the browser application when the rendering clients are running](img/browser.png)
+![Screendump of the browser application when the rendering clients are running](../img/browser.png)
 
 If things don't work try again to look at error messages in the terminal and in the windows with the traces.
 
@@ -107,7 +106,7 @@ In this case, you can either:
 Configuring the platform
 --------
 
-Before you can make a real test where clients are running on remote machines, you need to read the [configuration](configuring.html) page to configure WildOS for your platform.
+Before you can make a real test where clients are running on remote machines, you need to read the [configuration](configuring.md) page to configure WildOS for your platform.
 
 Installing the rendering clients
 --------
@@ -153,8 +152,8 @@ Running WildOS
 
 Once installation is complete, you can refer to the following pages to run WildOS routinely:
 
-- [Running WildOS](running.html)
-- [WildOS Applications](applications.html)
+- [Running WildOS](running.md)
+- [WildOS Applications](applications.md)
 
 Installing updates
 --------

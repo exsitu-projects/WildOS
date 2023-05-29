@@ -214,7 +214,7 @@ function processFile(infile, outfile, cb) {
 	console.log('processing', infile, '->', outfile);
 
 	// Run multimarkdown -> HTML
-	var mmd = spawn('multimarkdown', ['--process-html', infile]);
+	var mmd = spawn('multimarkdown', ['--to=html', infile]);
 
 	// Capture output
 	mmd.stdout.on('data', function(data) {
@@ -294,8 +294,13 @@ function processFile(infile, outfile, cb) {
 
 // Clean up resulting HTML.
 function postProcess(html) {
-	// *** Really a hack to fix the spurious <p> and </p> that mmd generates due to our markup
-	return html.replace(/<p><\/div>/g, '</div>').replace(/(<div\s+class="[^"]*">)<\/p>/g, '$1');
+	// - fix the spurious <p> and </p> that mmd generates due to our markup
+	// - replace .md links to .html
+	//		NOTE : installation-depdendant hack to replace doc/md/*.md with doc/html/*.html for the ReadMe file
+	return html.replace(/<p><\/div>/g, '</div>')
+			   .replace(/(<div\s+class="[^"]*">)<\/p>/g, '$1')
+			   .replace(/<a href="doc\/md\/([^.]+).md">/g, '<a href="doc/html/$1.html">')
+			   .replace(/<a href="([^.]+).md">/g, '<a href="$1.html">');
 }
 
 // Turn a context object into HTML.

@@ -18,16 +18,16 @@ WildOS is still in a very preliminary stage, so expect bugs, crashes and weird b
 
 To install and run WildOS, read the following documentation pages:
 
-- [Installing WildOS](doc/installing.html)
-- [Configuring WildOS](doc/configuring.html)
-- [Running WildOS](doc/running.html)
-- [WildOS Applications](doc/applications.html)
+- [Installing WildOS](doc/md/installing.md)
+- [Configuring WildOS](doc/md/configuring.md)
+- [Running WildOS](doc/md/running.md)
+- [WildOS Applications](doc/md/applications.md)
 
 ### Developping for WildOS ###
 
 WildOS is in active development. We need users to give us feedback, contribute code, and create their own applications.
 
-The `doc` directory contains [documentation](doc/index.html) describing the general architecture of the system and how to create new devices and new applications.
+The `doc` directory contains [documentation](doc/md/index.md) describing the general architecture of the system and how to create new devices and new applications.
 The source code is also fairly commented.
 
 So read the documentation, read the code and hack away!

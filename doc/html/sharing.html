@@ -5,15 +5,15 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Sharing Objects in WildOS</title>
 
-    <link href="assets/css/bootstrap.min.css" rel="stylesheet">
+    <link href="../assets/css/bootstrap.min.css" rel="stylesheet">
     <!-- HTML5 Shim and Respond.js IE8 support of HTML5 elements and media queries -->
     <!-- WARNING: Respond.js doesn't work if you view the page via file:// -->
     <!--[if lt IE 9]>
       <script src="https://oss.maxcdn.com/libs/html5shiv/3.7.0/html5shiv.js"></script>
       <script src="https://oss.maxcdn.com/libs/respond.js/1.4.2/respond.min.js"></script>
     <![endif]-->
-    <link href="assets/css/highlight-docco.css" rel="stylesheet">
-    <link href="assets/css/custom.css" rel="stylesheet">
+    <link href="../assets/css/highlight-docco.css" rel="stylesheet">
+    <link href="../assets/css/custom.css" rel="stylesheet">
   </head>
   <body>
     <nav class="navbar navbar-inverse navbar-fixed-top" role="navigation">
@@ -88,7 +88,7 @@ Adding a mixin to a class wraps its fields and methods as specified by the wrapp
 
 <h2 id="sharingobjectsconcept">Sharing objects concept</h2>
 
-<p>Sharing objects with WildOS is achieved by first registering one or more classes with an <code>ObjectSharer</code> and then attaching the object sharer to one or more sharing clients (on the server) or to a sharing server (on each client). </p>
+<p>Sharing objects with WildOS is achieved by first registering one or more classes with an <code>ObjectSharer</code> and then attaching the object sharer to one or more sharing clients (on the server) or to a sharing server (on each client).</p>
 
 <p>An object sharer does three things:</p>
 
@@ -142,12 +142,12 @@ When its <code>playSound</code> method is called, the slaves are notified of the
         .fields({ x: 0, y: 0 })
         .methods({
             moveBy: function(dx, dy) {
-                this.x += dx; this.y += dy;
-            },
-            playSound: function(sound) {
-                // play the sound on the server
-                // (or do nothing if only the clients take care of it)
-            },
+            	this.x += dx; this.y += dy;
+        	},
+        	playSound: function(sound) {
+        		// play the sound on the server
+        		// (or do nothing if only the clients take care of it)
+        	},
         });
 
     var sharer = ObjectSharer.create().master(Sprite, 'own', ['moveBy'], ['playSound'], 'after');
@@ -159,12 +159,12 @@ When its <code>playSound</code> method is called, the slaves are notified of the
         .fields({ x: 0, y: 0 })
         .methods({
             moveBy: function(dx, dy) {
-                // the body is empty because the call will be forwarded to the master.
-            },
-            playSound_after: function(sound) {
-                // play the sound
-                ...
-            },
+            	// the body is empty because the call will be forwarded to the master.
+        	},
+        	playSound_after: function(sound) {
+        		// play the sound
+        		...
+        	},
         });
 
     var sharer = ObjectSharer.create().slave(Sprite, 'own', ['moveBy']);
@@ -246,11 +246,11 @@ If the sharer held the last reference to the object, it will eventually be garba
 
 <pre><code>    ...
     clientConnected: function(socket, server) {
-        // We assume that the sharer is in this.sharer
-        if (this.sharer)
-            server.registerClient(socket, SharingClient.create(socket).addSharer(this.sharer));
-    }
-    ...
+    	// We assume that the sharer is in this.sharer
+    	if (this.sharer)
+	    	server.registerClient(socket, SharingClient.create(socket).addSharer(this.sharer));
+	}
+	...
 </code></pre>
 
 <p>In fact this is the default behavior for applications and therefore you have nothing to do if you are only sharing the application object. If you are sharing additional classes, you need to add these classes to the application sharer, and they will be picked up automatically by the sharing client.</p>
@@ -273,9 +273,9 @@ All you need to do is declare what you want to share (with <code>MyApp.shareStat
 and add other shared classes if any (with <code>MyApp.sharer.slave(...)</code>).</p>
 
     </div>
-    <script type="text/javascript" src="assets/js/jquery-1.11.0.min.js"></script>
-    <script type="text/javascript" src="assets/js/bootstrap.min.js"></script>
-    <script type="text/javascript" src="assets/js/highlight.custom.js"></script>
+    <script type="text/javascript" src="../assets/js/jquery-1.11.0.min.js"></script>
+    <script type="text/javascript" src="../assets/js/bootstrap.min.js"></script>
+    <script type="text/javascript" src="../assets/js/highlight.custom.js"></script>
     <script type="text/javascript">hljs.initHighlightingOnLoad();</script>
     <script type="text/javascript">
       $(document).ready(function() {

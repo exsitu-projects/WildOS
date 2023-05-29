@@ -1,7 +1,7 @@
 Running WildOS
 ========
 
-Once everything is [installed](installing.html) properly, you should be able to run WildOS.
+Once everything is [installed](installing.md) properly, you should be able to run WildOS.
 
 WildOS consists of multiple processes: a server and a set of clients. The order in which they are run (and stopped and restarted) should not matter. For example, you can stop the server, restart it, and the clients will automatically reconnect to it. However, if things go really wrong, it's better to kill everything, start the server, and then the clients.
 
@@ -61,7 +61,7 @@ uses the `local` config file to run server and clients on the local machine, use
 
 When running `wildos` without any arguments, the settings recorded in the Preferences of the application are used. These settings are accessible through the `Preferences` item of the `Platform` menu in the platform UI window. They let you specify the same options as the `wildos` command-line arguments described above, except that they persist from one run to the next.
 
-![Preference panel of WildOS](img/preference-panel.png)
+![Preference panel of WildOS](../img/preference-panel.png)
 
 
 ### Running the web clients ###
@@ -72,7 +72,7 @@ The server application displays in the top-right corner a QRcode of the URL for 
 
 This should open an empty page (except for the title "WILD controller") then, assuming the Browser application is still running, it should display a text entry field to change the URL displayed in the browser of the tiled display:
 
-![Screendump of the browser web controller](img/browser-controller.png)
+![Screendump of the browser web controller](../img/browser-controller.png)
 
 
 ### Shutting down ###

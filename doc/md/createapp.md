@@ -7,7 +7,7 @@ We strongly advise that you look at the source code of existing applications to 
 A WildOS application typically provides a way to display some content and/or interact with some content.
 Applications are often distributed, with some code running in the WildOS server and some code running in one or more clients.
 This distribution is dynamic, because clients can come and go at any time.
-To simplify the work of the developer, [object sharing](sharing.html) is often used to share state between server and clients.
+To simplify the work of the developer, [object sharing](sharing.md) is often used to share state between server and clients.
 
 ### File system layout ###
 WildOS applications must be stored in the `WildOS/server/apps` directory (or the `WildOS/apps` directory, but this has not been tested).
@@ -127,7 +127,7 @@ which is why the `stopMyApp` function is defined).
 
 ### Sharing objects with clients ###
 
-The documentation on [object sharing](sharing.html) explains how to set up sharing and how to use, in particular by wrapping object fields in order to react to updates. Since applications almost always share state with clients, the `App` class defines a class method to simplify the process:
+The documentation on [object sharing](sharing.md) explains how to set up sharing and how to use, in particular by wrapping object fields in order to react to updates. Since applications almost always share state with clients, the `App` class defines a class method to simplify the process:
 
 ```
     MyApp.shareState(/*fields: */ 'own', /*allow remote calls: */ null, /* notify: */ null)

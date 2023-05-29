@@ -5,15 +5,15 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Creating an Application for WildOS</title>
 
-    <link href="assets/css/bootstrap.min.css" rel="stylesheet">
+    <link href="../assets/css/bootstrap.min.css" rel="stylesheet">
     <!-- HTML5 Shim and Respond.js IE8 support of HTML5 elements and media queries -->
     <!-- WARNING: Respond.js doesn't work if you view the page via file:// -->
     <!--[if lt IE 9]>
       <script src="https://oss.maxcdn.com/libs/html5shiv/3.7.0/html5shiv.js"></script>
       <script src="https://oss.maxcdn.com/libs/respond.js/1.4.2/respond.min.js"></script>
     <![endif]-->
-    <link href="assets/css/highlight-docco.css" rel="stylesheet">
-    <link href="assets/css/custom.css" rel="stylesheet">
+    <link href="../assets/css/highlight-docco.css" rel="stylesheet">
+    <link href="../assets/css/custom.css" rel="stylesheet">
   </head>
   <body>
     <nav class="navbar navbar-inverse navbar-fixed-top" role="navigation">
@@ -83,9 +83,9 @@ Each application must conform to the format of a node module, i.e. it must be ei
 <li>A directory <code>MyApp</code> with a <code>package.json</code> file that includes a property <code>main</code> holding the name of the main file.</li>
 </ul>
 
-<p>Whichever way you decide to implement the package, we call this file (<code>MyApp.js</code>, <code>MyApp/index.js</code> or the file specified in the <code>main</code> property of the <code>MyApp/package.json</code>) the app&#8217;s <em>main file</em>. </p>
+<p>Whichever way you decide to implement the package, we call this file (<code>MyApp.js</code>, <code>MyApp/index.js</code> or the file specified in the <code>main</code> property of the <code>MyApp/package.json</code>) the app&#8217;s <em>main file</em>.</p>
 
-<p>If the application has client-side code running in a web browser, this code must be in the <code>content</code> directory under the application&#8217;s directory. </p>
+<p>If the application has client-side code running in a web browser, this code must be in the <code>content</code> directory under the application&#8217;s directory.</p>
 
 <p>If the application has client-side code for rendering on a tiled display, this code must be in the <code>WidOS/renderer/apps</code> directory (or the <code>WildOS/apps</code> directory, but this has not been tested). Like server-side code, the format must conform to a node package with the same name as the application.</p>
 
@@ -110,8 +110,8 @@ Since the platform is needed to access almost anything in WildOS, most applicati
 
 <pre><code>    MyApp.methods({
         ...
-        initPlatform: function(platform) {
-            this.platform = platform;
+    	initPlatform: function(platform) {
+    	    this.platform = platform;
         },
         ...
     })
@@ -133,9 +133,9 @@ Note that <code>injectJSFile</code> can take two additional optional arguments:<
 
 <ul>
 <li>an id to set on the <code>&lt;script&gt;</code> tag created by <code>injectJSFile</code>.
- This is useful to delete the element when the app is unloaded (see below).</li>
+This is useful to delete the element when the app is unloaded (see below).</li>
 <li>a callback to be called when the script is finished executing.
- This is useful if you need to access variables or DOM elements created by the script.</li>
+This is useful if you need to access variables or DOM elements created by the script.</li>
 </ul>
 
 <p>The platform also provides methods to inject CSS code and HTML code into the platform UI, similar to <code>injectJSFile</code>.</p>
@@ -156,18 +156,18 @@ The platform UI uses jQuery so your code can use it and does not need to load it
 <p>The application UI control code that is injected into the platform UI typically features two functions, <code>startMyApp</code> and <code>stopMyApp</code>:</p>
 
 <pre><code>    function startMyApp() {
-        ...
-        // create a div for the app
-        $('#top').append('&lt;div id=&quot;MyApp&quot;&gt;My app's stuff: &lt;/div&gt;'););
-        ...
-    }
+    	...
+    	// create a div for the app
+    	$('#top').append('&lt;div id=&quot;MyApp&quot;&gt;My app's stuff: &lt;/div&gt;'););
+    	...
+	}
 
-    function stopMyApp() {
-        // remove what we created
-        $('#top').remove();
-    }
+	function stopMyApp() {
+		// remove what we created
+		$('#top').remove();
+	}
 
-    startMyApp()
+	startMyApp()
 </code></pre>
 
 <p><code>startMyApp</code> creates the UI and is called by the script itself.</p>
@@ -177,9 +177,9 @@ The platform UI uses jQuery so your code can use it and does not need to load it
 <pre><code>    MyApp.methods({
         ...
         stop: function() {
-            ...
-            if (this.platform.window)
-                this.platform.window.window.stopMyApp();
+       	    ...
+       	    if (this.platform.window)
+				this.platform.window.window.stopMyApp();
         }
         ...
     })
@@ -221,14 +221,14 @@ This is often needed to create a mosaic of images that together represent a larg
 <p>The tile also holds, in the <code>window</code> property, the node-webkit window object for the tile.
 This gives you access to the content of the rendering window:</p>
 
-<pre><code>    MyApp.methods({
-        tileReady: function(tile) {
-            tile.window                       // the node-webkit window
-            tile.window.window                // the HTML window
-            tile.window.window.document       // the HTML document in the tile
-            tile.window.window.location.href  // the URL of the HTML document in the tile
-        }
-    })
+<pre><code>	MyApp.methods({
+		tileReady: function(tile) {
+			tile.window                       // the node-webkit window
+			tile.window.window                // the HTML window
+			tile.window.window.document       // the HTML document in the tile
+			tile.window.window.location.href  // the URL of the HTML document in the tile
+		}
+	})
 </code></pre>
 
 <p>Some applications will load their own content in the tiles by changing the tile window&#8217;s URL.
@@ -239,30 +239,30 @@ in the second case, you need to re-inject your code when another application loa
 
 <p>This can be done by setting a handler as follows:</p>
 
-<pre><code>    MyApp.methods({
-        tileReady: function(tile) {
-            var self = this;
-            tile.window.on('loaded', function() {
-                // do what is needed once the window is done loading
-                // use self instead of this to access the app object
-                self.initContent(tile);
-            });
-        }
-    })
+<pre><code>	MyApp.methods({
+		tileReady: function(tile) {
+			var self = this;
+			tile.window.on('loaded', function() {
+				// do what is needed once the window is done loading
+				// use self instead of this to access the app object
+				self.initContent(tile);
+			});
+		}
+	})
 </code></pre>
 
 <p>Unlike the <code>Platform</code> class of the server, the <code>Tile</code> class does not (yet) provide function to inject Javascript, CSS or HTML code into the page.
 Since the page may not have jQuery loaded, you need to use native DOM functions to inject code (of course, you can start by injecting jquery.js).
 Here is an example of how to create a div:</p>
 
-<pre><code>    MyApp.methods({
-        initContent: function(tile) {
-            var doc = tile.window.window.document;
-            var el = doc.createElement('div');
-            // set element's attributes and content
-            doc.body.appendChild(el);
-        }
-    })
+<pre><code>	MyApp.methods({
+		initContent: function(tile) {
+			var doc = tile.window.window.document;
+			var el = doc.createElement('div');
+			// set element's attributes and content
+			doc.body.appendChild(el);
+		}
+	})
 </code></pre>
 
 <p>In order for you application to use the client-side rendering code, it must be installed on the rendering client machines.
@@ -291,7 +291,7 @@ Instead, the web controller loads the page <code>http://&lt;server-address&gt;:8
 
 <pre><code>    var MyApp = App.subclass().name('MyApp')
         .methods({
-            ...
+        	...
         })
         .shareState('own');
 
@@ -301,9 +301,9 @@ Instead, the web controller loads the page <code>http://&lt;server-address&gt;:8
 <p>When your application is loaded, the <code>WebControllers</code> device manager notifies all the web controllers, which then injects the app&#8217;s <code>controller.html</code> file (if it exists) into a new div in the web interface. When the app is unloaded, the div is removed, with all its content. Therefore you usually do not have to do anything special in the app&#8217;s <code>stop</code> method.</p>
 
     </div>
-    <script type="text/javascript" src="assets/js/jquery-1.11.0.min.js"></script>
-    <script type="text/javascript" src="assets/js/bootstrap.min.js"></script>
-    <script type="text/javascript" src="assets/js/highlight.custom.js"></script>
+    <script type="text/javascript" src="../assets/js/jquery-1.11.0.min.js"></script>
+    <script type="text/javascript" src="../assets/js/bootstrap.min.js"></script>
+    <script type="text/javascript" src="../assets/js/highlight.custom.js"></script>
     <script type="text/javascript">hljs.initHighlightingOnLoad();</script>
     <script type="text/javascript">
       $(document).ready(function() {

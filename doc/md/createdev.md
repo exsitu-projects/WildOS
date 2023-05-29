@@ -182,7 +182,7 @@ If multiple clients may connect to the server for the same device, you will prob
 	},
 ```
 
-Also, you will probably want to share some state between the client and server, using the [sharing](sharing.html) facilities of WildOS.For example, you can create a sharer in the constructor of the device and set it up as a master of the device class. This way, the state of the device will be shared with the connected clients.
+Also, you will probably want to share some state between the client and server, using the [sharing](sharing.md) facilities of WildOS.For example, you can create a sharer in the constructor of the device and set it up as a master of the device class. This way, the state of the device will be shared with the connected clients.
 
 ### Client side
 
